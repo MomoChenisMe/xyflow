@@ -1,0 +1,113 @@
+/* NodeResizer component styles matching React Flow */
+
+.react-flow__resize-control {
+  position: absolute;
+  user-select: none;
+  pointer-events: all;
+  box-sizing: border-box;
+}
+
+.react-flow__resize-control.handle {
+  border: 1px solid;
+  border-color: var(--xy-resize-background-color, var(--xy-resize-background-color-default));
+  background-color: var(--xy-resize-background-color, var(--xy-resize-background-color-default));
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+}
+
+.react-flow__resize-control.line {
+  border: 1px solid;
+  border-color: var(--xy-resize-background-color, var(--xy-resize-background-color-default));
+}
+
+/* Handle positions */
+.react-flow__resize-control.handle.top-left {
+  top: -5px;
+  left: -5px;
+  cursor: nw-resize;
+}
+
+.react-flow__resize-control.handle.top {
+  top: -5px;
+  left: 50%;
+  margin-left: -5px;
+  cursor: n-resize;
+}
+
+.react-flow__resize-control.handle.top-right {
+  top: -5px;
+  right: -5px;
+  cursor: ne-resize;
+}
+
+.react-flow__resize-control.handle.right {
+  top: 50%;
+  right: -5px;
+  margin-top: -5px;
+  cursor: e-resize;
+}
+
+.react-flow__resize-control.handle.bottom-right {
+  bottom: -5px;
+  right: -5px;
+  cursor: se-resize;
+}
+
+.react-flow__resize-control.handle.bottom {
+  bottom: -5px;
+  left: 50%;
+  margin-left: -5px;
+  cursor: s-resize;
+}
+
+.react-flow__resize-control.handle.bottom-left {
+  bottom: -5px;
+  left: -5px;
+  cursor: sw-resize;
+}
+
+.react-flow__resize-control.handle.left {
+  top: 50%;
+  left: -5px;
+  margin-top: -5px;
+  cursor: w-resize;
+}
+
+/* Line positions */
+.react-flow__resize-control.line.top {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  cursor: n-resize;
+}
+
+.react-flow__resize-control.line.right {
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 100%;
+  cursor: e-resize;
+}
+
+.react-flow__resize-control.line.bottom {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  cursor: s-resize;
+}
+
+.react-flow__resize-control.line.left {
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  cursor: w-resize;
+}
+
+/* XY Flow compatibility classes */
+.xy-flow__resize-control {
+  composes: react-flow__resize-control;
+}

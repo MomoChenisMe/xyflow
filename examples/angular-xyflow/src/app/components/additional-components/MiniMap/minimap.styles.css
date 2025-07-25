@@ -1,0 +1,66 @@
+/* MiniMap component styles matching React Flow */
+
+.xy-flow__minimap {
+  background: var(
+    --xy-minimap-background-color-props,
+    var(--xy-minimap-background-color, var(--xy-minimap-background-color-default))
+  );
+}
+
+.xy-flow__minimap-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.xy-flow__minimap-mask {
+  fill: var(
+    --xy-minimap-mask-background-color-props,
+    var(--xy-minimap-mask-background-color, var(--xy-minimap-mask-background-color-default))
+  );
+  stroke: var(
+    --xy-minimap-mask-stroke-color-props,
+    var(--xy-minimap-mask-stroke-color, var(--xy-minimap-mask-stroke-color-default))
+  );
+  stroke-width: var(
+    --xy-minimap-mask-stroke-width-props,
+    var(--xy-minimap-mask-stroke-width, var(--xy-minimap-mask-stroke-width-default))
+  );
+}
+
+.xy-flow__minimap-node {
+  fill: var(
+    --xy-minimap-node-background-color-props,
+    var(--xy-minimap-node-background-color, var(--xy-minimap-node-background-color-default))
+  );
+  stroke: var(
+    --xy-minimap-node-stroke-color-props,
+    var(--xy-minimap-node-stroke-color, var(--xy-minimap-node-stroke-color-default))
+  );
+  stroke-width: var(
+    --xy-minimap-node-stroke-width-props,
+    var(--xy-minimap-node-stroke-width, var(--xy-minimap-node-stroke-width-default))
+  );
+  
+  &.selected {
+    stroke: var(--xy-minimap-node-stroke-color-selected, #555);
+    stroke-width: var(--xy-minimap-node-stroke-width-selected, 2);
+  }
+}
+
+/* React Flow compatibility classes */
+.react-flow__minimap {
+  composes: xy-flow__minimap;
+}
+
+.react-flow__minimap-svg {
+  composes: xy-flow__minimap-svg;
+}
+
+.react-flow__minimap-mask {
+  composes: xy-flow__minimap-mask;
+}
+
+.react-flow__minimap-node {
+  composes: xy-flow__minimap-node;
+}

@@ -1,10 +1,20 @@
-/* React Flow CSS - Complete Integration */
-/* Based on @packages/system/src/styles/ and @packages/react/src/styles/ */
+/**
+ * Angular XYFlow 完整樣式系統
+ * 
+ * 基於 @xyflow/system 和 @xyflow/react 的樣式，完全適配 Angular
+ * 支援亮色/暗色主題、響應式設計、CSS 變量系統
+ */
 
-/* ===== CSS VARIABLES AND BASE STYLES ===== */
+/* 導入核心樣式 */
+@import './variables.css';
+@import './base.css';
+@import './components.css';
+
+/* ===== 主容器樣式 - 兼容性調整 ===== */
 .react-flow, .xy-flow {
   direction: ltr;
-
+  
+  /* 基本繼承自 variables.css 的變量 */
   --xy-edge-stroke-default: #b1b1b7;
   --xy-edge-stroke-width-default: 1;
   --xy-edge-stroke-selected-default: #555;
@@ -100,17 +110,28 @@
 }
 
 /* ===== MAIN FLOW CONTAINER ===== */
-.react-flow {
+.react-flow,
+.xy-flow {
   background-color: var(--xy-background-color, var(--xy-background-color-default));
   width: 100%;
   height: 100%;
   position: relative;
-  overflow: hidden;
+  /* overflow: hidden; <- 移除，遵循 React Flow 原始設計 */
   z-index: 0;
   user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* 確保觸控設備上的良好體驗 */
+  touch-action: none;
 }
 
-.react-flow__background {
+/* 與React Flow完全兼容的類名別名 */
+.react-flow {
+  /* 所有 react-flow__ 類名都應該與 xy-flow__ 類名完全相同 */
+}
+
+.react-flow__background,
+.xy-flow__background {
   background-color: var(--xy-background-color-props, var(--xy-background-color, var(--xy-background-color-default)));
   pointer-events: none;
   z-index: -1;
@@ -265,33 +286,51 @@ svg.react-flow__connectionline {
 }
 
 /* ===== NODES ===== */
-.react-flow__nodes {
+.react-flow__nodes,
+.xy-flow__nodes {
   pointer-events: none;
   transform-origin: 0 0;
   width: 100%;
   height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
-.react-flow__node {
+.react-flow__node,
+.xy-flow__node {
   position: absolute;
   user-select: none;
   pointer-events: all;
   transform-origin: 0 0;
   box-sizing: border-box;
   cursor: default;
+  
+  /* 確保節點可以被點擊和拖動 */
+  touch-action: none;
 }
 
-.react-flow__node.selectable {
+.react-flow__node.selectable,
+.xy-flow__node.selectable {
   cursor: pointer;
 }
 
-.react-flow__node.draggable {
-  cursor: grab;
-  pointer-events: all;
+.react-flow__node.selectable:hover,
+.xy-flow__node.selectable:hover {
+  box-shadow: var(--xy-node-boxshadow-hover, var(--xy-node-boxshadow-hover-default));
 }
 
-.react-flow__node.draggable.dragging {
+.react-flow__node.draggable,
+.xy-flow__node.draggable {
+  cursor: grab;
+  pointer-events: all;
+  touch-action: none;
+}
+
+.react-flow__node.draggable.dragging,
+.xy-flow__node.draggable.dragging {
   cursor: grabbing;
+  z-index: 1000;
 }
 
 .react-flow__node.selectable:focus,
@@ -365,47 +404,76 @@ svg.react-flow__connectionline {
 }
 
 /* ===== HANDLES ===== */
-.react-flow__handle {
+.react-flow__handle,
+.xy-flow__handle {
   position: absolute;
   pointer-events: none;
   min-width: 5px;
   min-height: 5px;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   background-color: var(--xy-handle-background-color, var(--xy-handle-background-color-default));
-  border: 1px solid var(--xy-handle-border-color, var(--xy-handle-border-color-default));
+  border: 2px solid var(--xy-handle-border-color, var(--xy-handle-border-color-default));
   border-radius: 100%;
+  z-index: 10;
+  
+  /* Ensure handles are visible */
+  opacity: 1;
+  transition: all 0.2s ease;
 }
 
-.react-flow__handle.connectingfrom {
+.react-flow__handle.connectingfrom,
+.xy-flow__handle.connectingfrom {
   pointer-events: all;
 }
 
-.react-flow__handle.connectionindicator {
+.react-flow__handle.connectionindicator,
+.xy-flow__handle.connectionindicator {
   pointer-events: all;
   cursor: crosshair;
 }
 
-.react-flow__handle-bottom {
+/* Enable pointer events for all connectable handles */
+.react-flow__handle.connectable,
+.xy-flow__handle.connectable {
+  pointer-events: all;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* Handle hover effects */
+.react-flow__handle.connectable:hover,
+.xy-flow__handle.connectable:hover {
+  transform: scale(1.1);
+  background-color: #ff6060;
+  border-color: #ff6060;
+  transition: all 0.2s ease;
+}
+
+.react-flow__handle-bottom,
+.xy-flow__handle-bottom {
   top: auto;
   left: 50%;
   bottom: 0;
   transform: translate(-50%, 50%);
 }
 
-.react-flow__handle-top {
+.react-flow__handle-top,
+.xy-flow__handle-top {
   top: 0;
   left: 50%;
   transform: translate(-50%, -50%);
 }
 
-.react-flow__handle-left {
+.react-flow__handle-left,
+.xy-flow__handle-left {
   top: 50%;
   left: 0;
   transform: translate(-50%, -50%);
 }
 
-.react-flow__handle-right {
+.react-flow__handle-right,
+.xy-flow__handle-right {
   top: 50%;
   right: 0;
   transform: translate(50%, -50%);
@@ -421,36 +489,45 @@ svg.react-flow__connectionline {
   pointer-events: none;
 }
 
-.react-flow__panel {
+.react-flow__panel,
+.xy-flow__panel {
   position: absolute;
   z-index: 5;
   margin: 15px;
 }
 
-.react-flow__panel.top {
+.react-flow__panel.top,
+.xy-flow__panel.top {
   top: 0;
 }
 
-.react-flow__panel.bottom {
+.react-flow__panel.bottom,
+.xy-flow__panel.bottom {
   bottom: 0;
 }
 
 .react-flow__panel.top.center,
-.react-flow__panel.bottom.center {
+.react-flow__panel.bottom.center,
+.xy-flow__panel.top.center,
+.xy-flow__panel.bottom.center {
   left: 50%;
   transform: translateX(-15px) translateX(-50%);
 }
 
-.react-flow__panel.left {
+.react-flow__panel.left,
+.xy-flow__panel.left {
   left: 0;
 }
 
-.react-flow__panel.right {
+.react-flow__panel.right,
+.xy-flow__panel.right {
   right: 0;
 }
 
 .react-flow__panel.left.center,
-.react-flow__panel.right.center {
+.react-flow__panel.right.center,
+.xy-flow__panel.left.center,
+.xy-flow__panel.right.center {
   top: 50%;
   transform: translateY(-15px) translateY(-50%);
 }
@@ -552,7 +629,8 @@ svg.react-flow__connectionline {
 }
 
 /* ===== CONTROLS ===== */
-.react-flow__controls {
+.react-flow__controls,
+.xy-flow__controls {
   display: flex;
   flex-direction: column;
   box-shadow: var(--xy-controls-box-shadow, var(--xy-controls-box-shadow-default));
@@ -562,7 +640,8 @@ svg.react-flow__connectionline {
   flex-direction: row;
 }
 
-.react-flow__controls-button {
+.react-flow__controls-button,
+.xy-flow__controls-button {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -634,68 +713,252 @@ svg.react-flow__connectionline {
   }
 }
 
-/* ===== ANGULAR SPECIFIC ADJUSTMENTS ===== */
+/* ===== ANGULAR 特定調整 ===== */
+
+/* Angular 組件宿主樣式 */
 :host {
   display: block;
   width: 100%;
   height: 100%;
 }
 
-/* Control panel button styles for Angular example */
+/* Angular 類名兼容性 */
+
+/* Angular 範例特殊樣式 */
+.xy-flow-basic-example {
+  /* 基本範例容器樣式 */
+  width: 100%;
+  height: 100vh;
+  position: relative;
+}
+
+.xy-flow-example-container {
+  /* 範例容器樣式 */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.xy-flow-example-header {
+  /* 範例標題樣式 */
+  padding: 10px;
+  background: var(--xy-controls-button-background-color-default);
+  border-bottom: 1px solid var(--xy-controls-button-border-color-default);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.xy-flow-example-content {
+  /* 範例內容區域 */
+  flex: 1;
+  position: relative;
+}
+
+/* 控制面板按鈕樣式 */
 .react-flow__panel button {
   margin: 2px;
   padding: 5px 10px;
-  border: 1px solid #ddd;
-  background: #fff;
+  border: 1px solid var(--xy-controls-button-border-color-default);
+  background: var(--xy-controls-button-background-color-default);
+  color: var(--xy-controls-button-color-default);
   border-radius: 3px;
   cursor: pointer;
   font-size: 11px;
   display: block;
   width: 100%;
   text-align: left;
+  
+  transition: background-color var(--xy-transition-duration-default) var(--xy-transition-timing-function-default),
+              color var(--xy-transition-duration-default) var(--xy-transition-timing-function-default);
 }
 
 .react-flow__panel button:hover {
-  background: #f0f0f0;
+  background: var(--xy-controls-button-background-color-hover-default);
+  color: var(--xy-controls-button-color-hover-default);
 }
 
-/* 特殊樣式類 for examples */
-.react-flow-basic-example {
-  /* 基本範例的特殊樣式 */
+.react-flow__panel button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-/* Node theme styles - 對應 React 範例 */
+/* 節點主題樣式 */
 .react-flow__node.light {
-  /* light 節點使用預設樣式 */
-  background: var(--xy-node-background-color, var(--xy-node-background-color-default));
-  color: var(--xy-node-color, var(--xy-node-color-default));
+  background: var(--xy-node-background-color-default);
+  color: var(--xy-node-color-default);
 }
 
 .react-flow__node.dark {
-  /* dark 節點使用特殊樣式 - 對應 React 範例 */
   background: #557;
   color: #f8f8f8;
+  border-color: #669;
 }
 
 /* 輔助功能樣式 */
 .react-flow__node:focus,
 .react-flow__node:focus-visible {
-  outline: 2px solid #ff0073;
+  outline: var(--xy-focus-outline-default);
+  outline-offset: 2px;
 }
 
 .react-flow__edge:focus,
 .react-flow__edge:focus-visible {
-  outline: 2px solid #ff0073;
+  outline: var(--xy-focus-outline-default);
+  outline-offset: 2px;
 }
 
-/* 媒體查詢 */
+.react-flow__handle:focus,
+.react-flow__handle:focus-visible {
+  outline: var(--xy-focus-outline-default);
+  outline-offset: 1px;
+}
+
+/* 動畫增強 */
+.xy-flow__node.appearing {
+  animation: node-appear 0.2s ease-out;
+}
+
+.xy-flow__edge.appearing {
+  animation: edge-appear 0.5s ease-out;
+}
+
+/* 表單控件樣式 */
+.xy-flow__form-control {
+  margin: 5px 0;
+}
+
+.xy-flow__form-control label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 2px;
+  color: var(--xy-node-color-default);
+}
+
+.xy-flow__form-control input,
+.xy-flow__form-control select,
+.xy-flow__form-control textarea {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--xy-controls-button-border-color-default);
+  border-radius: 3px;
+  background: var(--xy-controls-button-background-color-default);
+  color: var(--xy-controls-button-color-default);
+  font-size: 12px;
+}
+
+.xy-flow__form-control input:focus,
+.xy-flow__form-control select:focus,
+.xy-flow__form-control textarea:focus {
+  outline: var(--xy-focus-outline-default);
+  outline-offset: 1px;
+}
+
+/* 載入狀態樣式 */
+.xy-flow__loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--xy-controls-button-background-color-default);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: var(--xy-controls-box-shadow-default);
+  text-align: center;
+  z-index: 1000;
+}
+
+.xy-flow__loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--xy-controls-button-border-color-default);
+  border-top: 3px solid var(--xy-handle-background-color-default);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 錯誤狀態樣式 */
+.xy-flow__error {
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px;
+  font-size: 12px;
+}
+
+.xy-flow__error-title {
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+/* 響應式調整 */
 @media (max-width: 768px) {
   .react-flow__panel {
     margin: 10px;
   }
   
   .react-flow__controls-button {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
+  }
+  
+  .xy-flow-example-header {
+    padding: 8px;
+    font-size: 13px;
+  }
+  
+  .xy-flow__form-control input,
+  .xy-flow__form-control select,
+  .xy-flow__form-control textarea {
+    padding: 6px 8px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .react-flow__controls-button {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .react-flow__panel button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+/* 高對比度模式 */
+@media (prefers-contrast: high) {
+  .react-flow__node {
+    border-width: 2px;
+  }
+  
+  .react-flow__edge path {
+    stroke-width: 2;
+  }
+  
+  .react-flow__handle {
+    border-width: 2px;
+  }
+}
+
+/* 減少動畫模式 */
+@media (prefers-reduced-motion: reduce) {
+  .xy-flow__node.appearing,
+  .xy-flow__edge.appearing {
+    animation: none;
+  }
+  
+  .xy-flow__loading-spinner {
+    animation: none;
+    border-top-color: transparent;
   }
 }

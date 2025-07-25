@@ -12,6 +12,9 @@ import {
   Panel,
   OnNodeDrag,
   FitViewOptions,
+  OnConnect,
+  addEdge,
+  Connection,
 } from '@xyflow/react';
 
 const onNodeDrag: OnNodeDrag = (_, node: Node, nodes: Node[]) => console.log('drag', node, nodes);
@@ -72,6 +75,11 @@ const BasicFlow = () => {
     setViewport,
     fitView,
   } = useReactFlow();
+
+  const onConnect: OnConnect = useCallback((params: Connection) => {
+    console.log('onConnect', params);
+    setEdges((eds) => addEdge(params, eds));
+  }, [setEdges]);
 
   const updatePos = () => {
     setNodes((nodes) =>
@@ -140,6 +148,7 @@ const BasicFlow = () => {
       defaultNodes={initialNodes}
       defaultEdges={initialEdges}
       onNodesChange={console.log}
+      onConnect={onConnect}
       onNodeClick={onNodeClick}
       onNodeDragStop={onNodeDragStop}
       onNodeDragStart={onNodeDragStart}

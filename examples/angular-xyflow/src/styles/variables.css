@@ -1,0 +1,294 @@
+/**
+ * Angular XYFlow CSS 變量定義
+ * 
+ * 基於 @xyflow/system 的變量系統，完全兼容 React Flow 的主題和樣式
+ * 支持亮色/暗色主題切換，使用三級變量回退機制
+ */
+
+/* ===================
+   基礎容器樣式
+   =================== */
+
+.xy-flow {
+  /* 容器樣式 - 移除 overflow: hidden 以匹配 React Flow */
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* overflow: hidden; <- 移除，遵循 React Flow 設計 */
+  z-index: 0;
+  
+  /* 基礎顏色變量 - 亮色主題 */
+  --xy-background-color-default: #fafafa;
+  --xy-background-pattern-color-default: #e2e2e2;
+  
+  /* 節點變量 */
+  --xy-node-color-default: #222;
+  --xy-node-background-color-default: #fff;
+  --xy-node-border-default: 1px solid #1a192b;
+  --xy-node-border-radius-default: 3px;
+  --xy-node-boxshadow-hover-default: 0 1px 4px 1px rgba(0, 0, 0, 0.08);
+  --xy-node-boxshadow-selected-default: 0 0 0 0.5px #1a192b;
+  
+  /* 邊線變量 */
+  --xy-edge-stroke-default: #b1b1b7;
+  --xy-edge-stroke-width-default: 1;
+  --xy-edge-stroke-selected-default: #555;
+  
+  /* 連接點變量 */
+  --xy-handle-background-color-default: #1a192b;
+  --xy-handle-border-color-default: #fff;
+  --xy-handle-color-default: #fff;
+  
+  /* 控制器變量 */
+  --xy-controls-button-background-color-default: #fefefe;
+  --xy-controls-button-background-color-hover-default: #f4f4f4;
+  --xy-controls-button-color-default: inherit;
+  --xy-controls-button-color-hover-default: inherit;
+  --xy-controls-button-border-color-default: #eee;
+  --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.08);
+  
+  /* 小地圖變量 */
+  --xy-minimap-background-color-default: #fff;
+  --xy-minimap-mask-background-color-default: rgb(240, 240, 240, 0.6);
+  --xy-minimap-mask-stroke-color-default: none;
+  --xy-minimap-mask-stroke-width-default: 1;
+  --xy-minimap-node-background-color-default: #e2e2e2;
+  --xy-minimap-node-stroke-color-default: transparent;
+  --xy-minimap-node-stroke-width-default: 2;
+  
+  /* 選擇框變量 */
+  --xy-selection-background-color-default: rgba(0, 89, 220, 0.08);
+  --xy-selection-border-default: 1px dotted rgba(0, 89, 220, 0.8);
+  
+  /* 歸屬變量 */
+  --xy-attribution-background-color-default: rgba(255, 255, 255, 0.5);
+  --xy-attribution-color-default: #999;
+  
+  /* 調整器變量 */
+  --xy-resize-handle-background-color-default: #3367d9;
+  --xy-resize-handle-color-default: #fff;
+  --xy-resize-line-color-default: #3367d9;
+  
+  /* 輔助功能變量 */
+  --xy-focus-outline-default: 2px solid #0078d4;
+  
+  /* 動畫變量 */
+  --xy-transition-duration-default: 150ms;
+  --xy-transition-timing-function-default: ease-in-out;
+}
+
+/* ===================
+   暗色主題變量
+   =================== */
+
+.xy-flow.dark {
+  /* 基礎顏色變量 - 暗色主題 */
+  --xy-background-color-default: #1a1a1a;
+  --xy-background-pattern-color-default: #2a2a2a;
+  
+  /* 節點變量 */
+  --xy-node-color-default: #fff;
+  --xy-node-background-color-default: #1e1e1e;
+  --xy-node-border-default: 1px solid #bebebe;
+  --xy-node-boxshadow-hover-default: 0 1px 4px 1px rgba(255, 255, 255, 0.08);
+  --xy-node-boxshadow-selected-default: 0 0 0 0.5px #bebebe;
+  
+  /* 邊線變量 */
+  --xy-edge-stroke-default: #3e3e3e;
+  --xy-edge-stroke-selected-default: #999;
+  
+  /* 連接點變量 */
+  --xy-handle-background-color-default: #bebebe;
+  --xy-handle-border-color-default: #1e1e1e;
+  --xy-handle-color-default: #1e1e1e;
+  
+  /* 控制器變量 */
+  --xy-controls-button-background-color-default: #2a2a2a;
+  --xy-controls-button-background-color-hover-default: #3a3a3a;
+  --xy-controls-button-border-color-default: #444;
+  --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.3);
+  
+  /* 小地圖變量 */
+  --xy-minimap-background-color-default: #1e1e1e;
+  --xy-minimap-mask-background-color-default: rgb(60, 60, 60, 0.6);
+  --xy-minimap-node-background-color-default: #444;
+  
+  /* 選擇框變量 */
+  --xy-selection-background-color-default: rgba(100, 150, 255, 0.15);
+  --xy-selection-border-default: 1px dotted rgba(100, 150, 255, 0.8);
+  
+  /* 歸屬變量 */
+  --xy-attribution-background-color-default: rgba(0, 0, 0, 0.5);
+  --xy-attribution-color-default: #ccc;
+}
+
+/* ===================
+   三級變量回退系統
+   =================== */
+
+/* 
+ * 變量回退順序：
+ * 1. --xy-*-props (組件級屬性變量)
+ * 2. --xy-* (用戶自定義變量)
+ * 3. --xy-*-default (默認值變量)
+ * 
+ * 示例用法：
+ * background: var(
+ *   --xy-node-background-color-props,
+ *   var(--xy-node-background-color, var(--xy-node-background-color-default))
+ * );
+ */
+
+/* ===================
+   系統主題檢測
+   =================== */
+
+@media (prefers-color-scheme: dark) {
+  .xy-flow.system {
+    /* 繼承暗色主題變量 */
+    --xy-background-color-default: #1a1a1a;
+    --xy-background-pattern-color-default: #2a2a2a;
+    --xy-node-color-default: #fff;
+    --xy-node-background-color-default: #1e1e1e;
+    --xy-node-border-default: 1px solid #bebebe;
+    --xy-node-boxshadow-hover-default: 0 1px 4px 1px rgba(255, 255, 255, 0.08);
+    --xy-node-boxshadow-selected-default: 0 0 0 0.5px #bebebe;
+    --xy-edge-stroke-default: #3e3e3e;
+    --xy-edge-stroke-selected-default: #999;
+    --xy-handle-background-color-default: #bebebe;
+    --xy-handle-border-color-default: #1e1e1e;
+    --xy-handle-color-default: #1e1e1e;
+    --xy-controls-button-background-color-default: #2a2a2a;
+    --xy-controls-button-background-color-hover-default: #3a3a3a;
+    --xy-controls-button-border-color-default: #444;
+    --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.3);
+    --xy-minimap-background-color-default: #1e1e1e;
+    --xy-minimap-mask-background-color-default: rgb(60, 60, 60, 0.6);
+    --xy-minimap-node-background-color-default: #444;
+    --xy-selection-background-color-default: rgba(100, 150, 255, 0.15);
+    --xy-selection-border-default: 1px dotted rgba(100, 150, 255, 0.8);
+    --xy-attribution-background-color-default: rgba(0, 0, 0, 0.5);
+    --xy-attribution-color-default: #ccc;
+  }
+}
+
+/* ===================
+   組件特定變量
+   =================== */
+
+/* 節點類型變量 */
+.xy-flow {
+  /* Input 節點 */
+  --xy-node-input-background-color-default: var(--xy-node-background-color-default);
+  --xy-node-input-border-color-default: var(--xy-handle-background-color-default);
+  
+  /* Output 節點 */
+  --xy-node-output-background-color-default: var(--xy-node-background-color-default);
+  --xy-node-output-border-color-default: var(--xy-handle-background-color-default);
+  
+  /* Group 節點 */
+  --xy-node-group-background-color-default: rgba(240, 240, 240, 0.25);
+  --xy-node-group-border-color-default: transparent;
+}
+
+.xy-flow.dark {
+  /* Input 節點 */
+  --xy-node-input-background-color-default: var(--xy-node-background-color-default);
+  --xy-node-input-border-color-default: var(--xy-handle-background-color-default);
+  
+  /* Output 節點 */
+  --xy-node-output-background-color-default: var(--xy-node-background-color-default);
+  --xy-node-output-border-color-default: var(--xy-handle-background-color-default);
+  
+  /* Group 節點 */
+  --xy-node-group-background-color-default: rgba(64, 64, 64, 0.25);
+  --xy-node-group-border-color-default: transparent;
+}
+
+/* ===================
+   尺寸和間距變量
+   =================== */
+
+.xy-flow {
+  /* 節點尺寸 */
+  --xy-node-min-width-default: 100px;
+  --xy-node-min-height-default: 40px;
+  --xy-node-padding-default: 10px;
+  
+  /* 連接點尺寸 */
+  --xy-handle-size-default: 8px;
+  --xy-handle-border-radius-default: 50%;
+  
+  /* 邊線寬度 */
+  --xy-edge-stroke-width-hover-default: 2;
+  --xy-edge-stroke-width-selected-default: 2;
+  
+  /* 控制器尺寸 */
+  --xy-controls-button-size-default: 24px;
+  --xy-controls-button-spacing-default: 4px;
+  
+  /* 小地圖尺寸 */
+  --xy-minimap-width-default: 200px;
+  --xy-minimap-height-default: 150px;
+  
+  /* Z-index 層級 */
+  --xy-node-z-index-default: 1;
+  --xy-edge-z-index-default: 0;
+  --xy-handle-z-index-default: 5; /* 提高 handle z-index 確保在 edge 之上 */
+  --xy-controls-z-index-default: 3;
+  --xy-minimap-z-index-default: 3;
+  --xy-selection-z-index-default: 4;
+}
+
+/* ===================
+   響應式變量
+   =================== */
+
+@media (max-width: 768px) {
+  .xy-flow {
+    /* 移動設備優化 */
+    --xy-handle-size-default: 12px;
+    --xy-controls-button-size-default: 32px;
+    --xy-node-padding-default: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .xy-flow {
+    /* 小屏幕設備優化 */
+    --xy-handle-size-default: 14px;
+    --xy-controls-button-size-default: 36px;
+    --xy-controls-button-spacing-default: 6px;
+    --xy-minimap-width-default: 150px;
+    --xy-minimap-height-default: 100px;
+  }
+}
+
+/* ===================
+   高對比度主題支持
+   =================== */
+
+@media (prefers-contrast: high) {
+  .xy-flow {
+    --xy-node-border-default: 2px solid #000;
+    --xy-edge-stroke-width-default: 2;
+    --xy-handle-border-color-default: #000;
+    --xy-focus-outline-default: 3px solid #000;
+  }
+  
+  .xy-flow.dark {
+    --xy-node-border-default: 2px solid #fff;
+    --xy-handle-border-color-default: #fff;
+    --xy-focus-outline-default: 3px solid #fff;
+  }
+}
+
+/* ===================
+   減少動畫效果支持
+   =================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .xy-flow {
+    --xy-transition-duration-default: 0ms;
+  }
+}
