@@ -42,6 +42,118 @@
 - Leverage Angular CLI for schematics and code generation.
 - Implement proper lazy loading with loadComponent and loadChildren.
 
+#### ANGULAR_20_SIGNAL_APIS
+
+- Always 「use context7」 to find angular 20 signal APIs.
+
+**Core Signal Functions:**
+
+**signal()**
+- 基本可寫信號，包裝值並在值改變時通知消費者
+```typescript
+const count = signal(0);
+count.set(1);
+count.update(current => current + 1);
+```
+
+**computed()**
+- 計算信號，根據其他信號自動派生值
+```typescript
+const price = signal(10);
+const quantity = signal(2);
+const total = computed(() => price() * quantity());
+```
+
+**effect()**
+- 副作用，自動響應信號變化並執行定義的副作用
+```typescript
+effect(() => {
+  console.log('Count changed:', count());
+});
+```
+
+**linkedSignal()**
+- 雙向綁定信號，允許信號和外部源之間的雙向關係
+```typescript
+const selectedOption = linkedSignal(() => this.shippingOptions()[0]);
+```
+
+**Signal-Based Component APIs - 替代裝飾器：**
+
+**input()** - 替代 @Input() 裝飾器
+```typescript
+export class MyComponent {
+  // 必需輸入
+  name = input.required<string>();
+  // 可選輸入帶默認值
+  age = input<number>(0);
+  // 帶轉換的輸入
+  id = input<number, string>({
+    transform: (value: string) => parseInt(value)
+  });
+}
+```
+
+**model()** - 雙向數據綁定
+```typescript
+export class MyComponent {
+  value = model<string>('');
+}
+```
+
+**output()** - 替代 @Output() 裝飾器
+```typescript
+export class MyComponent {
+  valueChange = output<string>();
+  
+  emitChange(): void {
+    this.valueChange.emit('new value');
+  }
+}
+```
+
+**viewChild() / viewChildren()** - 替代 @ViewChild / @ViewChildren 裝飾器
+```typescript
+export class MyComponent {
+  // 查詢 HTML 元素
+  titleElement = viewChild<ElementRef>('title');
+  // 查詢組件實例
+  bookComponent = viewChild.required(BookComponent);
+  // 查詢多個元素
+  items = viewChildren('item');
+}
+```
+
+**contentChild() / contentChildren()** - 替代 @ContentChild / @ContentChildren 裝飾器
+```typescript
+export class MyComponent {
+  // 查詢投影的單個元素
+  projectedContent = contentChild<ElementRef>('content');
+  // 查詢投影的多個元素
+  items = contentChildren(ItemComponent, { descendants: true });
+}
+```
+
+**afterRenderEffect()** - 處理渲染後的副作用
+```typescript
+constructor() {
+  afterRenderEffect(() => {
+    // 在渲染完成後執行
+    this.adjustLayout();
+  });
+}
+```
+
+**Signal API 最佳實踐：**
+
+- 使用 signal-based APIs 替代傳統裝飾器 (@Input, @Output, @ViewChild, @ContentChild)
+- 配合 effect() 進行副作用處理而不是生命周期鉤子
+- 使用 computed() 創建派生狀態
+- 結合 model() 實現雙向綁定
+- 利用 linkedSignal() 處理複雜的響應式關係
+- 在新項目中優先使用 signal-based APIs
+- 逐步遷移現有組件到 signal 模式
+
 #### CODE_QUALITY_STANDARDS
 
 **Import Organization:**
