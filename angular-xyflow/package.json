@@ -1,5 +1,5 @@
 {
-  "name": "angular-flow",
+  "name": "angular-xyflow",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -26,6 +26,13 @@
     "@angular/forms": "^20.1.0",
     "@angular/platform-browser": "^20.1.0",
     "@angular/router": "^20.1.0",
+    "@xyflow/system": "^0.0.66",
+    "d3-drag": "^3.0.0",
+    "d3-interpolate": "^3.0.1",
+    "d3-selection": "^3.0.0",
+    "d3-transition": "^3.0.1",
+    "d3-zoom": "^3.0.0",
+    "puppeteer": "^24.15.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -33,6 +40,11 @@
     "@angular/build": "^20.1.0",
     "@angular/cli": "^20.1.0",
     "@angular/compiler-cli": "^20.1.0",
+    "@types/d3-drag": "^3.0.7",
+    "@types/d3-interpolate": "^3.0.4",
+    "@types/d3-selection": "^3.0.11",
+    "@types/d3-transition": "^3.0.9",
+    "@types/d3-zoom": "^3.0.8",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.8.0",
     "karma": "~6.4.0",

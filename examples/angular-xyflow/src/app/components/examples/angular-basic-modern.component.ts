@@ -181,6 +181,7 @@ export class AngularBasicModernComponent implements AfterViewInit, OnDestroy {
   onSelectionDragStop = output<{ event: MouseEvent; nodes: Node[] }>();
   
   constructor() {
+    console.log('🚀 CONSTRUCTOR: AngularBasicModernComponent instantiated');
     // Setup effects to react to input changes
     effect(() => {
       const nodes = this.defaultNodes();
@@ -204,8 +205,19 @@ export class AngularBasicModernComponent implements AfterViewInit, OnDestroy {
 
     effect(() => {
       const edges = this.defaultEdges();
+      console.log('🔥 AngularBasicModern: defaultEdges effect triggered:', {
+        edgesCount: edges?.length,
+        hasAngularFlow: !!this.angularFlow,
+        edges
+      });
       if (edges && edges.length > 0) {
+        console.log('🔥 AngularBasicModern: Calling angularFlow.setEdges...');
         this.angularFlow.setEdges(edges);
+        console.log('🔥 AngularBasicModern: Called angularFlow.setEdges successfully');
+        
+        // Verify edges were set in store
+        const storeEdges = this.angularFlow.getEdges();
+        console.log('🔥 AngularBasicModern: Edges in store after setEdges:', storeEdges.length, storeEdges);
       }
     });
   }

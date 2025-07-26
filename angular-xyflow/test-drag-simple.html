@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Angular Flow Drag Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        iframe { width: 100%; height: 500px; border: 1px solid #ccc; }
+        .console-output { 
+            background: #f5f5f5; 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            margin-top: 20px; 
+            height: 200px; 
+            overflow-y: auto; 
+            font-family: monospace; 
+            font-size: 12px;
+        }
+        .test-instructions {
+            background: #e7f3ff;
+            border: 1px solid #0066cc;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Angular Flow Drag Test</h1>
+    
+    <div class="test-instructions">
+        <h3>Test Instructions:</h3>
+        <ol>
+            <li>The Angular Flow app should load in the iframe below</li>
+            <li>Try to drag a node in the flow diagram</li>
+            <li>Check the console output below for debug information</li>
+            <li>If you see "🎯 Drag start:" and "🔧 Drag update:" messages, the drag system is working</li>
+        </ol>
+    </div>
+
+    <iframe src="http://localhost:4200" id="flowFrame"></iframe>
+    
+    <div class="console-output" id="consoleOutput">
+        <strong>Console Output:</strong><br>
+        Waiting for drag events...
+    </div>
+
+    <script>
+        let consoleOutput = document.getElementById('consoleOutput');
+        let originalLog = console.log;
+        
+        // Override console.log to capture Angular app logs
+        console.log = function(...args) {
+            // Call original log
+            originalLog.apply(console, args);
+            
+            // Add to our display
+            let logMessage = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg
+            ).join(' ');
+            
+            if (logMessage.includes('🎯') || logMessage.includes('🔧')) {
+                consoleOutput.innerHTML += `<br><span style="color: blue;">${new Date().toLocaleTimeString()}: ${logMessage}</span>`;
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }
+        };
+
+        // Listen for messages from the iframe
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'console-log') {
+                let logMessage = event.data.message;
+                consoleOutput.innerHTML += `<br><span style="color: green;">${new Date().toLocaleTimeString()}: ${logMessage}</span>`;
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }
+        });
+
+        // Check if iframe loaded successfully
+        document.getElementById('flowFrame').onload = function() {
+            consoleOutput.innerHTML += '<br><span style="color: green;">✅ Angular Flow app loaded successfully!</span>';
+        };
+
+        document.getElementById('flowFrame').onerror = function() {
+            consoleOutput.innerHTML += '<br><span style="color: red;">❌ Failed to load Angular Flow app</span>';
+        };
+    </script>
+</body>
+</html>

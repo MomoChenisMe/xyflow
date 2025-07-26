@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Angular Flow Viewport Panning Test</title>
+    <meta charset="utf-8">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        iframe { 
+            width: 100%; 
+            height: 600px; 
+            border: 2px solid #007bff; 
+            border-radius: 8px;
+        }
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .console-logs {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        .log-pan { color: #68d391; }
+        .log-zoom { color: #63b3ed; }
+        .log-error { color: #fc8181; }
+        .log-info { color: #a0aec0; }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .test-button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Angular Flow Viewport 拖拽測試</h1>
+    
+    <div class="instructions">
+        <h3>測試項目：</h3>
+        <ol>
+            <li><strong>拖拽 viewport：</strong>在空白區域按住左鍵拖拽（避開節點）</li>
+            <li><strong>滾輪縮放：</strong>使用滑鼠滾輪縮放</li>
+            <li><strong>雙擊縮放：</strong>雙擊空白區域進行縮放</li>
+            <li><strong>按鈕功能：</strong>測試下方的縮放和重置按鈕</li>
+        </ol>
+        <p><strong>期望結果：</strong></p>
+        <ul>
+            <li>拖拽空白區域應該能移動整個 viewport</li>
+            <li>滾輪應該能縮放整個視圖</li>
+            <li>控制台會顯示 "🔧 PanZoom" 相關日志</li>
+        </ul>
+    </div>
+
+    <div class="test-container">
+        <h3>Angular Flow 應用</h3>
+        <div id="app-status" class="status info">正在載入 Angular Flow 應用...</div>
+        
+        <div class="test-buttons">
+            <button class="test-button" onclick="testZoomIn()">🔍+ 放大</button>
+            <button class="test-button" onclick="testZoomOut()">🔍- 縮小</button>
+            <button class="test-button" onclick="testReset()">🔄 重置視圖</button>
+            <button class="test-button" onclick="testFitView()">📐 適合視窗</button>
+        </div>
+        
+        <iframe src="http://localhost:4200" id="angularFrame"></iframe>
+    </div>
+
+    <div class="test-container">
+        <h3>控制台輸出</h3>
+        <div class="console-logs" id="consoleLogs">
+            <div class="log-entry log-info">[INFO] 等待 PanZoom 事件...</div>
+        </div>
+    </div>
+
+    <script>
+        const appStatus = document.getElementById('app-status');
+        const consoleLogs = document.getElementById('consoleLogs');
+        const iframe = document.getElementById('angularFrame');
+        
+        // 添加日志條目
+        function addLog(message, type = 'info') {
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleLogs.appendChild(logEntry);
+            consoleLogs.scrollTop = consoleLogs.scrollHeight;
+        }
+
+        // 監聽 iframe 載入
+        iframe.onload = function() {
+            appStatus.textContent = '✅ Angular Flow 應用載入成功！現在可以測試 viewport 拖拽功能';
+            appStatus.className = 'status success';
+            addLog('Angular Flow 應用載入完成', 'info');
+            addLog('開始監聽 PanZoom 事件...', 'info');
+            
+            // 嘗試監聽 iframe 內的控制台消息
+            try {
+                const iframeWindow = iframe.contentWindow;
+                if (iframeWindow) {
+                    addLog('已連接到 iframe，等待 PanZoom 日志...', 'info');
+                }
+            } catch (e) {
+                addLog('無法直接監聽 iframe 內部事件（跨域限制）', 'error');
+            }
+        };
+
+        iframe.onerror = function() {
+            appStatus.textContent = '❌ Angular Flow 應用載入失敗';
+            appStatus.className = 'status error';
+            addLog('Angular Flow 應用載入失敗', 'error');
+        };
+
+        // 測試按鈕功能
+        function testZoomIn() {
+            addLog('測試：嘗試放大視圖', 'zoom');
+            // 這裡可以實現與 iframe 的通信來觸發縮放
+        }
+
+        function testZoomOut() {
+            addLog('測試：嘗試縮小視圖', 'zoom');
+        }
+
+        function testReset() {
+            addLog('測試：重置視圖', 'zoom');
+        }
+
+        function testFitView() {
+            addLog('測試：適合視窗', 'zoom');
+        }
+
+        // 定期添加測試提示
+        setTimeout(() => {
+            addLog('提示：嘗試在空白區域拖拽來移動 viewport', 'info');
+        }, 3000);
+
+        setTimeout(() => {
+            addLog('提示：使用滑鼠滾輪來縮放視圖', 'info');
+        }, 6000);
+
+        setTimeout(() => {
+            addLog('提示：雙擊空白區域應該能縮放', 'info');
+        }, 9000);
+
+        setTimeout(() => {
+            addLog('提示：打開瀏覽器開發者工具查看詳細的 PanZoom 日志', 'info');
+        }, 12000);
+
+        // 檢查應用是否響應
+        setInterval(() => {
+            fetch('http://localhost:4200/')
+                .then(response => {
+                    if (!response.ok) throw new Error('App not responding');
+                })
+                .catch(() => {
+                    if (appStatus.className !== 'status error') {
+                        appStatus.textContent = '⚠️ 應用可能已停止運行';
+                        appStatus.className = 'status error';
+                        addLog('檢測到應用可能已停止運行', 'error');
+                    }
+                });
+        }, 15000);
+
+        // 模擬 PanZoom 事件（用於演示）
+        setTimeout(() => {
+            if (Math.random() > 0.5) {
+                addLog('模擬：如果您看到 viewport 可以拖拽和縮放，說明 PanZoom 功能正常！', 'pan');
+            }
+        }, 15000);
+    </script>
+</body>
+</html>

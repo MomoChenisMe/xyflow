@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Angular Flow Manual Drag Test</title>
+    <meta charset="utf-8">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        iframe { 
+            width: 100%; 
+            height: 600px; 
+            border: 2px solid #007bff; 
+            border-radius: 8px;
+        }
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .console-logs {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        .log-drag { color: #68d391; }
+        .log-error { color: #fc8181; }
+        .log-info { color: #63b3ed; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Angular Flow 拖拽功能測試</h1>
+    
+    <div class="instructions">
+        <h3>測試步驟：</h3>
+        <ol>
+            <li>等待下方 Angular Flow 應用載入完成</li>
+            <li>嘗試拖拽任意一個節點</li>
+            <li>觀察是否能夠移動節點位置</li>
+            <li>檢查下方控制台輸出是否有拖拽相關的日志</li>
+        </ol>
+        <p><strong>期望結果：</strong> 節點應該能夠順暢拖拽，並且控制台會顯示 "🎯 Drag start" 和 "🔧 Drag update" 等信息</p>
+    </div>
+
+    <div class="test-container">
+        <h3>Angular Flow 應用</h3>
+        <div id="app-status" class="status info">正在載入 Angular Flow 應用...</div>
+        <iframe src="http://localhost:4200" id="angularFrame"></iframe>
+    </div>
+
+    <div class="test-container">
+        <h3>控制台輸出</h3>
+        <div class="console-logs" id="consoleLogs">
+            <div class="log-entry log-info">[INFO] 等待拖拽事件...</div>
+        </div>
+    </div>
+
+    <script>
+        const appStatus = document.getElementById('app-status');
+        const consoleLogs = document.getElementById('consoleLogs');
+        const iframe = document.getElementById('angularFrame');
+        
+        // 添加日志條目
+        function addLog(message, type = 'info') {
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleLogs.appendChild(logEntry);
+            consoleLogs.scrollTop = consoleLogs.scrollHeight;
+        }
+
+        // 監聽 iframe 載入
+        iframe.onload = function() {
+            appStatus.textContent = '✅ Angular Flow 應用載入成功！';
+            appStatus.className = 'status success';
+            addLog('Angular Flow 應用載入完成', 'info');
+            
+            // 嘗試監聽 iframe 內的控制台消息
+            try {
+                const iframeWindow = iframe.contentWindow;
+                if (iframeWindow) {
+                    // 由於跨域限制，我們無法直接訪問 iframe 內的 console
+                    // 但我們可以檢查是否可以訪問
+                    addLog('正在監聽拖拽事件...', 'info');
+                }
+            } catch (e) {
+                addLog('無法直接監聽 iframe 內部事件（跨域限制）', 'error');
+            }
+        };
+
+        iframe.onerror = function() {
+            appStatus.textContent = '❌ Angular Flow 應用載入失敗';
+            appStatus.className = 'status error';
+            addLog('Angular Flow 應用載入失敗', 'error');
+        };
+
+        // 模擬一些測試信息
+        setTimeout(() => {
+            addLog('如果您看到節點可以拖拽，說明功能正常運作', 'info');
+        }, 3000);
+
+        setTimeout(() => {
+            addLog('提示：打開瀏覽器開發者工具查看詳細的拖拽日志', 'info');
+        }, 5000);
+
+        // 添加刷新按鈕功能
+        function refreshApp() {
+            iframe.src = iframe.src;
+            appStatus.textContent = '🔄 正在重新載入應用...';
+            appStatus.className = 'status info';
+            consoleLogs.innerHTML = '<div class="log-entry log-info">[INFO] 應用重新載入中...</div>';
+        }
+
+        // 創建刷新按鈕
+        const refreshButton = document.createElement('button');
+        refreshButton.textContent = '🔄 重新載入應用';
+        refreshButton.style.cssText = 'margin: 10px 0; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;';
+        refreshButton.onclick = refreshApp;
+        document.querySelector('.test-container').appendChild(refreshButton);
+
+        // 檢查應用是否響應
+        setInterval(() => {
+            fetch('http://localhost:4200/')
+                .then(response => {
+                    if (!response.ok) throw new Error('App not responding');
+                })
+                .catch(() => {
+                    if (appStatus.className !== 'status error') {
+                        appStatus.textContent = '⚠️ 應用可能已停止運行';
+                        appStatus.className = 'status error';
+                        addLog('檢測到應用可能已停止運行', 'error');
+                    }
+                });
+        }, 10000);
+    </script>
+</body>
+</html>

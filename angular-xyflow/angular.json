@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "angular-flow": {
+    "angular-xyflow": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -58,10 +58,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "angular-flow:build:production"
+              "buildTarget": "angular-xyflow:build:production"
             },
             "development": {
-              "buildTarget": "angular-flow:build:development"
+              "buildTarget": "angular-xyflow:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -87,5 +87,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }
