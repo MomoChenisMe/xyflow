@@ -26,13 +26,12 @@ import {
   AngularFlowInstance,
 } from './types';
 import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
-import { EdgeWrapperComponent } from './edge-wrapper/edge-wrapper.component';
 import { type Connection } from '@xyflow/system';
 
 @Component({
   selector: 'angular-flow',
   standalone: true,
-  imports: [CommonModule, NodeWrapperComponent, EdgeWrapperComponent],
+  imports: [CommonModule, NodeWrapperComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -83,48 +82,44 @@ import { type Connection } from '@xyflow/system';
             </marker>
           </defs>
 
-          <!-- 調試：顯示邊的循環狀態 -->
-          <text x="10" y="20" fill="purple" font-size="12">
-            邊總數: {{ visibleEdges().length }}
-          </text>
+          @for (edge of visibleEdges(); track edge.id) { @let sourceNode =
+          getNodeById(edge.source); @let targetNode = getNodeById(edge.target);
+          @if (sourceNode && targetNode) {
+          <g
+            class="angular-flow__edge xy-flow__edge"
+            [class.selected]="edge.selected"
+            [class.animated]="edge.animated"
+          >
+            <!-- 計算邊路徑 -->
+            <path
+              [attr.d]="calculateEdgePath(sourceNode, targetNode, edge)"
+              [attr.stroke]="edge.selected ? '#ff0072' : '#b1b1b7'"
+              [attr.stroke-width]="edge.selected ? 2 : 1"
+              [attr.fill]="'none'"
+              [attr.marker-end]="'url(#arrowhead)'"
+              [class]="'angular-flow__edge-path xy-flow__edge-path'"
+              style="pointer-events: stroke;"
+            />
 
-          @for (edge of visibleEdges(); track edge.id) {
-            @let sourceNode = getNodeById(edge.source);
-            @let targetNode = getNodeById(edge.target);
-
-            @if (sourceNode && targetNode) {
-              <g
-                class="angular-flow__edge xy-flow__edge"
-                [class.selected]="edge.selected"
-                [class.animated]="edge.animated"
-              >
-                <!-- 計算邊路徑 -->
-                <path
-                  [attr.d]="calculateEdgePath(sourceNode, targetNode, edge)"
-                  [attr.stroke]="edge.selected ? '#ff0072' : '#b1b1b7'"
-                  [attr.stroke-width]="edge.selected ? 2 : 1"
-                  [attr.fill]="'none'"
-                  [attr.marker-end]="'url(#arrowhead)'"
-                  [class]="'angular-flow__edge-path xy-flow__edge-path'"
-                  style="pointer-events: stroke;"
-                />
-
-                <!-- Edge label -->
-                @if (edge.data?.['label']) {
-                  <text
-                    [attr.x]="(sourceNode.position.x + targetNode.position.x) / 2 + 75"
-                    [attr.y]="(sourceNode.position.y + targetNode.position.y) / 2 + 20"
-                    text-anchor="middle"
-                    dominant-baseline="middle"
-                    class="angular-flow__edge-label xy-flow__edge-label"
-                    style="font-size: 12px; fill: #222; pointer-events: none;"
-                  >
-                    {{ edge.data?.['label'] }}
-                  </text>
-                }
-              </g>
+            <!-- Edge label -->
+            @if (edge.data?.['label']) {
+            <text
+              [attr.x]="
+                (sourceNode.position.x + targetNode.position.x) / 2 + 75
+              "
+              [attr.y]="
+                (sourceNode.position.y + targetNode.position.y) / 2 + 20
+              "
+              text-anchor="middle"
+              dominant-baseline="middle"
+              class="angular-flow__edge-label xy-flow__edge-label"
+              style="font-size: 12px; fill: #222; pointer-events: none;"
+            >
+              {{ edge.data?.['label'] }}
+            </text>
             }
-          }
+          </g>
+          } }
         </svg>
 
         <!-- Nodes layer -->
@@ -312,7 +307,7 @@ export class AngularFlowComponent<
       controlledEdges: controlledEdges?.length || 0,
       serviceEdges: serviceEdges.length,
       result: result.length,
-      edges: result
+      edges: result,
     });
 
     return result;
@@ -402,7 +397,11 @@ export class AngularFlowComponent<
   }
 
   // 計算邊路徑
-  calculateEdgePath(sourceNode: NodeType, targetNode: NodeType, edge: EdgeType): string {
+  calculateEdgePath(
+    sourceNode: NodeType,
+    targetNode: NodeType,
+    edge: EdgeType
+  ): string {
     // 使用節點的實際尺寸，如果沒有則使用默認值
     const sourceWidth = (sourceNode as any).width || 150;
     const sourceHeight = (sourceNode as any).height || 40;

@@ -5,7 +5,6 @@ export { AngularFlowService } from './angular-flow.service';
 // Core components
 export { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
 export { HandleComponent } from './handle/handle.component';
-export { EdgeWrapperComponent } from './edge-wrapper/edge-wrapper.component';
 
 // Additional components
 export { BackgroundComponent } from './background/background.component';
@@ -26,5 +25,5 @@ export type {
   FitViewOptionsBase,
   ConnectionLineType,
   PanOnScrollMode,
-  SelectionMode
+  SelectionMode,
 } from '@xyflow/system';
