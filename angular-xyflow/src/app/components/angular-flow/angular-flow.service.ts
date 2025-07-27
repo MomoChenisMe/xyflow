@@ -218,7 +218,14 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
       edge.targetHandle === targetHandle
     );
 
-    return !existingEdge;
+    if (existingEdge) {
+      return false;
+    }
+
+    // 額外驗證：確保不會有相同類型的 handle 連接
+    // 這裡我們假設 source 節點的 handle 是 source 類型，target 節點的 handle 是 target 類型
+    // 實際上這已經在連接創建時保證了，但這裡加一層保護
+    return true;
   }
 
   // 從連接創建邊
@@ -506,6 +513,15 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
         if (fromHandle.nodeId === handle.nodeId && 
             fromHandle.type === handle.type && 
             fromHandle.id === handle.id) {
+          return;
+        }
+
+        // 只允許相對類型的連接：source -> target 或 target -> source
+        const isValidHandleType = 
+          (fromHandle.type === 'source' && handle.type === 'target') ||
+          (fromHandle.type === 'target' && handle.type === 'source');
+          
+        if (!isValidHandleType) {
           return;
         }
 

@@ -196,7 +196,9 @@ export class HandleComponent implements OnInit, OnDestroy {
 
   // 事件處理方法
   handleMouseDown(event: MouseEvent) {
-    if (!this.isConnectable() || this.type() !== 'source') return;
+    // 只有 source handle 可以開始連接，或者 target handle 也能開始連接（取決於需求）
+    // 這裡我們允許兩種類型都能開始連接，但要確保只能連到相對類型
+    if (!this.isConnectable()) return;
     
     event.preventDefault();
     event.stopPropagation();
@@ -296,11 +298,11 @@ export class HandleComponent implements OnInit, OnDestroy {
     this.flowService.endConnection(connection);
   }
 
-  handleMouseEnter(event: MouseEvent) {
+  handleMouseEnter(_event: MouseEvent) {
     this.isHovered.set(true);
   }
 
-  handleMouseLeave(event: MouseEvent) {
+  handleMouseLeave(_event: MouseEvent) {
     this.isHovered.set(false);
   }
 
