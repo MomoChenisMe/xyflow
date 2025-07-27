@@ -1,8 +1,8 @@
-import { 
-  Component, 
-  input, 
-  output, 
-  viewChild, 
+import {
+  Component,
+  input,
+  output,
+  viewChild,
   ElementRef,
   computed,
   signal,
@@ -28,7 +28,7 @@ import { type Connection, type Position } from '@xyflow/system';
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <div 
+    <div
       #nodeElement
       class="xy-flow__node angular-flow__node"
       [class]="nodeClasses()"
@@ -59,7 +59,7 @@ import { type Connection, type Position } from '@xyflow/system';
           />
         }
       }
-      
+
       <!-- Node content based on type -->
       <div class="angular-flow__node-content">
         @switch (node().type) {
@@ -80,7 +80,7 @@ import { type Connection, type Position } from '@xyflow/system';
           }
         }
       </div>
-      
+
       <!-- Target handles -->
       @if (shouldShowHandles()) {
         @if (hasTargetHandle()) {
@@ -103,12 +103,15 @@ import { type Connection, type Position } from '@xyflow/system';
     .angular-flow__node {
       position: absolute;
       cursor: grab;
-      border-radius: 8px;
-      border: 1px solid #b1b1b7;
+      border-radius: 3px;
+      border: 1px solid #1a192b;
       background: #fff;
-      color: #222;
+      color: inherit;
       min-width: 150px;
-      min-height: 40px;
+      font-size: 12px;
+      text-align: center;
+      padding: 10px;
+      box-sizing: border-box;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     }
 
@@ -119,7 +122,7 @@ import { type Connection, type Position } from '@xyflow/system';
 
     .xy-flow__node.selected,
     .angular-flow__node.selected {
-      box-shadow: 0 0 0 2px #ff0072;
+      box-shadow: 0 0 0 0.5px #1a192b;
     }
 
     .xy-flow__node.dragging,
@@ -128,16 +131,11 @@ import { type Connection, type Position } from '@xyflow/system';
     }
 
     .angular-flow__node-content {
-      padding: 10px 15px;
-      min-height: 20px;
       width: 100%;
       box-sizing: border-box;
     }
 
     .angular-flow__node-label {
-      font-size: 12px;
-      font-weight: 500;
-      text-align: center;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -155,50 +153,32 @@ import { type Connection, type Position } from '@xyflow/system';
       /* Default nodes use the main node background */
     }
 
-    /* Input node specific styles */
-    .angular-flow__node.type-input {
-      background: #ffffff;
-      border: 1px solid #b1b1b7;
-      border-radius: 8px;
-    }
-
-    .angular-flow__node.type-input:hover {
-      border-color: #999;
-    }
-
-    /* Default node specific styles */
-    .angular-flow__node.type-default {
-      background: #ffffff;
-      border: 1px solid #b1b1b7;
-      border-radius: 8px;
-    }
-
-    .angular-flow__node.type-default:hover {
-      border-color: #999;
-    }
-
-    /* Output node specific styles */
+    /* Node type specific styles - minimal differences */
+    .angular-flow__node.type-input,
+    .angular-flow__node.type-default,
     .angular-flow__node.type-output {
-      background: #ffffff;
-      border: 1px solid #b1b1b7;
-      border-radius: 8px;
+      /* All node types inherit base styles */
     }
 
-    .angular-flow__node.type-output:hover {
-      border-color: #999;
-    }
-
-    /* Light/Dark theme classes */
+    /* Light/Dark theme classes - override base styles */
     .angular-flow__node.light {
       background: #fff;
-      border-color: #ddd;
+      border-color: #1a192b;
       color: #222;
     }
 
+    .angular-flow__node.light.selected {
+      box-shadow: 0 0 0 0.5px #1a192b;
+    }
+
     .angular-flow__node.dark {
-      background: #333;
-      border-color: #555;
-      color: #fff;
+      background: #1e1e1e;
+      border-color: #3c3c3c;
+      color: #f8f8f8;
+    }
+
+    .angular-flow__node.dark.selected {
+      box-shadow: 0 0 0 0.5px #999;
     }
   `]
 })
@@ -207,7 +187,7 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   readonly node = input.required<AngularNode>();
   readonly selected = input<boolean>(false);
   readonly dragging = input<boolean>(false);
-  
+
   // 輸出事件
   readonly nodeClick = output<MouseEvent>();
   readonly nodeDragStart = output<MouseEvent>();
@@ -216,56 +196,56 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   readonly connectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target' }>();
   readonly connectEnd = output<Connection>();
   readonly handleClick = output<{ event: MouseEvent; nodeId: string; handleId?: string; handleType: 'source' | 'target' }>();
-  
+
   // 視圖子元素
   readonly nodeElement = viewChild.required<ElementRef<HTMLDivElement>>('nodeElement');
-  
+
   // 內部狀態
   private readonly isDragging = signal(false);
   private resizeObserver?: ResizeObserver;
   private dragService = inject(AngularFlowDragService);
   private flowService = inject(AngularFlowService);
-  
+
   // 計算屬性
   readonly nodeClasses = computed(() => {
     const classes = ['xy-flow__node', 'angular-flow__node'];
     const nodeData = this.node();
-    
+
     if (nodeData.type) {
       classes.push(`type-${nodeData.type}`);
     }
-    
+
     if (nodeData.className) {
       classes.push(nodeData.className);
     }
-    
+
     if (this.selected()) {
       classes.push('selected');
     }
-    
+
     if (this.dragging() || this.isDragging()) {
       classes.push('dragging');
     }
-    
+
     return classes.join(' ');
   });
-  
+
   readonly nodeTransform = computed(() => {
     const pos = this.node().position;
     return `translate(${pos.x}px, ${pos.y}px)`;
   });
-  
+
   readonly shouldShowHandles = computed(() => {
     // 顯示連接點的邏輯
     return true;
   });
-  
+
   readonly hasSourceHandle = computed(() => {
     const nodeType = this.node().type;
     // Input 和 default 節點有 source handle，output 節點沒有
     return !nodeType || nodeType === 'default' || nodeType === 'input';
   });
-  
+
   readonly hasTargetHandle = computed(() => {
     const nodeType = this.node().type;
     // Default 和 output 節點有 target handle，input 節點沒有
@@ -311,7 +291,7 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   private setupDragForNode() {
     const element = this.nodeElement()?.nativeElement;
     const nodeData = this.node();
-    
+
     if (!element || !nodeData) {
       console.log('❌ 無法設置拖拽：element 或 nodeData 為空', { element, nodeData });
       return;
@@ -319,14 +299,14 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
 
     // 檢查節點是否可拖拽
     const isDraggable = nodeData.draggable !== false;
-    
+
     console.log('🔧 設置拖拽功能', {
       nodeId: nodeData.id,
       isDraggable,
       element: element,
       elementClasses: element.className
     });
-    
+
     if (isDraggable) {
       this.dragService.initializeDrag({
         nodeId: nodeData.id,
@@ -334,7 +314,7 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
         isSelectable: true,
         nodeClickDistance: 0
       });
-      
+
       console.log('✅ 拖拽功能已設置', { nodeId: nodeData.id });
     } else {
       console.log('⚠️ 節點不可拖拽', { nodeId: nodeData.id });
