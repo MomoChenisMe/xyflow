@@ -2,10 +2,12 @@ import {
   Component, 
   input, 
   computed,
+  inject,
   ChangeDetectionStrategy,
   CUSTOM_ELEMENTS_SCHEMA
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AngularFlowService } from '../angular-flow.service';
 import { BackgroundVariant } from '../types';
 
 @Component({
@@ -16,7 +18,8 @@ import { BackgroundVariant } from '../types';
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <svg 
-      class="angular-flow__background"
+      class="xy-flow__background angular-flow__background"
+      [class]="className()"
       [style.position]="'absolute'"
       [style.top]="'0'"
       [style.left]="'0'"
@@ -24,61 +27,46 @@ import { BackgroundVariant } from '../types';
       [style.height]="'100%'"
       [style.z-index]="'0'"
       [style.pointer-events]="'none'"
+      [style.background-color]="bgColor() || 'transparent'"
+      [style.--xy-background-color-props]="bgColor()"
+      [style.--xy-background-pattern-color-props]="color()"
     >
       <defs>
-        @if (variant() === 'dots') {
-          <pattern
-            id="angular-flow-background-dots"
-            [attr.width]="gap()"
-            [attr.height]="gap()"
-            patternUnits="userSpaceOnUse"
-          >
+        <pattern
+          [id]="patternId()"
+          [attr.x]="patternPosition().x"
+          [attr.y]="patternPosition().y"
+          [attr.width]="scaledGap()[0]"
+          [attr.height]="scaledGap()[1]"
+          patternUnits="userSpaceOnUse"
+          [attr.patternTransform]="patternTransform()"
+        >
+          @if (variant() === backgroundVariant.Dots) {
+            <!-- Dot Pattern -->
             <circle
-              [attr.cx]="gap() / 2"
-              [attr.cy]="gap() / 2"
-              [attr.r]="size() / 2"
-              [attr.fill]="color()"
+              [attr.cx]="scaledSize() / 2"
+              [attr.cy]="scaledSize() / 2"
+              [attr.r]="scaledSize() / 2"
+              [class]="'xy-flow__background-pattern dots ' + (patternClassName() || '')"
             />
-          </pattern>
-        }
-        
-        @if (variant() === 'lines') {
-          <pattern
-            id="angular-flow-background-lines"
-            [attr.width]="gap()"
-            [attr.height]="gap()"
-            patternUnits="userSpaceOnUse"
-          >
+          } @else {
+            <!-- Line Pattern (includes Lines and Cross) -->
             <path
-              [attr.d]="'M ' + gap() + ' 0 L 0 0 0 ' + gap()"
-              [attr.stroke]="color()"
-              [attr.stroke-width]="size()"
+              [attr.stroke-width]="lineWidth()"
+              [attr.d]="linePath()"
+              [class]="'xy-flow__background-pattern ' + variant() + ' ' + (patternClassName() || '')"
               fill="none"
             />
-          </pattern>
-        }
-        
-        @if (variant() === 'cross') {
-          <pattern
-            id="angular-flow-background-cross"
-            [attr.width]="gap()"
-            [attr.height]="gap()"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              [attr.d]="getCrossPath()"
-              [attr.stroke]="color()"
-              [attr.stroke-width]="size()"
-              fill="none"
-            />
-          </pattern>
-        }
+          }
+        </pattern>
       </defs>
       
-      <rect
-        width="100%"
-        height="100%"
-        [attr.fill]="patternFill()"
+      <rect 
+        x="0" 
+        y="0" 
+        width="100%" 
+        height="100%" 
+        [attr.fill]="'url(#' + patternId() + ')'"
       />
     </svg>
   `,
@@ -95,51 +83,105 @@ import { BackgroundVariant } from '../types';
   `]
 })
 export class BackgroundComponent {
-  // 輸入屬性
-  readonly variant = input<BackgroundVariant>(BackgroundVariant.Dots);
-  readonly gap = input<number>(20);
-  readonly size = input<number>(1);
-  readonly color = input<string>('#d0d0d0');
-  readonly backgroundColor = input<string>('transparent');
+  // 注入服務
+  private flowService = inject(AngularFlowService);
   
-  // 計算屬性
-  readonly patternFill = computed(() => {
-    const bgColor = this.backgroundColor();
+  // 輸入屬性
+  readonly id = input<string>();
+  readonly variant = input<BackgroundVariant>(BackgroundVariant.Dots);
+  readonly gap = input<number | [number, number]>(20);
+  readonly size = input<number>();
+  readonly lineWidth = input<number>(1);
+  readonly offset = input<number | [number, number]>(0);
+  readonly color = input<string>();
+  readonly bgColor = input<string>();
+  readonly className = input<string>();
+  readonly patternClassName = input<string>();
+  
+  // 常量
+  readonly backgroundVariant = BackgroundVariant;
+  
+  private readonly defaultSize = {
+    [BackgroundVariant.Dots]: 1,
+    [BackgroundVariant.Lines]: 1,
+    [BackgroundVariant.Cross]: 6,
+  };
+  
+  // 計算信號
+  readonly viewport = computed(() => this.flowService.viewport());
+  
+  readonly patternId = computed(() => {
+    const baseId = this.id() || '';
+    return `angular-flow-pattern-${this.variant()}-${baseId}`;
+  });
+  
+  readonly gapXY = computed((): [number, number] => {
+    const gap = this.gap();
+    return Array.isArray(gap) ? gap : [gap, gap];
+  });
+  
+  readonly offsetXY = computed((): [number, number] => {
+    const offset = this.offset();
+    return Array.isArray(offset) ? offset : [offset, offset];
+  });
+  
+  readonly scaledGap = computed((): [number, number] => {
+    const gapXY = this.gapXY();
+    const zoom = this.viewport().zoom;
+    return [gapXY[0] * zoom || 1, gapXY[1] * zoom || 1];
+  });
+  
+  readonly scaledSize = computed(() => {
+    const size = this.size() || this.defaultSize[this.variant()];
+    const zoom = this.viewport().zoom;
+    return size * zoom;
+  });
+  
+  readonly patternDimensions = computed(() => {
+    const isCross = this.variant() === BackgroundVariant.Cross;
+    const scaledGap = this.scaledGap();
+    const scaledSize = this.scaledSize();
+    
+    return isCross 
+      ? [scaledSize, scaledSize]
+      : scaledGap;
+  });
+  
+  readonly scaledOffset = computed((): [number, number] => {
+    const offsetXY = this.offsetXY();
+    const zoom = this.viewport().zoom;
+    const patternDims = this.patternDimensions();
+    
+    return [
+      offsetXY[0] * zoom || 1 + patternDims[0] / 2,
+      offsetXY[1] * zoom || 1 + patternDims[1] / 2,
+    ];
+  });
+  
+  readonly patternPosition = computed(() => {
+    const viewport = this.viewport();
+    const scaledGap = this.scaledGap();
+    
+    return {
+      x: viewport.x % scaledGap[0],
+      y: viewport.y % scaledGap[1]
+    };
+  });
+  
+  readonly patternTransform = computed(() => {
+    const scaledOffset = this.scaledOffset();
+    return `translate(-${scaledOffset[0]},-${scaledOffset[1]})`;
+  });
+  
+  readonly linePath = computed(() => {
+    const dims = this.patternDimensions();
     const variant = this.variant();
     
-    if (bgColor && bgColor !== 'transparent') {
-      return bgColor;
-    }
-    
-    switch (variant) {
-      case BackgroundVariant.Dots:
-        return 'url(#angular-flow-background-dots)';
-      case BackgroundVariant.Lines:
-        return 'url(#angular-flow-background-lines)';
-      case BackgroundVariant.Cross:
-        return 'url(#angular-flow-background-cross)';
-      default:
-        return 'transparent';
+    if (variant === BackgroundVariant.Cross) {
+      return `M${dims[0] / 2} 0 V${dims[1]} M0 ${dims[1] / 2} H${dims[0]}`;
+    } else {
+      // Lines variant
+      return `M${dims[0] / 2} 0 V${dims[1]} M0 ${dims[1] / 2} H${dims[0]}`;
     }
   });
-
-  // 獲取十字圖案路徑
-  getCrossPath(): string {
-    const gap = this.gap();
-    const halfGap = gap / 2;
-    const size = this.size();
-    
-    return `
-      M ${halfGap - size/2} 0 
-      L ${halfGap + size/2} 0 
-      L ${halfGap + size/2} ${gap} 
-      L ${halfGap - size/2} ${gap} 
-      Z
-      M 0 ${halfGap - size/2} 
-      L 0 ${halfGap + size/2} 
-      L ${gap} ${halfGap + size/2} 
-      L ${gap} ${halfGap - size/2} 
-      Z
-    `;
-  }
 }
