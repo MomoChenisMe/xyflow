@@ -7,13 +7,14 @@ import {
   type XYPosition,
   type Viewport as SystemViewport,
   type Connection,
+  Position,
   addEdge as systemAddEdge,
   evaluateAbsolutePosition,
   getConnectedEdges,
   getIncomers,
   getOutgoers
 } from '@xyflow/system';
-import { AngularNode, AngularEdge, Viewport, AngularFlowInstance } from './types';
+import { AngularNode, AngularEdge, Viewport, AngularFlowInstance, ConnectionState, NoConnection, ConnectionInProgress, Handle } from './types';
 
 @Injectable({
   providedIn: 'root'
@@ -26,9 +27,11 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   private _selectedNodes: WritableSignal<string[]> = signal([]);
   private _selectedEdges: WritableSignal<string[]> = signal([]);
   private _selectedHandles: WritableSignal<Array<{nodeId: string, handleId?: string, type: 'source' | 'target'}>> = signal([]);
+  private _connectionState: WritableSignal<ConnectionState<NodeType>> = signal<NoConnection>({ inProgress: false });
   private _initialized: WritableSignal<boolean> = signal(false);
   private _minZoom: WritableSignal<number> = signal(0.5);
   private _maxZoom: WritableSignal<number> = signal(2);
+  private _connectionRadius: WritableSignal<number> = signal(20);
   private _fitViewQueued: WritableSignal<boolean> = signal(false);
 
   // 計算信號
@@ -38,9 +41,11 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   readonly selectedNodes: Signal<string[]> = computed(() => this._selectedNodes());
   readonly selectedEdges: Signal<string[]> = computed(() => this._selectedEdges());
   readonly selectedHandles: Signal<Array<{nodeId: string, handleId?: string, type: 'source' | 'target'}>> = computed(() => this._selectedHandles());
+  readonly connectionState: Signal<ConnectionState<NodeType>> = computed(() => this._connectionState());
   readonly initialized: Signal<boolean> = computed(() => this._initialized());
   readonly minZoom: Signal<number> = computed(() => this._minZoom());
   readonly maxZoom: Signal<number> = computed(() => this._maxZoom());
+  readonly connectionRadius: Signal<number> = computed(() => this._connectionRadius());
 
   // 節點和邊的查找映射
   readonly nodeLookup: Signal<Map<string, NodeType>> = computed(() => {
@@ -381,5 +386,195 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   // 獲取 Handle 實例
   getHandle(): any | null {
     return this.handle;
+  }
+
+  // 連接狀態管理方法
+  startConnection(fromNode: NodeType, fromHandle: Handle, fromPosition: { x: number; y: number }) {
+    const connectionState: ConnectionInProgress<NodeType> = {
+      inProgress: true,
+      isValid: null,
+      from: fromPosition,
+      fromHandle,
+      fromPosition: fromHandle.position,
+      fromNode,
+      to: fromPosition, // 初始時終點就是起點
+      toHandle: null,
+      toPosition: this.getOppositePosition(fromHandle.position),
+      toNode: null,
+    };
+    
+    this._connectionState.set(connectionState);
+    console.log('Connection started:', connectionState);
+  }
+
+  updateConnection(to: { x: number; y: number }, toHandle?: Handle | null, toNode?: NodeType | null) {
+    const currentState = this._connectionState();
+    if (!currentState.inProgress) return;
+
+    const isValid = toHandle && toNode ? this.isValidConnection({
+      source: currentState.fromNode.id,
+      target: toNode.id,
+      sourceHandle: currentState.fromHandle.id,
+      targetHandle: toHandle.id
+    }) : null;
+
+    const updatedState: ConnectionInProgress<NodeType> = {
+      ...currentState,
+      to,
+      toHandle: toHandle || null,
+      toNode: toNode || null,
+      toPosition: toHandle?.position || this.getOppositePosition(currentState.fromPosition),
+      isValid,
+    };
+
+    this._connectionState.set(updatedState);
+  }
+
+  endConnection(connection?: Connection) {
+    const currentState = this._connectionState();
+    
+    if (currentState.inProgress && connection && currentState.isValid) {
+      // 創建新的連接
+      this.onConnect(connection);
+    }
+    
+    // 重置連接狀態
+    this._connectionState.set({ inProgress: false });
+    console.log('Connection ended');
+  }
+
+  cancelConnection() {
+    this._connectionState.set({ inProgress: false });
+    console.log('Connection cancelled');
+  }
+
+  // 計算 handle 的世界座標位置
+  calculateHandlePosition(node: NodeType, handleType: 'source' | 'target', handlePosition?: Position, nodeWidth: number = 150, nodeHeight: number = 40): { x: number; y: number } {
+    const position = handlePosition || (handleType === 'source' ? Position.Bottom : Position.Top);
+    const nodeX = node.position.x;
+    const nodeY = node.position.y;
+
+    switch (position) {
+      case Position.Top:
+        return { x: nodeX + nodeWidth / 2, y: nodeY };
+      case Position.Right:
+        return { x: nodeX + nodeWidth, y: nodeY + nodeHeight / 2 };
+      case Position.Bottom:
+        return { x: nodeX + nodeWidth / 2, y: nodeY + nodeHeight };
+      case Position.Left:
+        return { x: nodeX, y: nodeY + nodeHeight / 2 };
+      default:
+        return { x: nodeX + nodeWidth / 2, y: nodeY + nodeHeight / 2 };
+    }
+  }
+
+  // 獲取相對位置
+  private getOppositePosition(position: Position): Position {
+    switch (position) {
+      case Position.Top: return Position.Bottom;
+      case Position.Bottom: return Position.Top;
+      case Position.Left: return Position.Right;
+      case Position.Right: return Position.Left;
+      default: return Position.Top;
+    }
+  }
+
+  // 尋找最近的有效 handle，基於 React Flow 的邏輯
+  findClosestHandle(
+    position: { x: number; y: number }, 
+    fromHandle: { nodeId: string; type: 'source' | 'target'; id?: string | null }
+  ): Handle | null {
+    let closestHandles: Handle[] = [];
+    let minDistance = Infinity;
+    const connectionRadius = this._connectionRadius();
+    const ADDITIONAL_DISTANCE = 250; // 擴大搜索範圍
+
+    // 獲取在搜索範圍內的節點
+    const searchRadius = connectionRadius + ADDITIONAL_DISTANCE;
+    const nearbyNodes = this._nodes().filter(node => {
+      const nodeDistance = Math.sqrt(
+        Math.pow(node.position.x - position.x, 2) + Math.pow(node.position.y - position.y, 2)
+      );
+      return nodeDistance <= searchRadius;
+    });
+
+    nearbyNodes.forEach(node => {
+      const handles = this.getNodeHandles(node);
+      
+      handles.forEach(handle => {
+        // 跳過來源 handle
+        if (fromHandle.nodeId === handle.nodeId && 
+            fromHandle.type === handle.type && 
+            fromHandle.id === handle.id) {
+          return;
+        }
+
+        const distance = Math.sqrt(
+          Math.pow(handle.x - position.x, 2) + Math.pow(handle.y - position.y, 2)
+        );
+
+        // 只考慮在連接半徑內的 handle
+        if (distance > connectionRadius) {
+          return;
+        }
+
+        if (distance < minDistance) {
+          closestHandles = [handle];
+          minDistance = distance;
+        } else if (distance === minDistance) {
+          // 當多個 handle 距離相同時，收集所有的
+          closestHandles.push(handle);
+        }
+      });
+    });
+
+    if (!closestHandles.length) {
+      return null;
+    }
+
+    // 當多個 handle 重疊時，優先選擇相對的 handle 類型
+    if (closestHandles.length > 1) {
+      const oppositeHandleType = fromHandle.type === 'source' ? 'target' : 'source';
+      return closestHandles.find(handle => handle.type === oppositeHandleType) ?? closestHandles[0];
+    }
+
+    return closestHandles[0];
+  }
+
+  // 獲取節點的所有 handle
+  private getNodeHandles(node: NodeType): Handle[] {
+    const handles: Handle[] = [];
+    const nodeWidth = 150;
+    const nodeHeight = 40;
+
+    // 根據節點類型決定有哪些 handles
+    const hasSourceHandle = !node.type || node.type === 'default' || node.type === 'input';
+    const hasTargetHandle = !node.type || node.type === 'default' || node.type === 'output';
+
+    if (hasSourceHandle) {
+      const sourcePosition = this.calculateHandlePosition(node, 'source', node.sourcePosition, nodeWidth, nodeHeight);
+      handles.push({
+        id: null,
+        nodeId: node.id,
+        position: node.sourcePosition || Position.Bottom,
+        type: 'source',
+        x: sourcePosition.x,
+        y: sourcePosition.y,
+      });
+    }
+
+    if (hasTargetHandle) {
+      const targetPosition = this.calculateHandlePosition(node, 'target', node.targetPosition, nodeWidth, nodeHeight);
+      handles.push({
+        id: null,
+        nodeId: node.id,
+        position: node.targetPosition || Position.Top,
+        type: 'target',
+        x: targetPosition.x,
+        y: targetPosition.y,
+      });
+    }
+
+    return handles;
   }
 }

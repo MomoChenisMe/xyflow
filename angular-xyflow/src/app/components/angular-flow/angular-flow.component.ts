@@ -140,6 +140,21 @@ import { type Connection, Position } from '@xyflow/system';
             }
           </g>
           } }
+
+          <!-- Connection Line - 顯示連接進行中的線條 -->
+          @if (connectionInProgress() && connectionLinePath()) {
+          @let connState = connectionInProgress();
+          <g class="angular-flow__connection-line xy-flow__connection-line">
+            <path
+              [attr.d]="connectionLinePath()"
+              [attr.stroke]="connState.isValid === true ? '#10b981' : connState.isValid === false ? '#f87171' : '#b1b1b7'"
+              [attr.stroke-width]="1"
+              [attr.fill]="'none'"
+              class="angular-flow__connection-path xy-flow__connection-path"
+              style="pointer-events: none;"
+            />
+          </g>
+          }
         </svg>
 
         <!-- Nodes layer -->
@@ -234,6 +249,18 @@ import { type Connection, Position } from '@xyflow/system';
         to {
           stroke-dashoffset: -10;
         }
+      }
+
+      .angular-flow__connection-line {
+        pointer-events: none;
+        z-index: 1000;
+      }
+
+      .angular-flow__connection-path {
+        stroke: #b1b1b7;
+        stroke-width: 1;
+        fill: none;
+        pointer-events: none;
       }
     `,
   ],
@@ -342,6 +369,36 @@ export class AngularFlowComponent<
 
   // 流程實例
   readonly flowInstance = computed(() => this.flowService.getFlowInstance());
+
+  // 連接狀態
+  readonly connectionState = computed(() => this.flowService.connectionState());
+
+  // 連接進行中狀態 - 類型安全的計算信號
+  readonly connectionInProgress = computed(() => {
+    const state = this.connectionState();
+    if (!state.inProgress) return null;
+    
+    // TypeScript 類型守衛，確保我們有正確的類型
+    return state as any; // 安全的類型轉換，因為我們已經檢查了 inProgress
+  });
+
+  // 連接線路徑計算
+  readonly connectionLinePath = computed(() => {
+    const connState = this.connectionInProgress();
+    if (!connState) return null;
+
+    const { from, to, fromPosition, toPosition } = connState;
+    
+    // 使用貝茲曲線路徑
+    return this.getBezierPath(
+      from.x,
+      from.y,
+      fromPosition,
+      to.x,
+      to.y,
+      toPosition
+    );
+  });
 
   // 邊線標記相關計算
   readonly hasEdgeMarkers = computed(() => {

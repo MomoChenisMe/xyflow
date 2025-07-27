@@ -163,3 +163,47 @@ export enum NodeType {
   Input = 'input',
   Output = 'output'
 }
+
+// Handle related types
+export interface Handle {
+  id: string | null;
+  nodeId: string;
+  position: Position;
+  type: 'source' | 'target';
+  x: number;
+  y: number;
+}
+
+// Connection state types
+export interface NoConnection {
+  inProgress: false;
+}
+
+export interface ConnectionInProgress<NodeType extends AngularNode = AngularNode> {
+  inProgress: true;
+  isValid: boolean | null;
+  from: XYPosition;
+  fromHandle: Handle;
+  fromPosition: Position;
+  fromNode: NodeType;
+  to: XYPosition;
+  toHandle: Handle | null;
+  toPosition: Position;
+  toNode: NodeType | null;
+}
+
+export type ConnectionState<NodeType extends AngularNode = AngularNode> = 
+  | ConnectionInProgress<NodeType>
+  | NoConnection;
+
+// Connection line component props
+export interface ConnectionLineComponentProps {
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  fromPosition: Position;
+  toPosition: Position;
+  isValid: boolean | null;
+  connectionLineStyle?: Record<string, any>;
+}
