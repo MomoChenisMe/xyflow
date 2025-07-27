@@ -98,12 +98,13 @@ import { type Connection, type Position } from '@xyflow/system';
     .angular-flow__node {
       position: absolute;
       cursor: grab;
-      border-radius: 3px;
-      border: 1px solid #1a192b;
+      border-radius: 8px;
+      border: 1px solid #b1b1b7;
       background: #fff;
       color: #222;
-      min-width: 20px;
-      min-height: 20px;
+      min-width: 150px;
+      min-height: 40px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     }
 
     .xy-flow__node:hover,
@@ -122,37 +123,64 @@ import { type Connection, type Position } from '@xyflow/system';
     }
 
     .angular-flow__node-content {
-      padding: 10px;
+      padding: 10px 15px;
       min-height: 20px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .angular-flow__node-label {
       font-size: 12px;
-      font-weight: 400;
+      font-weight: 500;
       text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .angular-flow__node-input {
-      background: #e2f7e6;
-      border-radius: 3px;
+      /* Input nodes use the main node background */
     }
 
     .angular-flow__node-output {
-      background: #ffe2e2;
-      border-radius: 3px;
+      /* Output nodes use the main node background */
     }
 
     .angular-flow__node-default {
-      background: #fff;
+      /* Default nodes use the main node background */
     }
 
-    /* Node type specific styles */
+    /* Input node specific styles */
     .angular-flow__node.type-input {
-      background: #e2f7e6;
+      background: #ffffff;
+      border: 1px solid #b1b1b7;
+      border-radius: 8px;
     }
 
+    .angular-flow__node.type-input:hover {
+      border-color: #999;
+    }
+
+    /* Default node specific styles */
+    .angular-flow__node.type-default {
+      background: #ffffff;
+      border: 1px solid #b1b1b7;
+      border-radius: 8px;
+    }
+
+    .angular-flow__node.type-default:hover {
+      border-color: #999;
+    }
+
+    /* Output node specific styles */
     .angular-flow__node.type-output {
-      background: #ffe2e2;
+      background: #ffffff;
+      border: 1px solid #b1b1b7;
+      border-radius: 8px;
+    }
+
+    .angular-flow__node.type-output:hover {
+      border-color: #999;
     }
 
     /* Light/Dark theme classes */
@@ -227,11 +255,13 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   
   readonly hasSourceHandle = computed(() => {
     const nodeType = this.node().type;
+    // Input 和 default 節點有 source handle，output 節點沒有
     return !nodeType || nodeType === 'default' || nodeType === 'input';
   });
   
   readonly hasTargetHandle = computed(() => {
     const nodeType = this.node().type;
+    // Default 和 output 節點有 target handle，input 節點沒有
     return !nodeType || nodeType === 'default' || nodeType === 'output';
   });
 

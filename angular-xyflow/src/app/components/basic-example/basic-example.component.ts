@@ -135,33 +135,36 @@ export class BasicExampleComponent {
     {
       id: '1',
       type: 'input',
-      data: { label: 'Node 1' },
+      data: { label: 'Input Node' },
       position: { x: 250, y: 5 },
       className: 'light',
       sourcePosition: Position.Bottom,
     },
     {
       id: '2',
-      data: { label: 'Node 2' },
+      type: 'default',
+      data: { label: 'Default Node' },
       position: { x: 100, y: 100 },
       className: 'light',
       sourcePosition: Position.Bottom,
-      targetPosition: Position.Bottom,
+      targetPosition: Position.Top,
     },
     {
       id: '3',
-      data: { label: 'Node 3' },
+      type: 'default',
+      data: { label: 'Processing Node' },
       position: { x: 400, y: 100 },
       className: 'light',
       sourcePosition: Position.Bottom,
-      targetPosition: Position.Bottom,
+      targetPosition: Position.Top,
     },
     {
       id: '4',
-      data: { label: 'Node 4' },
-      position: { x: 400, y: 200 },
+      type: 'output',
+      data: { label: 'Output Node' },
+      position: { x: 300, y: 200 },
       className: 'light',
-      targetPosition: Position.Bottom,
+      targetPosition: Position.Top,
     },
   ]);
 
@@ -178,6 +181,18 @@ export class BasicExampleComponent {
       id: 'e1-3', 
       source: '1', 
       target: '3',
+      type: 'default'
+    },
+    { 
+      id: 'e2-4', 
+      source: '2', 
+      target: '4',
+      type: 'default'
+    },
+    { 
+      id: 'e3-4', 
+      source: '3', 
+      target: '4',
       type: 'default'
     },
   ]);
@@ -298,13 +313,17 @@ export class BasicExampleComponent {
   }
 
   addNode() {
+    const nodeTypes = ['input', 'default', 'output'];
+    const randomType = nodeTypes[Math.floor(Math.random() * nodeTypes.length)];
+    
     const newNode: AngularNode = {
       id: `${Math.random()}`,
-      data: { label: 'Node' },
+      type: randomType,
+      data: { label: `${randomType.charAt(0).toUpperCase() + randomType.slice(1)} Node` },
       position: { x: Math.random() * 300, y: Math.random() * 300 },
       className: 'light',
       sourcePosition: Position.Bottom,
-      targetPosition: Position.Bottom,
+      targetPosition: Position.Top,
     };
     
     this.flow.addNodes(newNode);
