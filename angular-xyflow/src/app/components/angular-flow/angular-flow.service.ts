@@ -25,6 +25,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   private _viewport: WritableSignal<Viewport> = signal({ x: 0, y: 0, zoom: 1 });
   private _selectedNodes: WritableSignal<string[]> = signal([]);
   private _selectedEdges: WritableSignal<string[]> = signal([]);
+  private _selectedHandles: WritableSignal<Array<{nodeId: string, handleId?: string, type: 'source' | 'target'}>> = signal([]);
   private _initialized: WritableSignal<boolean> = signal(false);
   private _minZoom: WritableSignal<number> = signal(0.5);
   private _maxZoom: WritableSignal<number> = signal(2);
@@ -36,6 +37,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   readonly viewport: Signal<Viewport> = computed(() => this._viewport());
   readonly selectedNodes: Signal<string[]> = computed(() => this._selectedNodes());
   readonly selectedEdges: Signal<string[]> = computed(() => this._selectedEdges());
+  readonly selectedHandles: Signal<Array<{nodeId: string, handleId?: string, type: 'source' | 'target'}>> = computed(() => this._selectedHandles());
   readonly initialized: Signal<boolean> = computed(() => this._initialized());
   readonly minZoom: Signal<number> = computed(() => this._minZoom());
   readonly maxZoom: Signal<number> = computed(() => this._maxZoom());
@@ -244,6 +246,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
       );
     } else {
       this._selectedNodes.set([nodeId]);
+      this._selectedEdges.set([]); // 清除邊選擇
     }
     
     // 更新節點的選中狀態
@@ -253,18 +256,116 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
         selected: this._selectedNodes().includes(node.id)
       }))
     );
+    
+    // 清除邊的選中狀態（如果不是多選）
+    if (!multiSelect) {
+      this._edges.update(edges => 
+        edges.map(edge => ({ ...edge, selected: false }))
+      );
+    }
+  }
+
+  // 邊選擇
+  selectEdge(edgeId: string, multiSelect = false) {
+    if (multiSelect) {
+      this._selectedEdges.update(selected => 
+        selected.includes(edgeId) 
+          ? selected.filter(id => id !== edgeId)
+          : [...selected, edgeId]
+      );
+    } else {
+      this._selectedEdges.set([edgeId]);
+      this._selectedNodes.set([]); // 清除節點選擇
+    }
+    
+    // 更新邊的選中狀態
+    this._edges.update(edges => 
+      edges.map(edge => ({
+        ...edge,
+        selected: this._selectedEdges().includes(edge.id)
+      }))
+    );
+    
+    // 清除節點的選中狀態（如果不是多選）
+    if (!multiSelect) {
+      this._nodes.update(nodes => 
+        nodes.map(node => ({ ...node, selected: false }))
+      );
+    }
+  }
+
+  // Handle 選擇
+  selectHandle(nodeId: string, handleId: string | undefined, type: 'source' | 'target', multiSelect = false) {
+    const handleKey = { nodeId, handleId, type };
+    
+    if (multiSelect) {
+      this._selectedHandles.update(selected => {
+        const existingIndex = selected.findIndex(h => 
+          h.nodeId === nodeId && h.handleId === handleId && h.type === type
+        );
+        
+        if (existingIndex >= 0) {
+          // 取消選擇
+          return selected.filter((_, index) => index !== existingIndex);
+        } else {
+          // 添加選擇
+          return [...selected, handleKey];
+        }
+      });
+    } else {
+      this._selectedHandles.set([handleKey]);
+      this._selectedNodes.set([]); // 清除節點選擇
+      this._selectedEdges.set([]); // 清除邊選擇
+      
+      // 更新節點的選中狀態
+      this._nodes.update(nodes => 
+        nodes.map(node => ({ ...node, selected: false }))
+      );
+      
+      // 更新邊的選中狀態
+      this._edges.update(edges => 
+        edges.map(edge => ({ ...edge, selected: false }))
+      );
+    }
+    
+    console.log('Handle selected:', { nodeId, handleId, type, selected: this._selectedHandles() });
+  }
+
+  // 檢查 Handle 是否被選中
+  isHandleSelected(nodeId: string, handleId: string | undefined, type: 'source' | 'target'): boolean {
+    return this._selectedHandles().some(h => 
+      h.nodeId === nodeId && h.handleId === handleId && h.type === type
+    );
   }
 
   // 清除選擇
   clearSelection() {
     this._selectedNodes.set([]);
     this._selectedEdges.set([]);
+    this._selectedHandles.set([]);
     this._nodes.update(nodes => 
       nodes.map(node => ({ ...node, selected: false }))
     );
     this._edges.update(edges => 
       edges.map(edge => ({ ...edge, selected: false }))
     );
+  }
+
+  // 取得選中的節點
+  getSelectedNodes(): NodeType[] {
+    const selectedIds = this._selectedNodes();
+    return this._nodes().filter(node => selectedIds.includes(node.id));
+  }
+
+  // 取得選中的邊
+  getSelectedEdges(): EdgeType[] {
+    const selectedIds = this._selectedEdges();
+    return this._edges().filter(edge => selectedIds.includes(edge.id));
+  }
+
+  // 取得選中的 Handles
+  getSelectedHandles(): Array<{nodeId: string, handleId?: string, type: 'source' | 'target'}> {
+    return [...this._selectedHandles()];
   }
 
   // 獲取 PanZoom 實例

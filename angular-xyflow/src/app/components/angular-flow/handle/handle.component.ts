@@ -41,6 +41,7 @@ import { type Connection } from '@xyflow/system';
       (mouseup)="handleMouseUp($event)"
       (mouseenter)="handleMouseEnter($event)"
       (mouseleave)="handleMouseLeave($event)"
+      (click)="onHandleClick($event)"
     ></div>
   `,
   styles: [`
@@ -107,6 +108,13 @@ import { type Connection } from '@xyflow/system';
       background: #ff4444;
       border-color: #ff4444;
     }
+
+    .angular-flow__handle.selected {
+      background: #ff0072;
+      border-color: #ff0072;
+      box-shadow: 0 0 8px 2px rgba(255, 0, 114, 0.4);
+      transform: scale(1.2);
+    }
   `]
 })
 export class HandleComponent implements OnInit, OnDestroy {
@@ -116,10 +124,12 @@ export class HandleComponent implements OnInit, OnDestroy {
   readonly nodeId = input.required<string>();
   readonly handleId = input<string>();
   readonly isConnectable = input<boolean>(true);
+  readonly selected = input<boolean>(false);
   
   // 輸出事件
   readonly connectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }>();
   readonly connectEnd = output<Connection>();
+  readonly handleClick = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }>();
   
   // 視圖子元素
   readonly handleElement = viewChild.required<ElementRef<HTMLDivElement>>('handleElement');
@@ -145,6 +155,10 @@ export class HandleComponent implements OnInit, OnDestroy {
     
     if (this.isHovered()) {
       classes.push('hovered');
+    }
+    
+    if (this.selected()) {
+      classes.push('selected');
     }
     
     return classes.join(' ');
@@ -239,6 +253,18 @@ export class HandleComponent implements OnInit, OnDestroy {
 
   handleMouseLeave(event: MouseEvent) {
     this.isHovered.set(false);
+  }
+
+  onHandleClick(event: MouseEvent) {
+    // 阻止事件冒泡
+    event.stopPropagation();
+    
+    this.handleClick.emit({
+      event,
+      nodeId: this.nodeId(),
+      handleType: this.type(),
+      handleId: this.handleId()
+    });
   }
 
   // 更新連接有效性

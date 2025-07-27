@@ -18,6 +18,7 @@ import { CommonModule } from '@angular/common';
 import { AngularNode } from '../types';
 import { HandleComponent } from '../handle/handle.component';
 import { AngularFlowDragService } from '../drag.service';
+import { AngularFlowService } from '../angular-flow.service';
 import { type Connection, type Position } from '@xyflow/system';
 
 @Component({
@@ -41,18 +42,20 @@ import { type Connection, type Position } from '@xyflow/system';
       [style.pointer-events]="node().hidden ? 'none' : 'auto'"
       [style.opacity]="node().hidden ? 0 : 1"
       [style.cursor]="getCursor()"
-      (click)="handleClick($event)"
+      (click)="onNodeClick($event)"
     >
       <!-- Source handles -->
       @if (shouldShowHandles()) {
         @if (hasSourceHandle()) {
           <angular-flow-handle
             type="source"
-[position]="getSourcePosition()"
+            [position]="getSourcePosition()"
             [nodeId]="node().id"
             [isConnectable]="node().connectable !== false"
+            [selected]="isHandleSelected('source')"
             (connectStart)="connectStart.emit($event)"
             (connectEnd)="connectEnd.emit($event)"
+            (handleClick)="handleClick.emit($event)"
           />
         }
       }
@@ -83,11 +86,13 @@ import { type Connection, type Position } from '@xyflow/system';
         @if (hasTargetHandle()) {
           <angular-flow-handle
             type="target"
-[position]="getTargetPosition()"
+            [position]="getTargetPosition()"
             [nodeId]="node().id"
             [isConnectable]="node().connectable !== false"
+            [selected]="isHandleSelected('target')"
             (connectStart)="connectStart.emit($event)"
             (connectEnd)="connectEnd.emit($event)"
+            (handleClick)="handleClick.emit($event)"
           />
         }
       }
@@ -210,6 +215,7 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   readonly nodeDragStop = output<MouseEvent>();
   readonly connectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target' }>();
   readonly connectEnd = output<Connection>();
+  readonly handleClick = output<{ event: MouseEvent; nodeId: string; handleId?: string; handleType: 'source' | 'target' }>();
   
   // 視圖子元素
   readonly nodeElement = viewChild.required<ElementRef<HTMLDivElement>>('nodeElement');
@@ -218,6 +224,7 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   private readonly isDragging = signal(false);
   private resizeObserver?: ResizeObserver;
   private dragService = inject(AngularFlowDragService);
+  private flowService = inject(AngularFlowService);
   
   // 計算屬性
   readonly nodeClasses = computed(() => {
@@ -350,7 +357,7 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   }
 
 
-  handleClick(event: MouseEvent) {
+  onNodeClick(event: MouseEvent) {
     // 避免在拖動後觸發點擊
     if (!this.isDragging()) {
       this.nodeClick.emit(event);
@@ -372,5 +379,11 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       return 'default';
     }
     return this.isDragging() ? 'grabbing' : 'grab';
+  }
+
+  // 檢查 Handle 是否被選中
+  isHandleSelected(type: 'source' | 'target'): boolean {
+    const nodeId = this.node().id;
+    return this.flowService.isHandleSelected(nodeId, undefined, type);
   }
 }

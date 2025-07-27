@@ -46,6 +46,7 @@ import { type Connection, Position } from '@xyflow/system';
       [style.position]="'relative'"
       [style.overflow]="'hidden'"
       [style.background]="'#fafafa'"
+      (click)="handlePaneClick($event)"
     >
       <!-- Viewport container -->
       <div
@@ -119,7 +120,8 @@ import { type Connection, Position } from '@xyflow/system';
               [attr.marker-start]="getMarkerUrl(edge, 'start')"
               [attr.marker-end]="getMarkerUrl(edge, 'end')"
               [class]="'angular-flow__edge-path xy-flow__edge-path'"
-              style="pointer-events: stroke;"
+              style="pointer-events: stroke; cursor: pointer;"
+              (click)="handleEdgeClick($event, edge)"
             />
 
             <!-- Edge label -->
@@ -161,6 +163,7 @@ import { type Connection, Position } from '@xyflow/system';
             (nodeDragStop)="handleNodeDragStop($event, node)"
             (connectStart)="handleConnectStart($event.event, node)"
             (connectEnd)="handleConnectEnd($event)"
+            (handleClick)="handleHandleClick($event.event, $event.nodeId, $event.handleId, $event.handleType)"
           />
           }
         </div>
@@ -600,7 +603,55 @@ export class AngularFlowComponent<
 
   // 事件處理方法
   handleNodeClick(event: MouseEvent, node: NodeType) {
+    // 阻止事件冒泡，避免觸發背景點擊
+    event.stopPropagation();
+    
+    // 檢查是否按下 Ctrl/Cmd 鍵進行多選
+    const multiSelect = event.ctrlKey || event.metaKey;
+    
+    // 選擇節點
+    this.flowService.selectNode(node.id, multiSelect);
+    
     this.onNodeClick.emit({ event, node });
+  }
+
+  handleEdgeClick(event: MouseEvent, edge: EdgeType) {
+    // 阻止事件冒泡，避免觸發背景點擊
+    event.stopPropagation();
+    
+    // 檢查是否按下 Ctrl/Cmd 鍵進行多選
+    const multiSelect = event.ctrlKey || event.metaKey;
+    
+    // 選擇邊線
+    this.flowService.selectEdge(edge.id, multiSelect);
+    
+    console.log('Edge clicked:', edge.id, 'Selected:', edge.selected);
+  }
+
+  handlePaneClick(event: MouseEvent) {
+    // 只有當點擊的是背景元素時才清除選擇
+    const target = event.target as HTMLElement;
+    
+    // 檢查點擊的是否是背景元素
+    if (target.classList.contains('angular-flow') || 
+        target.classList.contains('xy-flow') || 
+        target.classList.contains('angular-flow__viewport') ||
+        target.classList.contains('xy-flow__viewport')) {
+      this.flowService.clearSelection();
+    }
+  }
+
+  handleHandleClick(event: MouseEvent, nodeId: string, handleId: string | undefined, type: 'source' | 'target') {
+    // 阻止事件冒泡，避免觸發節點或背景點擊
+    event.stopPropagation();
+    
+    // 檢查是否按下 Ctrl/Cmd 鍵進行多選
+    const multiSelect = event.ctrlKey || event.metaKey;
+    
+    // 選擇 Handle
+    this.flowService.selectHandle(nodeId, handleId, type, multiSelect);
+    
+    console.log('Handle clicked:', { nodeId, handleId, type });
   }
 
   handleNodeDragStart(event: MouseEvent, node: NodeType) {
@@ -618,7 +669,7 @@ export class AngularFlowComponent<
     this.onNodeDragStop.emit({ event, node, nodes });
   }
 
-  handleConnectStart(event: MouseEvent, node: NodeType) {
+  handleConnectStart(_event: MouseEvent, _node: NodeType) {
     // 連接開始邏輯
   }
 
