@@ -24,6 +24,8 @@ import {
   AngularEdge,
   Viewport,
   AngularFlowInstance,
+  EdgeMarker,
+  MarkerType,
 } from './types';
 import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
 import { type Connection } from '@xyflow/system';
@@ -69,18 +71,36 @@ import { type Connection } from '@xyflow/system';
           [style.z-index]="'1'"
           [style.overflow]="'visible'"
         >
-          <defs>
-            <marker
-              id="arrowhead"
-              markerWidth="10"
-              markerHeight="7"
-              refX="9"
-              refY="3.5"
-              orient="auto"
-            >
-              <polygon points="0 0, 10 3.5, 0 7" fill="#b1b1b7" />
-            </marker>
-          </defs>
+          <!-- Marker definitions -->
+          @if (hasEdgeMarkers()) {
+            <defs>
+              @for (marker of edgeMarkers(); track marker.id) {
+                <marker
+                  [id]="marker.id"
+                  [attr.markerWidth]="marker.width || 10"
+                  [attr.markerHeight]="marker.height || 7"
+                  [attr.refX]="marker.type === markerType.Arrow ? 8 : 9"
+                  [attr.refY]="marker.height ? marker.height / 2 : 3.5"
+                  [attr.orient]="marker.orient || 'auto'"
+                  [attr.markerUnits]="marker.markerUnits || 'strokeWidth'"
+                >
+                  @if (marker.type === markerType.Arrow) {
+                    <polyline
+                      points="0,0 8,3.5 0,7"
+                      [attr.stroke]="marker.color || '#b1b1b7'"
+                      [attr.stroke-width]="marker.strokeWidth || 1"
+                      fill="none"
+                    />
+                  } @else {
+                    <polygon
+                      points="0 0, 10 3.5, 0 7"
+                      [attr.fill]="marker.color || '#b1b1b7'"
+                    />
+                  }
+                </marker>
+              }
+            </defs>
+          }
 
           @for (edge of visibleEdges(); track edge.id) { @let sourceNode =
           getNodeById(edge.source); @let targetNode = getNodeById(edge.target);
@@ -96,7 +116,8 @@ import { type Connection } from '@xyflow/system';
               [attr.stroke]="edge.selected ? '#ff0072' : '#b1b1b7'"
               [attr.stroke-width]="edge.selected ? 2 : 1"
               [attr.fill]="'none'"
-              [attr.marker-end]="'url(#arrowhead)'"
+              [attr.marker-start]="getMarkerUrl(edge, 'start')"
+              [attr.marker-end]="getMarkerUrl(edge, 'end')"
               [class]="'angular-flow__edge-path xy-flow__edge-path'"
               style="pointer-events: stroke;"
             />
@@ -282,6 +303,7 @@ export class AngularFlowComponent<
 
   // 內部狀態信號
   private readonly containerSize = signal({ width: 0, height: 0 });
+  readonly markerType = MarkerType;
 
   // 計算信號
   readonly visibleNodes = computed(() => {
@@ -320,6 +342,37 @@ export class AngularFlowComponent<
 
   // 流程實例
   readonly flowInstance = computed(() => this.flowService.getFlowInstance());
+
+  // 邊線標記相關計算
+  readonly hasEdgeMarkers = computed(() => {
+    const edges = this.visibleEdges();
+    return edges.some(edge => edge.markerStart || edge.markerEnd);
+  });
+
+  readonly edgeMarkers = computed(() => {
+    const edges = this.visibleEdges();
+    const markers: Array<{ id: string; type: MarkerType; color?: string; width?: number; height?: number; orient?: string; markerUnits?: string; strokeWidth?: number }> = [];
+    
+    edges.forEach((edge) => {
+      if (edge.markerStart) {
+        const markerData = typeof edge.markerStart === 'string' ? { type: MarkerType.ArrowClosed } : edge.markerStart;
+        const markerId = this.getMarkerId(edge, 'start', markerData);
+        if (!markers.find(m => m.id === markerId)) {
+          markers.push({ id: markerId, ...markerData });
+        }
+      }
+      
+      if (edge.markerEnd) {
+        const markerData = typeof edge.markerEnd === 'string' ? { type: MarkerType.ArrowClosed } : edge.markerEnd;
+        const markerId = this.getMarkerId(edge, 'end', markerData);
+        if (!markers.find(m => m.id === markerId)) {
+          markers.push({ id: markerId, ...markerData });
+        }
+      }
+    });
+    
+    return markers;
+  });
 
   constructor() {
     // 監聽輸入變化的副作用
@@ -492,5 +545,22 @@ export class AngularFlowComponent<
 
   resetViewport(): void {
     this.panZoomService.resetViewport();
+  }
+
+  // 獲取標記 ID
+  private getMarkerId(edge: EdgeType, position: 'start' | 'end', marker: EdgeMarker): string {
+    const type = marker.type || MarkerType.ArrowClosed;
+    const color = (marker.color || '#b1b1b7').replace('#', '');
+    return `angular-flow__marker-${position}-${type}-${color}`;
+  }
+
+  // 獲取標記 URL
+  getMarkerUrl(edge: EdgeType, position: 'start' | 'end'): string | null {
+    const marker = position === 'start' ? edge.markerStart : edge.markerEnd;
+    if (!marker) return null;
+    
+    const markerData = typeof marker === 'string' ? { type: MarkerType.ArrowClosed } : marker;
+    const markerId = this.getMarkerId(edge, position, markerData);
+    return `url(#${markerId})`;
   }
 }

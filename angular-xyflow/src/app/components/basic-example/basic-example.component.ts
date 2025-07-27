@@ -20,7 +20,7 @@ import {
   BackgroundVariant,
   AngularFlowInstance
 } from '../angular-flow';
-import { Connection } from '@xyflow/system';
+import { Connection, Position } from '@xyflow/system';
 
 @Component({
   selector: 'app-basic-example',
@@ -138,24 +138,30 @@ export class BasicExampleComponent {
       data: { label: 'Node 1' },
       position: { x: 250, y: 5 },
       className: 'light',
+      sourcePosition: Position.Bottom,
     },
     {
       id: '2',
       data: { label: 'Node 2' },
       position: { x: 100, y: 100 },
       className: 'light',
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Bottom,
     },
     {
       id: '3',
       data: { label: 'Node 3' },
       position: { x: 400, y: 100 },
       className: 'light',
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Bottom,
     },
     {
       id: '4',
       data: { label: 'Node 4' },
       position: { x: 400, y: 200 },
       className: 'light',
+      targetPosition: Position.Bottom,
     },
   ]);
 
@@ -278,8 +284,8 @@ export class BasicExampleComponent {
 
   onSetNodes() {
     this.flow.setNodes([
-      { id: 'a', position: { x: 0, y: 0 }, data: { label: 'Node a' } },
-      { id: 'b', position: { x: 0, y: 150 }, data: { label: 'Node b' } },
+      { id: 'a', position: { x: 0, y: 0 }, data: { label: 'Node a' }, sourcePosition: Position.Bottom },
+      { id: 'b', position: { x: 0, y: 150 }, data: { label: 'Node b' }, targetPosition: Position.Bottom },
     ]);
 
     this.flow.setEdges([{ id: 'a-b', source: 'a', target: 'b' }]);
@@ -297,6 +303,8 @@ export class BasicExampleComponent {
       data: { label: 'Node' },
       position: { x: Math.random() * 300, y: Math.random() * 300 },
       className: 'light',
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Bottom,
     };
     
     this.flow.addNodes(newNode);

@@ -33,6 +33,22 @@ export interface AngularNode<T extends Record<string, unknown> = Record<string, 
   zIndex?: number;
 }
 
+// Edge marker type
+export enum MarkerType {
+  Arrow = 'arrow',
+  ArrowClosed = 'arrowclosed'
+}
+
+export interface EdgeMarker {
+  type: MarkerType;
+  color?: string;
+  width?: number;
+  height?: number;
+  markerUnits?: 'strokeWidth' | 'userSpaceOnUse';
+  strokeWidth?: number;
+  orient?: string;
+}
+
 // Angular-specific Edge type extending system EdgeBase
 export interface AngularEdge<T extends Record<string, unknown> = Record<string, unknown>> extends EdgeBase<T> {
   id: string;
@@ -49,6 +65,8 @@ export interface AngularEdge<T extends Record<string, unknown> = Record<string, 
   data?: T;
   className?: string;
   zIndex?: number;
+  markerStart?: EdgeMarker | string;
+  markerEnd?: EdgeMarker | string;
 }
 
 // Angular Flow Props interface

@@ -329,11 +329,11 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
 
   // 輔助方法
   getSourcePosition(): Position {
-    return (this.node().sourcePosition as Position) || 'right';
+    return (this.node().sourcePosition as Position) || 'bottom';
   }
 
   getTargetPosition(): Position {
-    return (this.node().targetPosition as Position) || 'left';
+    return (this.node().targetPosition as Position) || 'bottom';
   }
 
   getCursor(): string {
