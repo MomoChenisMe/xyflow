@@ -220,3 +220,14 @@ panel {
   top: 0;
   left: 0;
 }
+
+/* 拖動鎖定樣式 */
+.non-draggable {
+  cursor: default !important;
+  pointer-events: none !important;
+  
+  &.xy-flow__node,
+  &.angular-flow__node {
+    cursor: default !important;
+  }
+}

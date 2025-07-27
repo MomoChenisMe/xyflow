@@ -259,9 +259,11 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       this.isDragging.set(dragging);
     });
 
-    // 監聽節點數據變化，重新設置拖拽
+    // 監聽節點數據和全局拖動狀態變化，重新設置拖拽
     effect(() => {
       const nodeData = this.node();
+      const globalDraggable = this.flowService.nodesDraggable(); // 監聽全局狀態
+      
       if (nodeData) {
         // 延遲設置拖拽，確保 DOM 元素已準備好
         setTimeout(() => this.setupDragForNode(), 0);
@@ -297,8 +299,10 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // 檢查節點是否可拖拽
-    const isDraggable = nodeData.draggable !== false;
+    // 檢查節點是否可拖拽 - 需要同時滿足全局設置和節點設置
+    const globalDraggable = this.flowService.nodesDraggable();
+    const nodeDraggable = nodeData.draggable !== false;
+    const isDraggable = globalDraggable && nodeDraggable;
 
     console.log('🔧 設置拖拽功能', {
       nodeId: nodeData.id,
@@ -307,18 +311,23 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       elementClasses: element.className
     });
 
-    if (isDraggable) {
-      this.dragService.initializeDrag({
-        nodeId: nodeData.id,
-        domNode: element,
-        isSelectable: true,
-        nodeClickDistance: 0
-      });
+    // 總是初始化拖動服務，但根據狀態啟用或禁用
+    this.dragService.initializeDrag({
+      nodeId: nodeData.id,
+      domNode: element,
+      isSelectable: true,
+      nodeClickDistance: 0
+    });
 
-      console.log('✅ 拖拽功能已設置', { nodeId: nodeData.id });
-    } else {
-      console.log('⚠️ 節點不可拖拽', { nodeId: nodeData.id });
-    }
+    // 根據狀態啟用或禁用拖動
+    this.dragService.setNodeDraggable(nodeData.id, isDraggable);
+
+    console.log('🔧 拖拽狀態已更新', { 
+      nodeId: nodeData.id, 
+      isDraggable,
+      globalDraggable,
+      nodeDraggable 
+    });
   }
 
   // 設置大小調整觀察器
@@ -340,7 +349,11 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   onNodeClick(event: MouseEvent) {
     // 避免在拖動後觸發點擊
     if (!this.isDragging()) {
-      this.nodeClick.emit(event);
+      // 檢查是否允許選取元素
+      const isSelectable = this.flowService.elementsSelectable();
+      if (isSelectable) {
+        this.nodeClick.emit(event);
+      }
     }
   }
 
@@ -355,7 +368,11 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
 
   getCursor(): string {
     const node = this.node();
-    if (node.draggable === false) {
+    const globalDraggable = this.flowService.nodesDraggable();
+    const nodeDraggable = node.draggable !== false;
+    
+    // 只有在全局和節點都允許拖動時才顯示拖動游標
+    if (!globalDraggable || !nodeDraggable) {
       return 'default';
     }
     return this.isDragging() ? 'grabbing' : 'grab';

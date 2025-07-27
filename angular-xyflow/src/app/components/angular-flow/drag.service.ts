@@ -54,8 +54,11 @@ export class AngularFlowDragService implements OnDestroy {
       }
     });
 
-    // 更新拖拽配置
-    xyDragInstance.update(config);
+    // 更新拖拽配置 - noDragClassName 屬於 update 方法參數
+    xyDragInstance.update({
+      ...config,
+      noDragClassName: 'non-draggable'
+    });
     
     // 儲存實例
     this.xyDragInstances.set(nodeId, xyDragInstance);
@@ -65,7 +68,16 @@ export class AngularFlowDragService implements OnDestroy {
   updateDrag(nodeId: string, config: Partial<DragConfig>): void {
     const instance = this.xyDragInstances.get(nodeId);
     if (instance) {
-      instance.update(config as any);
+      // 轉換 config 到正確的 DragUpdateParams 格式
+      const updateParams = {
+        domNode: config.domNode!,
+        noDragClassName: config.noDragClassName,
+        handleSelector: config.handleSelector,
+        isSelectable: config.isSelectable,
+        nodeId: config.nodeId,
+        nodeClickDistance: config.nodeClickDistance
+      };
+      instance.update(updateParams);
     }
   }
 
@@ -120,7 +132,7 @@ export class AngularFlowDragService implements OnDestroy {
       domNode: flowContainer,
       transform: [viewport.x, viewport.y, viewport.zoom] as [number, number, number],
       autoPanOnNodeDrag: true,
-      nodesDraggable: true,
+      nodesDraggable: this.flowService.nodesDraggable(),
       selectNodesOnDrag: false,
       nodeDragThreshold: 0,
       panBy: async (delta: { x: number; y: number }) => {
@@ -167,6 +179,31 @@ export class AngularFlowDragService implements OnDestroy {
   private handleNodeClick(nodeId: string): void {
     // 實現節點選擇邏輯
     console.log('Handle node click:', nodeId);
+  }
+
+  // 設置特定節點的拖動狀態
+  setNodeDraggable(nodeId: string, draggable: boolean): void {
+    const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement;
+    const instance = this.xyDragInstances.get(nodeId);
+    
+    if (nodeElement && instance) {
+      if (draggable) {
+        nodeElement.classList.remove('non-draggable');
+      } else {
+        nodeElement.classList.add('non-draggable');
+      }
+      
+      // 更新拖拽實例的 noDragClassName
+      instance.update({
+        domNode: nodeElement,
+        noDragClassName: 'non-draggable',
+        nodeId: nodeId,
+        isSelectable: true,
+        nodeClickDistance: 0
+      });
+      
+      console.log('🔧 節點拖動狀態已更新', { nodeId, draggable });
+    }
   }
 
   ngOnDestroy(): void {

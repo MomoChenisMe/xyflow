@@ -676,6 +676,11 @@ export class AngularFlowComponent<
     // 阻止事件冒泡，避免觸發背景點擊
     event.stopPropagation();
     
+    // 檢查是否允許選取元素
+    if (!this.flowService.elementsSelectable()) {
+      return;
+    }
+    
     // 檢查是否按下 Ctrl/Cmd 鍵進行多選
     const multiSelect = event.ctrlKey || event.metaKey;
     

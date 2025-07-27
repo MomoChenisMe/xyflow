@@ -37,8 +37,8 @@ import { Handle } from '../types';
       [style.border]="'1px solid #555'"
       [style.border-radius]="'50%'"
       [style.cursor]="'crosshair'"
-      [style.pointer-events]="isConnectable() ? 'auto' : 'none'"
-      [style.opacity]="isConnectable() ? 1 : 0.5"
+      [style.pointer-events]="canConnect() ? 'auto' : 'none'"
+      [style.opacity]="canConnect() ? 1 : 0.5"
       [style.z-index]="4"
       (mousedown)="handleMouseDown($event)"
       (mouseup)="handleMouseUp($event)"
@@ -146,6 +146,12 @@ export class HandleComponent implements OnInit, OnDestroy {
   private flowService = inject(AngularFlowService);
   
   // 計算屬性
+  readonly canConnect = computed(() => {
+    const globalConnectable = this.flowService.nodesConnectable();
+    const handleConnectable = this.isConnectable();
+    return globalConnectable && handleConnectable;
+  });
+
   readonly handleClasses = computed(() => {
     const classes = ['angular-flow__handle', this.type(), `position-${this.position()}`];
     
@@ -196,9 +202,8 @@ export class HandleComponent implements OnInit, OnDestroy {
 
   // 事件處理方法
   handleMouseDown(event: MouseEvent) {
-    // 只有 source handle 可以開始連接，或者 target handle 也能開始連接（取決於需求）
-    // 這裡我們允許兩種類型都能開始連接，但要確保只能連到相對類型
-    if (!this.isConnectable()) return;
+    // 檢查是否允許連接
+    if (!this.canConnect()) return;
     
     event.preventDefault();
     event.stopPropagation();

@@ -223,16 +223,11 @@ export class ControlsComponent {
     const currentState = this.isInteractive();
     const newValue = !currentState;
     
-    // 更新所有交互性狀態
+    // 只更新 Node/Edge 交互性狀態，不影響 viewport 交互
     this.flowService.setInteractivity(newValue);
     
-    // 更新 PanZoom 設置
-    this.panZoomService.updatePanZoom({
-      panOnDrag: newValue,
-      zoomOnScroll: newValue,
-      zoomOnPinch: newValue,
-      zoomOnDoubleClick: newValue
-    });
+    // ✅ 不修改 PanZoom 設置，保留 viewport 交互功能
+    // viewport 的 panOnDrag, zoomOnScroll 等應該始終保持啟用
     
     this.onInteractiveChange.emit(newValue);
   }
