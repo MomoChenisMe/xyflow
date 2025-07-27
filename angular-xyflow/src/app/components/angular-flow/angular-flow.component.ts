@@ -28,7 +28,7 @@ import {
   MarkerType,
 } from './types';
 import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
-import { type Connection } from '@xyflow/system';
+import { type Connection, Position } from '@xyflow/system';
 
 @Component({
   selector: 'angular-flow',
@@ -124,13 +124,10 @@ import { type Connection } from '@xyflow/system';
 
             <!-- Edge label -->
             @if (edge.data?.['label']) {
+            @let connectionPoints = getEdgeConnectionPoints(sourceNode, targetNode, edge);
             <text
-              [attr.x]="
-                (sourceNode.position.x + targetNode.position.x) / 2 + 75
-              "
-              [attr.y]="
-                (sourceNode.position.y + targetNode.position.y) / 2 + 20
-              "
+              [attr.x]="(connectionPoints.sourceX + connectionPoints.targetX) / 2"
+              [attr.y]="(connectionPoints.sourceY + connectionPoints.targetY) / 2"
               text-anchor="middle"
               dominant-baseline="middle"
               class="angular-flow__edge-label xy-flow__edge-label"
@@ -449,42 +446,155 @@ export class AngularFlowComponent<
     return node;
   }
 
-  // 計算邊路徑
-  calculateEdgePath(
+  // 計算 Handle 位置
+  private getHandlePosition(
+    node: NodeType,
+    position: Position,
+    nodeWidth: number,
+    nodeHeight: number
+  ): { x: number; y: number } {
+    const x = node.position.x;
+    const y = node.position.y;
+
+    switch (position) {
+      case Position.Top:
+        return { x: x + nodeWidth / 2, y: y };
+      case Position.Right:
+        return { x: x + nodeWidth, y: y + nodeHeight / 2 };
+      case Position.Bottom:
+        return { x: x + nodeWidth / 2, y: y + nodeHeight };
+      case Position.Left:
+        return { x: x, y: y + nodeHeight / 2 };
+      default:
+        return { x: x + nodeWidth / 2, y: y + nodeHeight / 2 };
+    }
+  }
+
+  // 獲取邊的連接點
+  getEdgeConnectionPoints(
     sourceNode: NodeType,
     targetNode: NodeType,
     edge: EdgeType
-  ): string {
+  ): {
+    sourceX: number;
+    sourceY: number;
+    targetX: number;
+    targetY: number;
+    sourcePosition: Position;
+    targetPosition: Position;
+  } {
     // 使用節點的實際尺寸，如果沒有則使用默認值
     const sourceWidth = (sourceNode as any).width || 150;
     const sourceHeight = (sourceNode as any).height || 40;
     const targetWidth = (targetNode as any).width || 150;
     const targetHeight = (targetNode as any).height || 40;
 
-    // 計算節點中心點
-    const sourceX = sourceNode.position.x + sourceWidth / 2;
-    const sourceY = sourceNode.position.y + sourceHeight / 2;
-    const targetX = targetNode.position.x + targetWidth / 2;
-    const targetY = targetNode.position.y + targetHeight / 2;
+    // 獲取 handle 位置，如果沒有設定則使用預設值
+    const sourcePosition = sourceNode.sourcePosition || Position.Bottom;
+    const targetPosition = targetNode.targetPosition || Position.Top;
+
+    // 計算實際的連接點
+    const sourcePoint = this.getHandlePosition(sourceNode, sourcePosition, sourceWidth, sourceHeight);
+    const targetPoint = this.getHandlePosition(targetNode, targetPosition, targetWidth, targetHeight);
+
+    return {
+      sourceX: sourcePoint.x,
+      sourceY: sourcePoint.y,
+      targetX: targetPoint.x,
+      targetY: targetPoint.y,
+      sourcePosition,
+      targetPosition,
+    };
+  }
+
+  // 計算貝茲曲線路徑
+  private getBezierPath(
+    sourceX: number,
+    sourceY: number,
+    sourcePosition: Position,
+    targetX: number,
+    targetY: number,
+    targetPosition: Position,
+    curvature: number = 0.25
+  ): string {
+    const getControlPoint = (
+      pos: Position,
+      x: number,
+      y: number,
+      targetX: number,
+      targetY: number
+    ): [number, number] => {
+      const distance = Math.sqrt((targetX - x) ** 2 + (targetY - y) ** 2);
+      const offset = Math.max(distance * curvature, 20);
+
+      switch (pos) {
+        case Position.Left:
+          return [x - offset, y];
+        case Position.Right:
+          return [x + offset, y];
+        case Position.Top:
+          return [x, y - offset];
+        case Position.Bottom:
+          return [x, y + offset];
+        default:
+          return [x, y];
+      }
+    };
+
+    const [sourceControlX, sourceControlY] = getControlPoint(
+      sourcePosition,
+      sourceX,
+      sourceY,
+      targetX,
+      targetY
+    );
+    const [targetControlX, targetControlY] = getControlPoint(
+      targetPosition,
+      targetX,
+      targetY,
+      sourceX,
+      sourceY
+    );
+
+    return `M ${sourceX},${sourceY} C ${sourceControlX},${sourceControlY} ${targetControlX},${targetControlY} ${targetX},${targetY}`;
+  }
+
+  // 計算邊路徑
+  calculateEdgePath(
+    sourceNode: NodeType,
+    targetNode: NodeType,
+    edge: EdgeType
+  ): string {
+    const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition } =
+      this.getEdgeConnectionPoints(sourceNode, targetNode, edge);
 
     // 根據邊類型返回不同的路徑
     const edgeType = (edge as any).type || 'default';
 
     switch (edgeType) {
       case 'straight':
-        return `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+        return `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
 
       case 'step':
         const midX = (sourceX + targetX) / 2;
-        return `M ${sourceX} ${sourceY} L ${midX} ${sourceY} L ${midX} ${targetY} L ${targetX} ${targetY}`;
+        return `M ${sourceX},${sourceY} L ${midX},${sourceY} L ${midX},${targetY} L ${targetX},${targetY}`;
+
+      case 'smoothstep':
+        // 簡化的 smooth step 實現
+        const offsetX = Math.abs(targetX - sourceX) * 0.5;
+        const offsetY = Math.abs(targetY - sourceY) * 0.5;
+        
+        if (sourcePosition === Position.Right && targetPosition === Position.Left) {
+          const midX = sourceX + offsetX;
+          return `M ${sourceX},${sourceY} L ${midX},${sourceY} Q ${midX + 10},${sourceY} ${midX + 10},${sourceY + 10} L ${midX + 10},${targetY - 10} Q ${midX + 10},${targetY} ${midX + 20},${targetY} L ${targetX},${targetY}`;
+        }
+        
+        return this.getBezierPath(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, 0.1);
 
       case 'default':
       case 'bezier':
       default:
-        // 簡化的貝茲曲線
-        const controlX1 = sourceX + (targetX - sourceX) * 0.3;
-        const controlX2 = sourceX + (targetX - sourceX) * 0.7;
-        return `M ${sourceX} ${sourceY} C ${controlX1} ${sourceY}, ${controlX2} ${targetY}, ${targetX} ${targetY}`;
+        return this.getBezierPath(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition);
     }
   }
 
@@ -548,7 +658,7 @@ export class AngularFlowComponent<
   }
 
   // 獲取標記 ID
-  private getMarkerId(edge: EdgeType, position: 'start' | 'end', marker: EdgeMarker): string {
+  private getMarkerId(_edge: EdgeType, position: 'start' | 'end', marker: EdgeMarker): string {
     const type = marker.type || MarkerType.ArrowClosed;
     const color = (marker.color || '#b1b1b7').replace('#', '');
     return `angular-flow__marker-${position}-${type}-${color}`;
