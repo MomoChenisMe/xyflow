@@ -179,10 +179,76 @@ export class AngularFlowPanZoomService implements OnDestroy {
       return;
     }
 
-    console.log('🎯 執行 fitView');
-    // 這裡可以實現 fitView 邏輯
-    // 暫時設置一個默認的 viewport
-    this.setViewport({ x: 0, y: 0, zoom: 1 });
+    console.log('🎯 執行 fitView with options:', options);
+    
+    const nodes = this.flowService.nodes();
+    if (nodes.length === 0) {
+      this.resetViewport();
+      return;
+    }
+
+    // 獲取DOM元素的實際尺寸
+    const domElement = this.getDomElement();
+    if (!domElement) {
+      console.warn('⚠️ 無法獲取容器元素');
+      return;
+    }
+
+    const rect = domElement.getBoundingClientRect();
+    const containerWidth = rect.width;
+    const containerHeight = rect.height;
+
+    // 計算所有節點的邊界
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    nodes.forEach(node => {
+      const nodeWidth = (node as any).width || 150;
+      const nodeHeight = (node as any).height || 40;
+      
+      minX = Math.min(minX, node.position.x);
+      minY = Math.min(minY, node.position.y);
+      maxX = Math.max(maxX, node.position.x + nodeWidth);
+      maxY = Math.max(maxY, node.position.y + nodeHeight);
+    });
+
+    // 計算邊界尺寸
+    const boundingWidth = maxX - minX;
+    const boundingHeight = maxY - minY;
+    
+    // 計算適合的縮放級別
+    const padding = options?.padding || { top: 100, left: 50, right: 50, bottom: 50 };
+    const paddingTop = typeof padding.top === 'string' ? parseFloat(padding.top) : (padding.top || 0);
+    const paddingLeft = typeof padding.left === 'string' ? parseFloat(padding.left) : (padding.left || 0);
+    const paddingRight = typeof padding.right === 'string' ? parseFloat(padding.right) : (padding.right || 0);
+    const paddingBottom = typeof padding.bottom === 'string' ? parseFloat(padding.bottom) : (padding.bottom || 0);
+    
+    const availableWidth = containerWidth - paddingLeft - paddingRight;
+    const availableHeight = containerHeight - paddingTop - paddingBottom;
+    
+    const zoomX = availableWidth / boundingWidth;
+    const zoomY = availableHeight / boundingHeight;
+    const zoom = Math.min(zoomX, zoomY, 2); // maxZoom = 2
+    
+    // 計算中心位置
+    const centerX = (containerWidth - boundingWidth * zoom) / 2 - minX * zoom + paddingLeft - paddingRight;
+    const centerY = (containerHeight - boundingHeight * zoom) / 2 - minY * zoom + paddingTop - paddingBottom;
+    
+    // 應用新的 viewport
+    this.setViewport({
+      x: centerX,
+      y: centerY,
+      zoom: Math.max(zoom, 0.5) // minZoom = 0.5
+    });
+  }
+
+  // 獲取DOM元素
+  private getDomElement(): HTMLElement | null {
+    // 這裡應該返回當前的DOM節點
+    // 暫時通過查詢選擇器獲取
+    return document.querySelector('.angular-flow') as HTMLElement;
   }
 
   // 放大

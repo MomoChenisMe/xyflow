@@ -33,6 +33,9 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   private _maxZoom: WritableSignal<number> = signal(2);
   private _connectionRadius: WritableSignal<number> = signal(20);
   private _fitViewQueued: WritableSignal<boolean> = signal(false);
+  private _nodesDraggable: WritableSignal<boolean> = signal(true);
+  private _nodesConnectable: WritableSignal<boolean> = signal(true);
+  private _elementsSelectable: WritableSignal<boolean> = signal(true);
 
   // 計算信號
   readonly nodes: Signal<NodeType[]> = computed(() => this._nodes());
@@ -46,6 +49,12 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   readonly minZoom: Signal<number> = computed(() => this._minZoom());
   readonly maxZoom: Signal<number> = computed(() => this._maxZoom());
   readonly connectionRadius: Signal<number> = computed(() => this._connectionRadius());
+  readonly nodesDraggable: Signal<boolean> = computed(() => this._nodesDraggable());
+  readonly nodesConnectable: Signal<boolean> = computed(() => this._nodesConnectable());
+  readonly elementsSelectable: Signal<boolean> = computed(() => this._elementsSelectable());
+  readonly isInteractive: Signal<boolean> = computed(() => 
+    this._nodesDraggable() || this._nodesConnectable() || this._elementsSelectable()
+  );
 
   // 節點和邊的查找映射
   readonly nodeLookup: Signal<Map<string, NodeType>> = computed(() => {
@@ -592,5 +601,24 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     }
 
     return handles;
+  }
+
+  // 交互性控制方法
+  setNodesDraggable(draggable: boolean) {
+    this._nodesDraggable.set(draggable);
+  }
+
+  setNodesConnectable(connectable: boolean) {
+    this._nodesConnectable.set(connectable);
+  }
+
+  setElementsSelectable(selectable: boolean) {
+    this._elementsSelectable.set(selectable);
+  }
+
+  setInteractivity(interactive: boolean) {
+    this._nodesDraggable.set(interactive);
+    this._nodesConnectable.set(interactive);
+    this._elementsSelectable.set(interactive);
   }
 }

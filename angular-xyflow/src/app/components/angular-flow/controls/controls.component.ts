@@ -4,11 +4,13 @@ import {
   output,
   inject,
   signal,
+  computed,
   ChangeDetectionStrategy,
   CUSTOM_ELEMENTS_SCHEMA
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AngularFlowService } from '../angular-flow.service';
+import { AngularFlowPanZoomService } from '../panzoom.service';
 
 @Component({
   selector: 'angular-flow-controls',
@@ -160,6 +162,7 @@ import { AngularFlowService } from '../angular-flow.service';
 export class ControlsComponent {
   // 注入服務
   private flowService = inject(AngularFlowService);
+  private panZoomService = inject(AngularFlowPanZoomService);
   
   // 輸入屬性
   readonly showZoom = input<boolean>(true);
@@ -173,67 +176,62 @@ export class ControlsComponent {
   readonly onFitViewClick = output<void>();
   readonly onInteractiveChange = output<boolean>();
   
-  // 內部狀態
-  private readonly isInteractiveSignal = signal<boolean>(true);
+  // 內部狀態 - 從服務獲取
 
   // 計算屬性
-  canZoomIn(): boolean {
+  readonly canZoomIn = computed(() => {
     const viewport = this.flowService.viewport();
     const maxZoom = this.flowService.maxZoom();
     return viewport.zoom < maxZoom;
-  }
+  });
 
-  canZoomOut(): boolean {
+  readonly canZoomOut = computed(() => {
     const viewport = this.flowService.viewport();
     const minZoom = this.flowService.minZoom();
     return viewport.zoom > minZoom;
-  }
+  });
+
+  readonly isInteractive = computed(() => {
+    return this.flowService.isInteractive();
+  });
 
   // 事件處理方法
   onZoomIn() {
     if (!this.canZoomIn()) return;
     
-    const viewport = this.flowService.viewport();
-    const maxZoom = this.flowService.maxZoom();
-    const newZoom = Math.min(viewport.zoom * 1.2, maxZoom);
-    
-    this.flowService.getFlowInstance().setViewport({
-      ...viewport,
-      zoom: newZoom
-    });
-    
+    this.panZoomService.zoomIn();
     this.onZoomInClick.emit();
   }
 
   onZoomOut() {
     if (!this.canZoomOut()) return;
     
-    const viewport = this.flowService.viewport();
-    const minZoom = this.flowService.minZoom();
-    const newZoom = Math.max(viewport.zoom / 1.2, minZoom);
-    
-    this.flowService.getFlowInstance().setViewport({
-      ...viewport,
-      zoom: newZoom
-    });
-    
+    this.panZoomService.zoomOut();
     this.onZoomOutClick.emit();
   }
 
   onFitView() {
     const options = this.fitViewOptions();
-    this.flowService.getFlowInstance().fitView(options);
+    this.panZoomService.fitView(options);
     this.onFitViewClick.emit();
   }
 
   onToggleInteractivity() {
-    const newValue = !this.isInteractiveSignal();
-    this.isInteractiveSignal.set(newValue);
-    // 更新交互狀態邏輯
+    const currentState = this.isInteractive();
+    const newValue = !currentState;
+    
+    // 更新所有交互性狀態
+    this.flowService.setInteractivity(newValue);
+    
+    // 更新 PanZoom 設置
+    this.panZoomService.updatePanZoom({
+      panOnDrag: newValue,
+      zoomOnScroll: newValue,
+      zoomOnPinch: newValue,
+      zoomOnDoubleClick: newValue
+    });
+    
     this.onInteractiveChange.emit(newValue);
   }
 
-  isInteractive(): boolean {
-    return this.isInteractiveSignal();
-  }
 }
