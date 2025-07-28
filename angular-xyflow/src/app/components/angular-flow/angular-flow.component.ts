@@ -75,36 +75,34 @@ import { type Connection, Position } from '@xyflow/system';
         >
           <!-- Marker definitions -->
           @if (hasEdgeMarkers()) {
-            <defs>
-              @for (marker of edgeMarkers(); track marker.id) {
-                <marker
-                  [id]="marker.id"
-                  [attr.markerWidth]="marker.width || 10"
-                  [attr.markerHeight]="marker.height || 7"
-                  [attr.refX]="marker.type === markerType.Arrow ? 8 : 9"
-                  [attr.refY]="marker.height ? marker.height / 2 : 3.5"
-                  [attr.orient]="marker.orient || 'auto'"
-                  [attr.markerUnits]="marker.markerUnits || 'strokeWidth'"
-                >
-                  @if (marker.type === markerType.Arrow) {
-                    <polyline
-                      points="0,0 8,3.5 0,7"
-                      [attr.stroke]="marker.color || '#b1b1b7'"
-                      [attr.stroke-width]="marker.strokeWidth || 1"
-                      fill="none"
-                    />
-                  } @else {
-                    <polygon
-                      points="0 0, 10 3.5, 0 7"
-                      [attr.fill]="marker.color || '#b1b1b7'"
-                    />
-                  }
-                </marker>
+          <defs>
+            @for (marker of edgeMarkers(); track marker.id) {
+            <marker
+              [id]="marker.id"
+              [attr.markerWidth]="marker.width || 10"
+              [attr.markerHeight]="marker.height || 7"
+              [attr.refX]="marker.type === markerType.Arrow ? 8 : 9"
+              [attr.refY]="marker.height ? marker.height / 2 : 3.5"
+              [attr.orient]="marker.orient || 'auto'"
+              [attr.markerUnits]="marker.markerUnits || 'strokeWidth'"
+            >
+              @if (marker.type === markerType.Arrow) {
+              <polyline
+                points="0,0 8,3.5 0,7"
+                [attr.stroke]="marker.color || '#b1b1b7'"
+                [attr.stroke-width]="marker.strokeWidth || 1"
+                fill="none"
+              />
+              } @else {
+              <polygon
+                points="0 0, 10 3.5, 0 7"
+                [attr.fill]="marker.color || '#b1b1b7'"
+              />
               }
-            </defs>
-          }
-
-          @for (edge of visibleEdges(); track edge.id) { @let sourceNode =
+            </marker>
+            }
+          </defs>
+          } @for (edge of visibleEdges(); track edge.id) { @let sourceNode =
           getNodeById(edge.source); @let targetNode = getNodeById(edge.target);
           @if (sourceNode && targetNode) {
           <g
@@ -126,11 +124,15 @@ import { type Connection, Position } from '@xyflow/system';
             />
 
             <!-- Edge label -->
-            @if (edge.data?.['label']) {
-            @let connectionPoints = getEdgeConnectionPoints(sourceNode, targetNode, edge);
+            @if (edge.data?.['label']) { @let connectionPoints =
+            getEdgeConnectionPoints(sourceNode, targetNode, edge);
             <text
-              [attr.x]="(connectionPoints.sourceX + connectionPoints.targetX) / 2"
-              [attr.y]="(connectionPoints.sourceY + connectionPoints.targetY) / 2"
+              [attr.x]="
+                (connectionPoints.sourceX + connectionPoints.targetX) / 2
+              "
+              [attr.y]="
+                (connectionPoints.sourceY + connectionPoints.targetY) / 2
+              "
               text-anchor="middle"
               dominant-baseline="middle"
               class="angular-flow__edge-label xy-flow__edge-label"
@@ -143,12 +145,18 @@ import { type Connection, Position } from '@xyflow/system';
           } }
 
           <!-- Connection Line - 顯示連接進行中的線條 -->
-          @if (connectionInProgress() && connectionLinePath()) {
-          @let connState = connectionInProgress();
+          @if (connectionInProgress() && connectionLinePath()) { @let connState
+          = connectionInProgress();
           <g class="angular-flow__connection-line xy-flow__connection-line">
             <path
               [attr.d]="connectionLinePath()"
-              [attr.stroke]="connState.isValid === true ? '#10b981' : connState.isValid === false ? '#f87171' : '#b1b1b7'"
+              [attr.stroke]="
+                connState.isValid === true
+                  ? '#10b981'
+                  : connState.isValid === false
+                  ? '#f87171'
+                  : '#b1b1b7'
+              "
               [attr.stroke-width]="1"
               [attr.fill]="'none'"
               class="angular-flow__connection-path xy-flow__connection-path"
@@ -179,7 +187,14 @@ import { type Connection, Position } from '@xyflow/system';
             (nodeDragStop)="handleNodeDragStop($event, node)"
             (connectStart)="handleConnectStart($event.event, node)"
             (connectEnd)="handleConnectEnd($event)"
-            (handleClick)="handleHandleClick($event.event, $event.nodeId, $event.handleId, $event.handleType)"
+            (handleClick)="
+              handleHandleClick(
+                $event.event,
+                $event.nodeId,
+                $event.handleId,
+                $event.handleType
+              )
+            "
           />
           }
         </div>
@@ -406,26 +421,41 @@ export class AngularFlowComponent<
   // 邊線標記相關計算
   readonly hasEdgeMarkers = computed(() => {
     const edges = this.visibleEdges();
-    return edges.some(edge => edge.markerStart || edge.markerEnd);
+    return edges.some((edge) => edge.markerStart || edge.markerEnd);
   });
 
   readonly edgeMarkers = computed(() => {
     const edges = this.visibleEdges();
-    const markers: Array<{ id: string; type: MarkerType; color?: string; width?: number; height?: number; orient?: string; markerUnits?: string; strokeWidth?: number }> = [];
+    const markers: Array<{
+      id: string;
+      type: MarkerType;
+      color?: string;
+      width?: number;
+      height?: number;
+      orient?: string;
+      markerUnits?: string;
+      strokeWidth?: number;
+    }> = [];
 
     edges.forEach((edge) => {
       if (edge.markerStart) {
-        const markerData = typeof edge.markerStart === 'string' ? { type: MarkerType.ArrowClosed } : edge.markerStart;
+        const markerData =
+          typeof edge.markerStart === 'string'
+            ? { type: MarkerType.ArrowClosed }
+            : edge.markerStart;
         const markerId = this.getMarkerId(edge, 'start', markerData);
-        if (!markers.find(m => m.id === markerId)) {
+        if (!markers.find((m) => m.id === markerId)) {
           markers.push({ id: markerId, ...markerData });
         }
       }
 
       if (edge.markerEnd) {
-        const markerData = typeof edge.markerEnd === 'string' ? { type: MarkerType.ArrowClosed } : edge.markerEnd;
+        const markerData =
+          typeof edge.markerEnd === 'string'
+            ? { type: MarkerType.ArrowClosed }
+            : edge.markerEnd;
         const markerId = this.getMarkerId(edge, 'end', markerData);
-        if (!markers.find(m => m.id === markerId)) {
+        if (!markers.find((m) => m.id === markerId)) {
           markers.push({ id: markerId, ...markerData });
         }
       }
@@ -446,6 +476,7 @@ export class AngularFlowComponent<
           edges: edges,
           minZoom: this.minZoom(),
           maxZoom: this.maxZoom(),
+          selectNodesOnDrag: this.selectNodesOnDrag(),
         });
       }
     });
@@ -475,13 +506,15 @@ export class AngularFlowComponent<
 
     const rect = container.getBoundingClientRect();
     const currentSize = this.containerSize();
-    
+
     // 只有在尺寸真正改變時才更新（避免浮點數精度問題）
-    if (Math.abs(rect.width - currentSize.width) > 1 || 
-        Math.abs(rect.height - currentSize.height) > 1) {
-      console.log('📏 容器尺寸已更新:', { 
-        from: currentSize, 
-        to: { width: rect.width, height: rect.height } 
+    if (
+      Math.abs(rect.width - currentSize.width) > 1 ||
+      Math.abs(rect.height - currentSize.height) > 1
+    ) {
+      console.log('📏 容器尺寸已更新:', {
+        from: currentSize,
+        to: { width: rect.width, height: rect.height },
       });
       this.containerSize.set({ width: rect.width, height: rect.height });
     }
@@ -515,11 +548,11 @@ export class AngularFlowComponent<
       domNode: container,
       minZoom: this.minZoom(),
       maxZoom: this.maxZoom(),
-      zoomOnScroll: true,        // 滑鼠滾輪縮放：以滑鼠位置為基準
-      zoomOnPinch: true,         // 觸控板縮放：以觸控位置為基準
+      zoomOnScroll: true, // 滑鼠滾輪縮放：以滑鼠位置為基準
+      zoomOnPinch: true, // 觸控板縮放：以觸控位置為基準
       panOnScroll: false,
       panOnScrollSpeed: 0.5,
-      zoomOnDoubleClick: true,   // 雙擊縮放：以雙擊位置為基準
+      zoomOnDoubleClick: true, // 雙擊縮放：以雙擊位置為基準
       panOnDrag: true,
       preventScrolling: true,
       paneClickDistance: 0,
@@ -544,11 +577,11 @@ export class AngularFlowComponent<
       domNode: container,
       minZoom: this.minZoom(),
       maxZoom: this.maxZoom(),
-      zoomOnScroll: true,        // 滑鼠滾輪縮放：以滑鼠位置為基準
-      zoomOnPinch: true,         // 觸控板縮放：以觸控位置為基準
+      zoomOnScroll: true, // 滑鼠滾輪縮放：以滑鼠位置為基準
+      zoomOnPinch: true, // 觸控板縮放：以觸控位置為基準
       panOnScroll: false,
       panOnScrollSpeed: 0.5,
-      zoomOnDoubleClick: true,   // 雙擊縮放：以雙擊位置為基準
+      zoomOnDoubleClick: true, // 雙擊縮放：以雙擊位置為基準
       panOnDrag: true,
       preventScrolling: true,
       paneClickDistance: 0,
@@ -580,9 +613,9 @@ export class AngularFlowComponent<
       return; // 等待 PanZoom 初始化完成
     }
 
-    console.log('🎯 執行初始 fit view（僅此一次）', { 
-      nodeCount: nodes.length, 
-      fitViewOptions: this.fitViewOptions() 
+    console.log('🎯 執行初始 fit view（僅此一次）', {
+      nodeCount: nodes.length,
+      fitViewOptions: this.fitViewOptions(),
     });
 
     // 執行 fit view，傳遞選項
@@ -611,7 +644,7 @@ export class AngularFlowComponent<
 
     console.log('🎯 執行初始 fit view', {
       nodeCount: nodes.length,
-      fitViewOptions: this.fitViewOptions()
+      fitViewOptions: this.fitViewOptions(),
     });
 
     // 執行 fit view，傳遞選項
@@ -621,7 +654,7 @@ export class AngularFlowComponent<
   // 根據ID獲取節點
   getNodeById(id: string): NodeType | undefined {
     const node = this.visibleNodes().find((node) => node.id === id);
-    console.log('🔍 查找節點:', { nodeId: id, found: !!node, nodeData: node });
+    // console.log('🔍 查找節點:', { nodeId: id, found: !!node, nodeData: node });
     return node;
   }
 
@@ -673,8 +706,18 @@ export class AngularFlowComponent<
     const targetPosition = targetNode.targetPosition || Position.Top;
 
     // 計算實際的連接點
-    const sourcePoint = this.getHandlePosition(sourceNode, sourcePosition, sourceWidth, sourceHeight);
-    const targetPoint = this.getHandlePosition(targetNode, targetPosition, targetWidth, targetHeight);
+    const sourcePoint = this.getHandlePosition(
+      sourceNode,
+      sourcePosition,
+      sourceWidth,
+      sourceHeight
+    );
+    const targetPoint = this.getHandlePosition(
+      targetNode,
+      targetPosition,
+      targetWidth,
+      targetHeight
+    );
 
     return {
       sourceX: sourcePoint.x,
@@ -744,8 +787,14 @@ export class AngularFlowComponent<
     targetNode: NodeType,
     edge: EdgeType
   ): string {
-    const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition } =
-      this.getEdgeConnectionPoints(sourceNode, targetNode, edge);
+    const {
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourcePosition,
+      targetPosition,
+    } = this.getEdgeConnectionPoints(sourceNode, targetNode, edge);
 
     // 根據邊類型返回不同的路徑
     const edgeType = (edge as any).type || 'default';
@@ -763,17 +812,41 @@ export class AngularFlowComponent<
         const offsetX = Math.abs(targetX - sourceX) * 0.5;
         const offsetY = Math.abs(targetY - sourceY) * 0.5;
 
-        if (sourcePosition === Position.Right && targetPosition === Position.Left) {
+        if (
+          sourcePosition === Position.Right &&
+          targetPosition === Position.Left
+        ) {
           const midX = sourceX + offsetX;
-          return `M ${sourceX},${sourceY} L ${midX},${sourceY} Q ${midX + 10},${sourceY} ${midX + 10},${sourceY + 10} L ${midX + 10},${targetY - 10} Q ${midX + 10},${targetY} ${midX + 20},${targetY} L ${targetX},${targetY}`;
+          return `M ${sourceX},${sourceY} L ${midX},${sourceY} Q ${
+            midX + 10
+          },${sourceY} ${midX + 10},${sourceY + 10} L ${midX + 10},${
+            targetY - 10
+          } Q ${midX + 10},${targetY} ${
+            midX + 20
+          },${targetY} L ${targetX},${targetY}`;
         }
 
-        return this.getBezierPath(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, 0.1);
+        return this.getBezierPath(
+          sourceX,
+          sourceY,
+          sourcePosition,
+          targetX,
+          targetY,
+          targetPosition,
+          0.1
+        );
 
       case 'default':
       case 'bezier':
       default:
-        return this.getBezierPath(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition);
+        return this.getBezierPath(
+          sourceX,
+          sourceY,
+          sourcePosition,
+          targetX,
+          targetY,
+          targetPosition
+        );
     }
   }
 
@@ -814,15 +887,22 @@ export class AngularFlowComponent<
     const target = event.target as HTMLElement;
 
     // 檢查點擊的是否是背景元素
-    if (target.classList.contains('angular-flow') ||
-        target.classList.contains('xy-flow') ||
-        target.classList.contains('angular-flow__viewport') ||
-        target.classList.contains('xy-flow__viewport')) {
+    if (
+      target.classList.contains('angular-flow') ||
+      target.classList.contains('xy-flow') ||
+      target.classList.contains('angular-flow__viewport') ||
+      target.classList.contains('xy-flow__viewport')
+    ) {
       this.flowService.clearSelection();
     }
   }
 
-  handleHandleClick(event: MouseEvent, nodeId: string, handleId: string | undefined, type: 'source' | 'target') {
+  handleHandleClick(
+    event: MouseEvent,
+    nodeId: string,
+    handleId: string | undefined,
+    type: 'source' | 'target'
+  ) {
     // 阻止事件冒泡，避免觸發節點或背景點擊
     event.stopPropagation();
 
@@ -854,7 +934,7 @@ export class AngularFlowComponent<
     // 檢查事件是否來自 controls 或其子元素
     const target = event.target as HTMLElement;
     const isFromControls = target.closest('.angular-flow__controls') !== null;
-    
+
     if (isFromControls) {
       // 如果是來自 controls，阻止事件繼續傳播
       event.stopPropagation();
@@ -862,7 +942,7 @@ export class AngularFlowComponent<
       console.log('🚫 已阻止來自 Controls 的雙擊事件');
       return;
     }
-    
+
     // 其他雙擊事件由 XYPanZoom 的過濾器自動處理
     // Node 和 Edge 上的雙擊事件會被 noPanClassName 機制阻止
     console.log('✅ 雙擊事件將由 XYPanZoom 過濾器處理');
@@ -908,7 +988,11 @@ export class AngularFlowComponent<
   }
 
   // 獲取標記 ID
-  private getMarkerId(_edge: EdgeType, position: 'start' | 'end', marker: EdgeMarker): string {
+  private getMarkerId(
+    _edge: EdgeType,
+    position: 'start' | 'end',
+    marker: EdgeMarker
+  ): string {
     const type = marker.type || MarkerType.ArrowClosed;
     const color = (marker.color || '#b1b1b7').replace('#', '');
     return `angular-flow__marker-${position}-${type}-${color}`;
@@ -919,7 +1003,8 @@ export class AngularFlowComponent<
     const marker = position === 'start' ? edge.markerStart : edge.markerEnd;
     if (!marker) return null;
 
-    const markerData = typeof marker === 'string' ? { type: MarkerType.ArrowClosed } : marker;
+    const markerData =
+      typeof marker === 'string' ? { type: MarkerType.ArrowClosed } : marker;
     const markerId = this.getMarkerId(edge, position, markerData);
     return `url(#${markerId})`;
   }

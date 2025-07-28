@@ -43,6 +43,7 @@ import { type Connection, type Position } from '@xyflow/system';
       [style.opacity]="node().hidden ? 0 : 1"
       [style.cursor]="getCursor()"
       (click)="onNodeClick($event)"
+      (mousedown)="onNodeMouseDown($event)"
     >
       <!-- Source handles -->
       @if (shouldShowHandles()) {
@@ -260,13 +261,18 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
     });
 
     // 監聽節點數據和全局拖動狀態變化，重新設置拖拽
+    // 但避免在拖動過程中重新初始化
     effect(() => {
       const nodeData = this.node();
       const globalDraggable = this.flowService.nodesDraggable(); // 監聽全局狀態
+      const isDragging = this.isDragging() || this.dragService.dragging(); // 檢查是否正在拖動
       
-      if (nodeData) {
-        // 延遲設置拖拽，確保 DOM 元素已準備好
+      if (nodeData && !isDragging) {
+        // 只在不拖動時重新設置拖拽，確保 DOM 元素已準備好
+        console.log('🔄 Effect triggered for node:', nodeData.id, 'isDragging:', isDragging);
         setTimeout(() => this.setupDragForNode(), 0);
+      } else if (isDragging) {
+        console.log('⏸️ Skipping drag setup during drag for node:', nodeData?.id);
       }
     });
 
@@ -368,7 +374,8 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
        * 當 selectNodesOnDrag=true 且節點可拖拽且 nodeDragThreshold=0 時，
        * 節點選中已經在 mousedown 時處理，這裡不需要再次處理
        */
-      const selectNodesOnDrag = false; // 目前設為 false，對應 React Basic 例子
+      // 從服務獲取實際的設定值
+      const selectNodesOnDrag = this.flowService.selectNodesOnDrag();
       const nodeDragThreshold = 0;    // 目前設為 0
       
       if (isSelectable && (!selectNodesOnDrag || !isDraggable || nodeDragThreshold > 0)) {
@@ -378,6 +385,31 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       }
       
       this.nodeClick.emit(event);
+    }
+  }
+
+  // 處理 mousedown 事件 - 確保在 selectNodesOnDrag=false 時節點能立即被選中
+  onNodeMouseDown(event: MouseEvent) {
+    // 檢查是否需要在 mousedown 時選中節點
+    const isSelectable = this.flowService.elementsSelectable();
+    const globalDraggable = this.flowService.nodesDraggable();
+    const nodeDraggable = this.node().draggable !== false;
+    const isDraggable = globalDraggable && nodeDraggable;
+    const selectNodesOnDrag = this.flowService.selectNodesOnDrag();
+    
+    /*
+     * 在以下情況下在 mousedown 時選中節點：
+     * 1. 節點是可選中的
+     * 2. selectNodesOnDrag=false (因為 XYDrag 不會在這種情況下調用 onNodeMouseDown)
+     * 3. 節點是可拖拽的 (只有拖拽操作才需要這個邏輯)
+     */
+    if (isSelectable && !selectNodesOnDrag && isDraggable) {
+      // 檢查節點是否已經被選中
+      const currentNode = this.node();
+      if (!currentNode.selected) {
+        console.log('🖱️ Node mousedown - selecting node:', currentNode.id);
+        this.flowService.selectNode(currentNode.id, false);
+      }
     }
   }
 

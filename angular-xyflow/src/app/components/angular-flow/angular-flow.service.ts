@@ -36,6 +36,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   private _nodesDraggable: WritableSignal<boolean> = signal(true);
   private _nodesConnectable: WritableSignal<boolean> = signal(true);
   private _elementsSelectable: WritableSignal<boolean> = signal(true);
+  private _selectNodesOnDrag: WritableSignal<boolean> = signal(false);
 
   // 計算信號
   readonly nodes: Signal<NodeType[]> = computed(() => this._nodes());
@@ -52,6 +53,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   readonly nodesDraggable: Signal<boolean> = computed(() => this._nodesDraggable());
   readonly nodesConnectable: Signal<boolean> = computed(() => this._nodesConnectable());
   readonly elementsSelectable: Signal<boolean> = computed(() => this._elementsSelectable());
+  readonly selectNodesOnDrag: Signal<boolean> = computed(() => this._selectNodesOnDrag());
   readonly isInteractive: Signal<boolean> = computed(() => 
     this._nodesDraggable() || this._nodesConnectable() || this._elementsSelectable()
   );
@@ -169,6 +171,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     defaultViewport?: Viewport;
     minZoom?: number;
     maxZoom?: number;
+    selectNodesOnDrag?: boolean;
   }) {
     if (options?.nodes) {
       this._nodes.set([...options.nodes]);
@@ -184,6 +187,9 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     }
     if (options?.maxZoom !== undefined) {
       this._maxZoom.set(options.maxZoom);
+    }
+    if (options?.selectNodesOnDrag !== undefined) {
+      this._selectNodesOnDrag.set(options.selectNodesOnDrag);
     }
 
     // 初始化 PanZoom, Drag, Handle 會在實際需要時創建
@@ -259,22 +265,26 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
 
   // 節點選擇
   selectNode(nodeId: string, multiSelect = false) {
+    let newSelectedNodes: string[];
+    
     if (multiSelect) {
-      this._selectedNodes.update(selected => 
-        selected.includes(nodeId) 
-          ? selected.filter(id => id !== nodeId)
-          : [...selected, nodeId]
-      );
+      const currentSelected = this._selectedNodes();
+      newSelectedNodes = currentSelected.includes(nodeId) 
+        ? currentSelected.filter(id => id !== nodeId)
+        : [...currentSelected, nodeId];
     } else {
-      this._selectedNodes.set([nodeId]);
+      newSelectedNodes = [nodeId];
       this._selectedEdges.set([]); // 清除邊選擇
     }
     
-    // 更新節點的選中狀態
+    // 同步更新選中節點列表
+    this._selectedNodes.set(newSelectedNodes);
+    
+    // 立即同步更新節點的選中狀態
     this._nodes.update(nodes => 
       nodes.map(node => ({
         ...node,
-        selected: this._selectedNodes().includes(node.id)
+        selected: newSelectedNodes.includes(node.id)
       }))
     );
     
@@ -284,6 +294,8 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
         edges.map(edge => ({ ...edge, selected: false }))
       );
     }
+    
+    console.log('🔄 Node selection updated:', { nodeId, newSelectedNodes, multiSelect });
   }
 
   // 邊選擇
