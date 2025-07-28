@@ -295,7 +295,6 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
       );
     }
     
-    console.log('🔄 Node selection updated:', { nodeId, newSelectedNodes, multiSelect });
   }
 
   // 邊選擇
@@ -361,7 +360,6 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
       );
     }
     
-    console.log('Handle selected:', { nodeId, handleId, type, selected: this._selectedHandles() });
   }
 
   // 檢查 Handle 是否被選中
@@ -432,7 +430,6 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     };
     
     this._connectionState.set(connectionState);
-    console.log('Connection started:', connectionState);
   }
 
   updateConnection(to: { x: number; y: number }, toHandle?: Handle | null, toNode?: NodeType | null) {
@@ -468,12 +465,10 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     
     // 重置連接狀態
     this._connectionState.set({ inProgress: false });
-    console.log('Connection ended');
   }
 
   cancelConnection() {
     this._connectionState.set({ inProgress: false });
-    console.log('Connection cancelled');
   }
 
   // 計算 handle 的世界座標位置

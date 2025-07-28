@@ -209,14 +209,12 @@ export class ControlsComponent {
   onDoubleClick(event: MouseEvent) {
     event.stopPropagation();
     event.preventDefault();
-    console.log('🚫 Controls 已阻止雙擊事件傳播');
   }
 
   // 捕獲並阻止 mousedown 事件，防止觸發拖動
   onMouseDown(event: MouseEvent) {
     // 只阻止傳播，不阻止默認行為（以保留按鈕點擊功能）
     event.stopPropagation();
-    console.log('🚫 Controls 已阻止 mousedown 事件傳播');
   }
 
   onZoomIn(event: MouseEvent) {
@@ -225,7 +223,6 @@ export class ControlsComponent {
     
     if (!this.canZoomIn()) return;
     
-    console.log('🔍 Controls ZoomIn 點擊（已阻止事件冒泡）');
     this.panZoomService.zoomIn();
     this.onZoomInClick.emit();
   }
@@ -236,7 +233,6 @@ export class ControlsComponent {
     
     if (!this.canZoomOut()) return;
     
-    console.log('🔍 Controls ZoomOut 點擊（已阻止事件冒泡）');
     this.panZoomService.zoomOut();
     this.onZoomOutClick.emit();
   }
@@ -245,7 +241,6 @@ export class ControlsComponent {
     // 阻止事件冒泡，防止觸發 angular-flow 的 double click
     event.stopPropagation();
     
-    console.log('🎯 Controls FitView 點擊（已阻止事件冒泡）');
     const options = this.fitViewOptions();
     this.panZoomService.fitView(options);
     this.onFitViewClick.emit();
@@ -258,7 +253,6 @@ export class ControlsComponent {
     const currentState = this.isInteractive();
     const newValue = !currentState;
     
-    console.log('🔧 Controls Interactivity 切換（已阻止事件冒泡）:', newValue);
     
     // 只更新 Node/Edge 交互性狀態，不影響 viewport 交互
     this.flowService.setInteractivity(newValue);

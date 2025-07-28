@@ -269,10 +269,7 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       
       if (nodeData && !isDragging) {
         // 只在不拖動時重新設置拖拽，確保 DOM 元素已準備好
-        console.log('🔄 Effect triggered for node:', nodeData.id, 'isDragging:', isDragging);
         setTimeout(() => this.setupDragForNode(), 0);
-      } else if (isDragging) {
-        console.log('⏸️ Skipping drag setup during drag for node:', nodeData?.id);
       }
     });
 
@@ -301,7 +298,6 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
     const nodeData = this.node();
 
     if (!element || !nodeData) {
-      console.log('❌ 無法設置拖拽：element 或 nodeData 為空', { element, nodeData });
       return;
     }
 
@@ -310,14 +306,6 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
     const nodeDraggable = nodeData.draggable !== false;
     const isDraggable = globalDraggable && nodeDraggable;
 
-    console.log('🔧 設置拖拽功能', {
-      nodeId: nodeData.id,
-      isDraggable,
-      element: element,
-      elementClasses: element.className,
-      elementId: element.id,
-      dataNodeId: element.getAttribute('data-node-id')
-    });
 
     // 總是初始化拖動服務，但根據狀態啟用或禁用
     this.dragService.initializeDrag({
@@ -330,17 +318,7 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
     // 根據狀態啟用或禁用拖動
     this.dragService.setNodeDraggable(nodeData.id, isDraggable);
 
-    console.log('🔧 拖拽狀態已更新', { 
-      nodeId: nodeData.id, 
-      isDraggable,
-      globalDraggable,
-      nodeDraggable 
-    });
 
-    // 測試：手動添加 mousedown 事件監聽器來確認事件是否被觸發
-    element.addEventListener('mousedown', (e) => {
-      console.log('🖱️ 原生 mousedown 事件觸發:', nodeData.id, e.target);
-    });
   }
 
   // 設置大小調整觀察器
@@ -381,7 +359,6 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       if (isSelectable && (!selectNodesOnDrag || !isDraggable || nodeDragThreshold > 0)) {
         // 這種情況下需要在點擊時選中節點
         this.flowService.selectNode(this.node().id, false);
-        console.log('Node selected on click:', this.node().id);
       }
       
       this.nodeClick.emit(event);
@@ -407,7 +384,6 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       // 檢查節點是否已經被選中
       const currentNode = this.node();
       if (!currentNode.selected) {
-        console.log('🖱️ Node mousedown - selecting node:', currentNode.id);
         this.flowService.selectNode(currentNode.id, false);
       }
     }

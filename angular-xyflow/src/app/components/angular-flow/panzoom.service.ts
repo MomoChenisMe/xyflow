@@ -55,13 +55,6 @@ export class AngularFlowPanZoomService implements OnDestroy {
       defaultViewport = { x: 0, y: 0, zoom: 1 }
     } = config;
 
-    console.log('🔧 初始化 PanZoom 功能', { 
-      domNode, 
-      minZoom, 
-      maxZoom, 
-      panOnDrag, 
-      zoomOnScroll 
-    });
 
     // 創建 XYPanZoom 實例
     this.panZoomInstance = XYPanZoom({
@@ -72,20 +65,16 @@ export class AngularFlowPanZoomService implements OnDestroy {
       viewport: defaultViewport,
       paneClickDistance,
       onDraggingChange: (isDragging: boolean) => {
-        console.log('🔧 PanZoom dragging state changed:', isDragging);
         this._isDragging.set(isDragging);
       },
       onPanZoomStart: (event, viewport) => {
-        console.log('🎯 PanZoom start:', viewport);
         // 可以在這裡發送事件
       },
       onPanZoom: (event, viewport) => {
-        console.log('🔧 PanZoom update:', viewport);
         // 更新 flowService 的 viewport
         this.updateFlowViewport(viewport);
       },
       onPanZoomEnd: (event, viewport) => {
-        console.log('🎯 PanZoom end:', viewport);
         // 可以在這裡發送事件
       },
     });
@@ -106,7 +95,6 @@ export class AngularFlowPanZoomService implements OnDestroy {
       zoomActivationKeyPressed: false,
       lib: 'angular-xyflow',
       onTransformChange: (transform: Transform) => {
-        console.log('🔧 Transform changed:', transform);
         const viewport: Viewport = {
           x: transform[0],
           y: transform[1],
@@ -121,7 +109,6 @@ export class AngularFlowPanZoomService implements OnDestroy {
       this.setupCustomDoubleClickHandler();
     }
 
-    console.log('✅ PanZoom 功能已初始化');
   }
 
   // 設置自定義雙點擊處理器
@@ -145,21 +132,12 @@ export class AngularFlowPanZoomService implements OnDestroy {
       const isOnBackground = target.closest('.angular-flow__background');
       
       if (isOnNode || isOnEdge || isOnControls || isOnMiniMap || isOnPanel || isOnBackground) {
-        console.log('🚫 阻止在 UI 組件上的雙點擊縮放', { 
-          isOnNode: !!isOnNode, 
-          isOnEdge: !!isOnEdge, 
-          isOnControls: !!isOnControls,
-          isOnMiniMap: !!isOnMiniMap,
-          isOnPanel: !!isOnPanel,
-          isOnBackground: !!isOnBackground 
-        });
         event.stopPropagation();
         event.preventDefault();
         return;
       }
       
       // 背景區域的雙點擊由 D3 處理器處理
-      console.log('✅ 允許背景雙點擊縮放');
     };
 
     // 添加自定義雙點擊處理器，優先級高於 D3 的處理器
@@ -169,7 +147,7 @@ export class AngularFlowPanZoomService implements OnDestroy {
   // 更新 PanZoom 設置
   updatePanZoom(updates: Partial<PanZoomConfig>): void {
     if (!this.panZoomInstance) {
-      console.warn('⚠️ PanZoom 尚未初始化');
+      console.warn('PanZoom not initialized');
       return;
     }
 
@@ -205,11 +183,10 @@ export class AngularFlowPanZoomService implements OnDestroy {
   // 設置 viewport
   setViewport(viewport: Viewport, options?: { duration?: number }): void {
     if (!this.panZoomInstance) {
-      console.warn('⚠️ PanZoom 尚未初始化');
+      console.warn('PanZoom not initialized');
       return;
     }
 
-    console.log('🎯 設置 viewport:', viewport);
     this.panZoomInstance.setViewport(viewport, options);
   }
 
@@ -224,11 +201,10 @@ export class AngularFlowPanZoomService implements OnDestroy {
   // 縮放到適合視口
   fitView(options?: any): void {
     if (!this.panZoomInstance) {
-      console.warn('⚠️ PanZoom 尚未初始化');
+      console.warn('PanZoom not initialized');
       return;
     }
 
-    console.log('🎯 執行 fitView with options:', options);
     
     const nodes = this.flowService.nodes();
     if (nodes.length === 0) {
@@ -239,7 +215,7 @@ export class AngularFlowPanZoomService implements OnDestroy {
     // 獲取DOM元素的實際尺寸
     const domElement = this.getDomElement();
     if (!domElement) {
-      console.warn('⚠️ 無法獲取容器元素');
+      console.warn('Unable to get container element');
       return;
     }
 
@@ -304,7 +280,6 @@ export class AngularFlowPanZoomService implements OnDestroy {
   zoomIn(): void {
     if (!this.panZoomInstance) return;
     
-    console.log('🔍 執行 zoomIn（以視口中心為基準）');
     
     // 使用 D3 的 scaleBy 方法，不指定第三個參數，預設以視口中心為基準
     this.panZoomInstance.scaleBy(1.2);
@@ -314,7 +289,6 @@ export class AngularFlowPanZoomService implements OnDestroy {
   zoomOut(): void {
     if (!this.panZoomInstance) return;
     
-    console.log('🔍 執行 zoomOut（以視口中心為基準）');
     
     // 使用 D3 的 scaleBy 方法，不指定第三個參數，預設以視口中心為基準
     this.panZoomInstance.scaleBy(1 / 1.2);
@@ -343,7 +317,6 @@ export class AngularFlowPanZoomService implements OnDestroy {
     }
 
     if (this.panZoomInstance) {
-      console.log('🧹 清理 PanZoom 實例');
       this.panZoomInstance.destroy();
       this.panZoomInstance = undefined;
     }

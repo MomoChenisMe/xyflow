@@ -370,12 +370,6 @@ export class AngularFlowComponent<
       result = serviceEdges;
     }
 
-    console.log('🔗 可見邊計算:', {
-      controlledEdges: controlledEdges?.length || 0,
-      serviceEdges: serviceEdges.length,
-      result: result.length,
-      edges: result,
-    });
 
     return result;
   });
@@ -512,10 +506,6 @@ export class AngularFlowComponent<
       Math.abs(rect.width - currentSize.width) > 1 ||
       Math.abs(rect.height - currentSize.height) > 1
     ) {
-      console.log('📏 容器尺寸已更新:', {
-        from: currentSize,
-        to: { width: rect.width, height: rect.height },
-      });
       this.containerSize.set({ width: rect.width, height: rect.height });
     }
   }
@@ -538,11 +528,9 @@ export class AngularFlowComponent<
 
     const container = this.flowContainer()?.nativeElement;
     if (!container) {
-      console.log('❌ 無法設置 PanZoom：容器不存在');
       return;
     }
 
-    console.log('🔧 首次設置 PanZoom 功能', { container });
 
     this.panZoomService.initializePanZoom({
       domNode: container,
@@ -560,18 +548,15 @@ export class AngularFlowComponent<
     });
 
     this.panZoomInitialized.set(true);
-    console.log('✅ PanZoom 功能已初始化並標記完成');
   }
 
   // 傳統的設置 PanZoom 方法（供外部調用或強制重新初始化）
   private setupPanZoom() {
     const container = this.flowContainer()?.nativeElement;
     if (!container) {
-      console.log('❌ 無法設置 PanZoom：容器不存在');
       return;
     }
 
-    console.log('🔧 設置 PanZoom 功能', { container });
 
     this.panZoomService.initializePanZoom({
       domNode: container,
@@ -613,15 +598,10 @@ export class AngularFlowComponent<
       return; // 等待 PanZoom 初始化完成
     }
 
-    console.log('🎯 執行初始 fit view（僅此一次）', {
-      nodeCount: nodes.length,
-      fitViewOptions: this.fitViewOptions(),
-    });
 
     // 執行 fit view，傳遞選項
     this.performFitView(this.fitViewOptions());
     this.initialFitViewExecuted.set(true);
-    console.log('✅ 初始 fit view 已完成並標記');
   }
 
   // 傳統的處理初始 fit view 方法（供外部調用）
@@ -642,10 +622,6 @@ export class AngularFlowComponent<
       return;
     }
 
-    console.log('🎯 執行初始 fit view', {
-      nodeCount: nodes.length,
-      fitViewOptions: this.fitViewOptions(),
-    });
 
     // 執行 fit view，傳遞選項
     this.performFitView(this.fitViewOptions());
@@ -654,7 +630,6 @@ export class AngularFlowComponent<
   // 根據ID獲取節點
   getNodeById(id: string): NodeType | undefined {
     const node = this.visibleNodes().find((node) => node.id === id);
-    // console.log('🔍 查找節點:', { nodeId: id, found: !!node, nodeData: node });
     return node;
   }
 
@@ -879,7 +854,6 @@ export class AngularFlowComponent<
     // 選擇邊線
     this.flowService.selectEdge(edge.id, multiSelect);
 
-    console.log('Edge clicked:', edge.id, 'Selected:', edge.selected);
   }
 
   handlePaneClick(event: MouseEvent) {
@@ -912,7 +886,6 @@ export class AngularFlowComponent<
     // 選擇 Handle
     this.flowService.selectHandle(nodeId, handleId, type, multiSelect);
 
-    console.log('Handle clicked:', { nodeId, handleId, type });
   }
 
   handleNodeDragStart(event: MouseEvent, node: NodeType) {
@@ -939,13 +912,11 @@ export class AngularFlowComponent<
       // 如果是來自 controls，阻止事件繼續傳播
       event.stopPropagation();
       event.preventDefault();
-      console.log('🚫 已阻止來自 Controls 的雙擊事件');
       return;
     }
 
     // 其他雙擊事件由 XYPanZoom 的過濾器自動處理
     // Node 和 Edge 上的雙擊事件會被 noPanClassName 機制阻止
-    console.log('✅ 雙擊事件將由 XYPanZoom 過濾器處理');
   }
 
   handleConnectStart(_event: MouseEvent, _node: NodeType) {
