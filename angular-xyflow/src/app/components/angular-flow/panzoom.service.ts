@@ -90,10 +90,10 @@ export class AngularFlowPanZoomService implements OnDestroy {
       },
     });
 
-    // 更新 PanZoom 設置 - 使用類名來阻止 Node、Edge 和 Controls 上的 PanZoom 事件
+    // 更新 PanZoom 設置 - 阻止 Node、Edge、Controls、MiniMap、Panel、Background 上的 PanZoom 事件
     this.panZoomInstance.update({
-      noWheelClassName: 'angular-flow__node angular-flow__edge angular-flow__controls xy-flow__node xy-flow__edge',
-      noPanClassName: 'angular-flow__node angular-flow__edge angular-flow__controls xy-flow__node xy-flow__edge',
+      noWheelClassName: 'angular-flow__node angular-flow__edge angular-flow__controls angular-flow__minimap angular-flow__panel angular-flow__background xy-flow__node xy-flow__edge',
+      noPanClassName: 'angular-flow__node angular-flow__edge angular-flow__controls angular-flow__minimap angular-flow__panel angular-flow__background xy-flow__node xy-flow__edge',
       preventScrolling,
       panOnScroll,
       panOnDrag,
@@ -136,16 +136,22 @@ export class AngularFlowPanZoomService implements OnDestroy {
     this.doubleClickHandler = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       
-      // 檢查是否點擊在 Node、Edge 或 Controls 上
+      // 檢查是否點擊在 Node、Edge、Controls、MiniMap、Panel、Background 上
       const isOnNode = target.closest('.angular-flow__node, .xy-flow__node');
       const isOnEdge = target.closest('.angular-flow__edge, .xy-flow__edge');
       const isOnControls = target.closest('.angular-flow__controls');
+      const isOnMiniMap = target.closest('.angular-flow__minimap');
+      const isOnPanel = target.closest('.angular-flow__panel');
+      const isOnBackground = target.closest('.angular-flow__background');
       
-      if (isOnNode || isOnEdge || isOnControls) {
-        console.log('🚫 阻止在 Node/Edge/Controls 上的雙點擊縮放', { 
+      if (isOnNode || isOnEdge || isOnControls || isOnMiniMap || isOnPanel || isOnBackground) {
+        console.log('🚫 阻止在 UI 組件上的雙點擊縮放', { 
           isOnNode: !!isOnNode, 
           isOnEdge: !!isOnEdge, 
-          isOnControls: !!isOnControls 
+          isOnControls: !!isOnControls,
+          isOnMiniMap: !!isOnMiniMap,
+          isOnPanel: !!isOnPanel,
+          isOnBackground: !!isOnBackground 
         });
         event.stopPropagation();
         event.preventDefault();
