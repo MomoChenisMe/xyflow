@@ -330,6 +330,8 @@ export class AngularFlowComponent<
 
   // 內部狀態信號
   private readonly containerSize = signal({ width: 0, height: 0 });
+  private readonly panZoomInitialized = signal(false);
+  private readonly initialFitViewExecuted = signal(false);
   readonly markerType = MarkerType;
 
   // 計算信號
@@ -377,7 +379,7 @@ export class AngularFlowComponent<
   readonly connectionInProgress = computed(() => {
     const state = this.connectionState();
     if (!state.inProgress) return null;
-    
+
     // TypeScript 類型守衛，確保我們有正確的類型
     return state as any; // 安全的類型轉換，因為我們已經檢查了 inProgress
   });
@@ -388,7 +390,7 @@ export class AngularFlowComponent<
     if (!connState) return null;
 
     const { from, to, fromPosition, toPosition } = connState;
-    
+
     // 使用貝茲曲線路徑
     return this.getBezierPath(
       from.x,
@@ -409,7 +411,7 @@ export class AngularFlowComponent<
   readonly edgeMarkers = computed(() => {
     const edges = this.visibleEdges();
     const markers: Array<{ id: string; type: MarkerType; color?: string; width?: number; height?: number; orient?: string; markerUnits?: string; strokeWidth?: number }> = [];
-    
+
     edges.forEach((edge) => {
       if (edge.markerStart) {
         const markerData = typeof edge.markerStart === 'string' ? { type: MarkerType.ArrowClosed } : edge.markerStart;
@@ -418,7 +420,7 @@ export class AngularFlowComponent<
           markers.push({ id: markerId, ...markerData });
         }
       }
-      
+
       if (edge.markerEnd) {
         const markerData = typeof edge.markerEnd === 'string' ? { type: MarkerType.ArrowClosed } : edge.markerEnd;
         const markerId = this.getMarkerId(edge, 'end', markerData);
@@ -427,7 +429,7 @@ export class AngularFlowComponent<
         }
       }
     });
-    
+
     return markers;
   });
 
@@ -449,8 +451,9 @@ export class AngularFlowComponent<
 
     // 渲染後副作用
     afterRenderEffect(() => {
-      this.updateContainerSize();
-      this.setupPanZoom();
+      this.safeUpdateContainerSize();
+      this.safeSetupPanZoom();
+      this.safeHandleInitialFitView();
     });
   }
 
@@ -464,7 +467,26 @@ export class AngularFlowComponent<
     this.flowService.destroy();
   }
 
-  // 更新容器大小
+  // 安全更新容器大小 - 只在尺寸真正改變時更新
+  private safeUpdateContainerSize() {
+    const container = this.flowContainer()?.nativeElement;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const currentSize = this.containerSize();
+    
+    // 只有在尺寸真正改變時才更新（避免浮點數精度問題）
+    if (Math.abs(rect.width - currentSize.width) > 1 || 
+        Math.abs(rect.height - currentSize.height) > 1) {
+      console.log('📏 容器尺寸已更新:', { 
+        from: currentSize, 
+        to: { width: rect.width, height: rect.height } 
+      });
+      this.containerSize.set({ width: rect.width, height: rect.height });
+    }
+  }
+
+  // 傳統的更新容器大小方法（供外部調用）
   private updateContainerSize() {
     const container = this.flowContainer()?.nativeElement;
     if (container) {
@@ -473,7 +495,41 @@ export class AngularFlowComponent<
     }
   }
 
-  // 設置 PanZoom 功能
+  // 安全設置 PanZoom 功能 - 只初始化一次
+  private safeSetupPanZoom() {
+    // 如果已經初始化過，則跳過
+    if (this.panZoomInitialized()) {
+      return;
+    }
+
+    const container = this.flowContainer()?.nativeElement;
+    if (!container) {
+      console.log('❌ 無法設置 PanZoom：容器不存在');
+      return;
+    }
+
+    console.log('🔧 首次設置 PanZoom 功能', { container });
+
+    this.panZoomService.initializePanZoom({
+      domNode: container,
+      minZoom: this.minZoom(),
+      maxZoom: this.maxZoom(),
+      zoomOnScroll: true,        // 滑鼠滾輪縮放：以滑鼠位置為基準
+      zoomOnPinch: true,         // 觸控板縮放：以觸控位置為基準
+      panOnScroll: false,
+      panOnScrollSpeed: 0.5,
+      zoomOnDoubleClick: true,   // 雙擊縮放：以雙擊位置為基準
+      panOnDrag: true,
+      preventScrolling: true,
+      paneClickDistance: 0,
+      defaultViewport: { x: 0, y: 0, zoom: 1 },
+    });
+
+    this.panZoomInitialized.set(true);
+    console.log('✅ PanZoom 功能已初始化並標記完成');
+  }
+
+  // 傳統的設置 PanZoom 方法（供外部調用或強制重新初始化）
   private setupPanZoom() {
     const container = this.flowContainer()?.nativeElement;
     if (!container) {
@@ -487,16 +543,78 @@ export class AngularFlowComponent<
       domNode: container,
       minZoom: this.minZoom(),
       maxZoom: this.maxZoom(),
-      zoomOnScroll: true,
-      zoomOnPinch: true,
+      zoomOnScroll: true,        // 滑鼠滾輪縮放：以滑鼠位置為基準
+      zoomOnPinch: true,         // 觸控板縮放：以觸控位置為基準
       panOnScroll: false,
       panOnScrollSpeed: 0.5,
-      zoomOnDoubleClick: true,
+      zoomOnDoubleClick: true,   // 雙擊縮放：以雙擊位置為基準
       panOnDrag: true,
       preventScrolling: true,
       paneClickDistance: 0,
       defaultViewport: { x: 0, y: 0, zoom: 1 },
     });
+  }
+
+  // 安全處理初始 fit view - 只執行一次
+  private safeHandleInitialFitView() {
+    // 如果已經執行過初始 fit view，則跳過
+    if (this.initialFitViewExecuted()) {
+      return;
+    }
+
+    // 檢查是否需要執行初始 fit view
+    if (!this.fitView()) {
+      this.initialFitViewExecuted.set(true); // 標記為已處理，即使沒有執行
+      return;
+    }
+
+    // 檢查是否有節點存在
+    const nodes = this.visibleNodes();
+    if (nodes.length === 0) {
+      return; // 不標記為已處理，等待節點加載
+    }
+
+    // 確保 PanZoom 已初始化
+    if (!this.panZoomInitialized()) {
+      return; // 等待 PanZoom 初始化完成
+    }
+
+    console.log('🎯 執行初始 fit view（僅此一次）', { 
+      nodeCount: nodes.length, 
+      fitViewOptions: this.fitViewOptions() 
+    });
+
+    // 執行 fit view，傳遞選項
+    this.performFitView(this.fitViewOptions());
+    this.initialFitViewExecuted.set(true);
+    console.log('✅ 初始 fit view 已完成並標記');
+  }
+
+  // 傳統的處理初始 fit view 方法（供外部調用）
+  private handleInitialFitView() {
+    // 檢查是否需要執行初始 fit view
+    if (!this.fitView()) {
+      return;
+    }
+
+    // 檢查是否有節點存在
+    const nodes = this.visibleNodes();
+    if (nodes.length === 0) {
+      return;
+    }
+
+    // 確保 PanZoom 已初始化
+    if (!this.panZoomService) {
+      return;
+    }
+
+    console.log('🎯 執行初始 fit view', {
+      nodeCount: nodes.length,
+      fitViewOptions: this.fitViewOptions()
+    });
+
+    // 執行 fit view，傳遞選項
+    this.performFitView(this.fitViewOptions());
   }
 
   // 根據ID獲取節點
@@ -643,12 +761,12 @@ export class AngularFlowComponent<
         // 簡化的 smooth step 實現
         const offsetX = Math.abs(targetX - sourceX) * 0.5;
         const offsetY = Math.abs(targetY - sourceY) * 0.5;
-        
+
         if (sourcePosition === Position.Right && targetPosition === Position.Left) {
           const midX = sourceX + offsetX;
           return `M ${sourceX},${sourceY} L ${midX},${sourceY} Q ${midX + 10},${sourceY} ${midX + 10},${sourceY + 10} L ${midX + 10},${targetY - 10} Q ${midX + 10},${targetY} ${midX + 20},${targetY} L ${targetX},${targetY}`;
         }
-        
+
         return this.getBezierPath(sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, 0.1);
 
       case 'default':
@@ -662,41 +780,41 @@ export class AngularFlowComponent<
   handleNodeClick(event: MouseEvent, node: NodeType) {
     // 阻止事件冒泡，避免觸發背景點擊
     event.stopPropagation();
-    
+
     // 檢查是否按下 Ctrl/Cmd 鍵進行多選
     const multiSelect = event.ctrlKey || event.metaKey;
-    
+
     // 選擇節點
     this.flowService.selectNode(node.id, multiSelect);
-    
+
     this.onNodeClick.emit({ event, node });
   }
 
   handleEdgeClick(event: MouseEvent, edge: EdgeType) {
     // 阻止事件冒泡，避免觸發背景點擊
     event.stopPropagation();
-    
+
     // 檢查是否允許選取元素
     if (!this.flowService.elementsSelectable()) {
       return;
     }
-    
+
     // 檢查是否按下 Ctrl/Cmd 鍵進行多選
     const multiSelect = event.ctrlKey || event.metaKey;
-    
+
     // 選擇邊線
     this.flowService.selectEdge(edge.id, multiSelect);
-    
+
     console.log('Edge clicked:', edge.id, 'Selected:', edge.selected);
   }
 
   handlePaneClick(event: MouseEvent) {
     // 只有當點擊的是背景元素時才清除選擇
     const target = event.target as HTMLElement;
-    
+
     // 檢查點擊的是否是背景元素
-    if (target.classList.contains('angular-flow') || 
-        target.classList.contains('xy-flow') || 
+    if (target.classList.contains('angular-flow') ||
+        target.classList.contains('xy-flow') ||
         target.classList.contains('angular-flow__viewport') ||
         target.classList.contains('xy-flow__viewport')) {
       this.flowService.clearSelection();
@@ -706,13 +824,13 @@ export class AngularFlowComponent<
   handleHandleClick(event: MouseEvent, nodeId: string, handleId: string | undefined, type: 'source' | 'target') {
     // 阻止事件冒泡，避免觸發節點或背景點擊
     event.stopPropagation();
-    
+
     // 檢查是否按下 Ctrl/Cmd 鍵進行多選
     const multiSelect = event.ctrlKey || event.metaKey;
-    
+
     // 選擇 Handle
     this.flowService.selectHandle(nodeId, handleId, type, multiSelect);
-    
+
     console.log('Handle clicked:', { nodeId, handleId, type });
   }
 
@@ -781,7 +899,7 @@ export class AngularFlowComponent<
   getMarkerUrl(edge: EdgeType, position: 'start' | 'end'): string | null {
     const marker = position === 'start' ? edge.markerStart : edge.markerEnd;
     if (!marker) return null;
-    
+
     const markerData = typeof marker === 'string' ? { type: MarkerType.ArrowClosed } : marker;
     const markerId = this.getMarkerId(edge, position, markerData);
     return `url(#${markerId})`;

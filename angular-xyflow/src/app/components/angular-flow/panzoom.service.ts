@@ -251,22 +251,24 @@ export class AngularFlowPanZoomService implements OnDestroy {
     return document.querySelector('.angular-flow') as HTMLElement;
   }
 
-  // 放大
+  // 放大 - 以視口中心為基準（與 React Flow 一致）
   zoomIn(): void {
     if (!this.panZoomInstance) return;
     
-    const currentViewport = this.getViewport();
-    const newZoom = Math.min(currentViewport.zoom * 1.2, 2); // maxZoom = 2
-    this.setViewport({ ...currentViewport, zoom: newZoom });
+    console.log('🔍 執行 zoomIn（以視口中心為基準）');
+    
+    // 使用 D3 的 scaleBy 方法，不指定第三個參數，預設以視口中心為基準
+    this.panZoomInstance.scaleBy(1.2);
   }
 
-  // 縮小
+  // 縮小 - 以視口中心為基準（與 React Flow 一致）
   zoomOut(): void {
     if (!this.panZoomInstance) return;
     
-    const currentViewport = this.getViewport();
-    const newZoom = Math.max(currentViewport.zoom / 1.2, 0.5); // minZoom = 0.5
-    this.setViewport({ ...currentViewport, zoom: newZoom });
+    console.log('🔍 執行 zoomOut（以視口中心為基準）');
+    
+    // 使用 D3 的 scaleBy 方法，不指定第三個參數，預設以視口中心為基準
+    this.panZoomInstance.scaleBy(1 / 1.2);
   }
 
   // 重置 viewport
