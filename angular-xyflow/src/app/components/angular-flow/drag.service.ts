@@ -133,7 +133,7 @@ export class AngularFlowDragService implements OnDestroy {
       transform: [viewport.x, viewport.y, viewport.zoom] as [number, number, number],
       autoPanOnNodeDrag: true,
       nodesDraggable: this.flowService.nodesDraggable(),
-      selectNodesOnDrag: false,
+      selectNodesOnDrag: true,
       nodeDragThreshold: 0,
       panBy: async (delta: { x: number; y: number }) => {
         const currentViewport = this.flowService.viewport();
@@ -177,8 +177,23 @@ export class AngularFlowDragService implements OnDestroy {
 
   // 處理節點點擊
   private handleNodeClick(nodeId: string): void {
-    // 實現節點選擇邏輯
-    console.log('Handle node click:', nodeId);
+    const { selectNodesOnDrag, nodeDragThreshold, nodesDraggable } = this.getStoreItems();
+    const node = this.flowService.nodeLookup().get(nodeId);
+    
+    if (!node) {
+      console.error('Node not found:', nodeId);
+      return;
+    }
+    
+    // 根據 React Flow 邏輯，當 selectNodesOnDrag=true 且節點可拖拽時，在 mousedown 時選中節點
+    if (selectNodesOnDrag && nodesDraggable && nodeDragThreshold === 0) {
+      // 檢查節點是否可選中
+      const isSelectable = this.flowService.elementsSelectable();
+      if (isSelectable) {
+        this.flowService.selectNode(nodeId, false);
+        console.log('Node selected on mousedown:', nodeId);
+      }
+    }
   }
 
   // 設置特定節點的拖動狀態

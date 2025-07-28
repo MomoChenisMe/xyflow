@@ -351,9 +351,25 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
     if (!this.isDragging()) {
       // 檢查是否允許選取元素
       const isSelectable = this.flowService.elementsSelectable();
-      if (isSelectable) {
-        this.nodeClick.emit(event);
+      const globalDraggable = this.flowService.nodesDraggable();
+      const nodeDraggable = this.node().draggable !== false;
+      const isDraggable = globalDraggable && nodeDraggable;
+      
+      /*
+       * 根據 React Flow 邏輯：
+       * 當 selectNodesOnDrag=true 且節點可拖拽且 nodeDragThreshold=0 時，
+       * 節點選中已經在 mousedown 時處理，這裡不需要再次處理
+       * 只有當 selectNodesOnDrag=false 或節點不可拖拽或 nodeDragThreshold > 0 時才在這裡處理選中
+       */
+      const selectNodesOnDrag = true; // 目前我們設為 true
+      const nodeDragThreshold = 0;   // 目前我們設為 0
+      
+      if (isSelectable && (!selectNodesOnDrag || !isDraggable || nodeDragThreshold > 0)) {
+        // 這種情況下需要在點擊時選中節點
+        this.flowService.selectNode(this.node().id, false);
       }
+      
+      this.nodeClick.emit(event);
     }
   }
 
