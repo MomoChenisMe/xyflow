@@ -1,14 +1,14 @@
-import { 
-  Component, 
+import {
+  Component,
   signal,
   computed,
   inject,
   viewChild,
   ElementRef,
-  ChangeDetectionStrategy
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { 
+import {
   AngularFlowComponent,
   AngularFlowService,
   BackgroundComponent,
@@ -18,7 +18,7 @@ import {
   AngularNode,
   AngularEdge,
   BackgroundVariant,
-  AngularFlowInstance
+  AngularFlowInstance,
 } from '../angular-flow';
 import { Connection, Position } from '@xyflow/system';
 
@@ -31,7 +31,7 @@ import { Connection, Position } from '@xyflow/system';
     BackgroundComponent,
     ControlsComponent,
     PanelComponent,
-    MinimapComponent
+    MinimapComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -56,12 +56,10 @@ import { Connection, Position } from '@xyflow/system';
         (onSelectionDrag)="onSelectionDrag($event)"
         (onSelectionDragStop)="onSelectionDragStop($event)"
       >
-        <angular-flow-background 
-          [variant]="backgroundVariant.Dots"
-        />
-        
+        <angular-flow-background [variant]="backgroundVariant.Dots" />
+
         <angular-flow-minimap [pannable]="true" [zoomable]="true" />
-        
+
         <angular-flow-controls />
 
         <angular-flow-panel position="top-right">
@@ -69,7 +67,9 @@ import { Connection, Position } from '@xyflow/system';
           <button (click)="updatePos()">change pos</button>
           <button (click)="toggleClassnames()">toggle classnames</button>
           <button (click)="logToObject()">toObject</button>
-          <button (click)="deleteSelectedElements()">deleteSelectedElements</button>
+          <button (click)="deleteSelectedElements()">
+            deleteSelectedElements
+          </button>
           <button (click)="deleteSomeElements()">deleteSomeElements</button>
           <button (click)="onSetNodes()">setNodes</button>
           <button (click)="onUpdateNode()">updateNode</button>
@@ -78,58 +78,60 @@ import { Connection, Position } from '@xyflow/system';
       </angular-flow>
     </div>
   `,
-  styles: [`
-    .basic-example-container {
-      width: 100vw;
-      height: 100vh;
-      background: #fafafa;
-    }
+  styles: [
+    `
+      .basic-example-container {
+        width: 100vw;
+        height: 100vh;
+        background: #fafafa;
+      }
 
-    angular-flow-panel button {
-      display: block;
-      margin: 4px 0;
-      padding: 8px 12px;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      white-space: nowrap;
-    }
+      angular-flow-panel button {
+        display: block;
+        margin: 4px 0;
+        padding: 8px 12px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        white-space: nowrap;
+      }
 
-    angular-flow-panel button:hover {
-      background: #f5f5f5;
-      border-color: #ccc;
-    }
+      angular-flow-panel button:hover {
+        background: #f5f5f5;
+        border-color: #ccc;
+      }
 
-    angular-flow-panel button:active {
-      background: #eee;
-    }
+      angular-flow-panel button:active {
+        background: #eee;
+      }
 
-    /* Light/Dark node styles */
-    :host ::ng-deep .angular-flow__node.light {
-      background: #fff;
-      border-color: #ddd;
-      color: #222;
-    }
+      /* Light/Dark node styles */
+      :host ::ng-deep .angular-flow__node.light {
+        background: #fff;
+        border-color: #ddd;
+        color: #222;
+      }
 
-    :host ::ng-deep .angular-flow__node.dark {
-      background: #333;
-      border-color: #555;
-      color: #fff;
-    }
-  `]
+      :host ::ng-deep .angular-flow__node.dark {
+        background: #333;
+        border-color: #555;
+        color: #fff;
+      }
+    `,
+  ],
 })
 export class BasicExampleComponent {
   // 注入服務
   private flowService = inject(AngularFlowService<AngularNode, AngularEdge>);
-  
+
   // 視圖子元素引用
   readonly angularFlow = viewChild.required(AngularFlowComponent);
-  
+
   // 背景變體枚舉
   readonly backgroundVariant = BackgroundVariant;
-  
+
   // 初始節點數據
   readonly initialNodes = signal<AngularNode[]>([
     {
@@ -160,7 +162,7 @@ export class BasicExampleComponent {
     },
     {
       id: '4',
-      type: 'output',
+      type: 'default',
       data: { label: 'Output Node' },
       position: { x: 300, y: 200 },
       className: 'light',
@@ -170,36 +172,36 @@ export class BasicExampleComponent {
 
   // 初始邊數據
   readonly initialEdges = signal<AngularEdge[]>([
-    { 
-      id: 'e1-2', 
-      source: '1', 
-      target: '2', 
+    {
+      id: 'e1-2',
+      source: '1',
+      target: '2',
       animated: true,
-      type: 'default'
+      type: 'default',
     },
-    { 
-      id: 'e1-3', 
-      source: '1', 
+    {
+      id: 'e1-3',
+      source: '1',
       target: '3',
-      type: 'default'
+      type: 'default',
     },
-    { 
-      id: 'e2-4', 
-      source: '2', 
+    {
+      id: 'e2-4',
+      source: '2',
       target: '4',
-      type: 'default'
+      type: 'default',
     },
-    { 
-      id: 'e3-4', 
-      source: '3', 
+    {
+      id: 'e3-4',
+      source: '3',
       target: '4',
-      type: 'default'
+      type: 'default',
     },
   ]);
 
   // FitView 選項
   readonly fitViewOptions = signal({
-    padding: { top: 100, left: 0, right: 50, bottom: 10 }
+    padding: { top: 100, left: 0, right: 50, bottom: 10 },
   });
 
   // 獲取流程實例
@@ -230,15 +232,27 @@ export class BasicExampleComponent {
     console.log('click', data.node);
   }
 
-  onNodeDragStart(data: { event: MouseEvent; node: AngularNode; nodes: AngularNode[] }) {
+  onNodeDragStart(data: {
+    event: MouseEvent;
+    node: AngularNode;
+    nodes: AngularNode[];
+  }) {
     console.log('drag start', data.node, data.nodes);
   }
 
-  onNodeDrag(data: { event: MouseEvent; node: AngularNode; nodes: AngularNode[] }) {
+  onNodeDrag(data: {
+    event: MouseEvent;
+    node: AngularNode;
+    nodes: AngularNode[];
+  }) {
     console.log('drag', data.node, data.nodes);
   }
 
-  onNodeDragStop(data: { event: MouseEvent; node: AngularNode; nodes: AngularNode[] }) {
+  onNodeDragStop(data: {
+    event: MouseEvent;
+    node: AngularNode;
+    nodes: AngularNode[];
+  }) {
     console.log('drag stop', data.node, data.nodes);
   }
 
@@ -291,16 +305,26 @@ export class BasicExampleComponent {
   }
 
   deleteSomeElements() {
-    this.flow.deleteElements({ 
-      nodes: [{ id: '2' }], 
-      edges: [{ id: 'e1-3' }] 
+    this.flow.deleteElements({
+      nodes: [{ id: '2' }],
+      edges: [{ id: 'e1-3' }],
     });
   }
 
   onSetNodes() {
     this.flow.setNodes([
-      { id: 'a', position: { x: 0, y: 0 }, data: { label: 'Node a' }, sourcePosition: Position.Bottom },
-      { id: 'b', position: { x: 0, y: 150 }, data: { label: 'Node b' }, targetPosition: Position.Bottom },
+      {
+        id: 'a',
+        position: { x: 0, y: 0 },
+        data: { label: 'Node a' },
+        sourcePosition: Position.Bottom,
+      },
+      {
+        id: 'b',
+        position: { x: 0, y: 150 },
+        data: { label: 'Node b' },
+        targetPosition: Position.Bottom,
+      },
     ]);
 
     this.flow.setEdges([{ id: 'a-b', source: 'a', target: 'b' }]);
@@ -315,17 +339,21 @@ export class BasicExampleComponent {
   addNode() {
     const nodeTypes = ['input', 'default', 'output'];
     const randomType = nodeTypes[Math.floor(Math.random() * nodeTypes.length)];
-    
+
     const newNode: AngularNode = {
       id: `${Math.random()}`,
       type: randomType,
-      data: { label: `${randomType.charAt(0).toUpperCase() + randomType.slice(1)} Node` },
+      data: {
+        label: `${
+          randomType.charAt(0).toUpperCase() + randomType.slice(1)
+        } Node`,
+      },
       position: { x: Math.random() * 300, y: Math.random() * 300 },
       className: 'light',
       sourcePosition: Position.Bottom,
       targetPosition: Position.Top,
     };
-    
+
     this.flow.addNodes(newNode);
     this.flow.fitView();
   }
