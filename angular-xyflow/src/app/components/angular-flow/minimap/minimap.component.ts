@@ -9,7 +9,8 @@ import {
   ElementRef,
   OnInit,
   OnDestroy,
-  effect
+  effect,
+  ViewEncapsulation
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AngularFlowService } from '../angular-flow.service';
@@ -22,6 +23,7 @@ import type { XYPosition } from '@xyflow/system';
   standalone: true,
   imports: [CommonModule, PanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <angular-flow-panel 
@@ -74,7 +76,8 @@ import type { XYPosition } from '@xyflow/system';
   `,
   styles: [`
     .angular-flow__minimap {
-      background: var(--xy-minimap-background-color-props, #fff) !important;
+      background-color: var(--xy-minimap-background-color-props, #fff);
+      background: var(--xy-minimap-background-color-props, #fff);
       border: 1px solid #ddd;
       border-radius: 4px;
       overflow: hidden;
