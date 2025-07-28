@@ -25,11 +25,13 @@ interface PanZoomConfig {
 export class AngularFlowPanZoomService implements OnDestroy {
   private panZoomInstance?: PanZoomInstance;
   private readonly _isDragging = signal(false);
+  private doubleClickHandler?: (event: MouseEvent) => void;
 
   // 公開狀態
   readonly isDragging = computed(() => this._isDragging());
 
   constructor(private flowService: AngularFlowService) {}
+
 
   // 初始化 PanZoom 功能
   initializePanZoom(config: PanZoomConfig): void {
@@ -88,10 +90,10 @@ export class AngularFlowPanZoomService implements OnDestroy {
       },
     });
 
-    // 更新 PanZoom 設置
+    // 更新 PanZoom 設置 - 使用類名來阻止 Node、Edge 和 Controls 上的 PanZoom 事件
     this.panZoomInstance.update({
-      noWheelClassName: 'no-wheel',
-      noPanClassName: 'no-pan',
+      noWheelClassName: 'angular-flow__node angular-flow__edge angular-flow__controls xy-flow__node xy-flow__edge',
+      noPanClassName: 'angular-flow__node angular-flow__edge angular-flow__controls xy-flow__node xy-flow__edge',
       preventScrolling,
       panOnScroll,
       panOnDrag,
@@ -114,7 +116,48 @@ export class AngularFlowPanZoomService implements OnDestroy {
       }
     });
 
+    // 如果啟用雙點擊縮放，需要添加自定義處理
+    if (zoomOnDoubleClick) {
+      this.setupCustomDoubleClickHandler();
+    }
+
     console.log('✅ PanZoom 功能已初始化');
+  }
+
+  // 設置自定義雙點擊處理器
+  private setupCustomDoubleClickHandler(): void {
+    if (!this.panZoomInstance) return;
+
+    // 直接在 DOM 元素上添加雙點擊監聽器
+    const domElement = this.getDomElement();
+    if (!domElement) return;
+
+    // 創建並保存雙點擊處理器
+    this.doubleClickHandler = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // 檢查是否點擊在 Node、Edge 或 Controls 上
+      const isOnNode = target.closest('.angular-flow__node, .xy-flow__node');
+      const isOnEdge = target.closest('.angular-flow__edge, .xy-flow__edge');
+      const isOnControls = target.closest('.angular-flow__controls');
+      
+      if (isOnNode || isOnEdge || isOnControls) {
+        console.log('🚫 阻止在 Node/Edge/Controls 上的雙點擊縮放', { 
+          isOnNode: !!isOnNode, 
+          isOnEdge: !!isOnEdge, 
+          isOnControls: !!isOnControls 
+        });
+        event.stopPropagation();
+        event.preventDefault();
+        return;
+      }
+      
+      // 背景區域的雙點擊由 D3 處理器處理
+      console.log('✅ 允許背景雙點擊縮放');
+    };
+
+    // 添加自定義雙點擊處理器，優先級高於 D3 的處理器
+    domElement.addEventListener('dblclick', this.doubleClickHandler, true);
   }
 
   // 更新 PanZoom 設置
@@ -284,6 +327,15 @@ export class AngularFlowPanZoomService implements OnDestroy {
 
   // 清理 PanZoom 實例
   destroy(): void {
+    // 清理雙點擊事件監聽器
+    if (this.doubleClickHandler) {
+      const domElement = this.getDomElement();
+      if (domElement) {
+        domElement.removeEventListener('dblclick', this.doubleClickHandler, true);
+      }
+      this.doubleClickHandler = undefined;
+    }
+
     if (this.panZoomInstance) {
       console.log('🧹 清理 PanZoom 實例');
       this.panZoomInstance.destroy();

@@ -863,7 +863,9 @@ export class AngularFlowComponent<
       return;
     }
     
-    // 其他雙擊事件正常處理（由 PanZoom 服務處理縮放）
+    // 其他雙擊事件由 XYPanZoom 的過濾器自動處理
+    // Node 和 Edge 上的雙擊事件會被 noPanClassName 機制阻止
+    console.log('✅ 雙擊事件將由 XYPanZoom 過濾器處理');
   }
 
   handleConnectStart(_event: MouseEvent, _node: NodeType) {
