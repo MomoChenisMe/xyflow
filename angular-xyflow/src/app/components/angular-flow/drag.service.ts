@@ -25,11 +25,14 @@ export class AngularFlowDragService implements OnDestroy {
 
   // 初始化拖拽功能
   initializeDrag(config: DragConfig): void {
-    const { nodeId } = config;
+    const { nodeId, domNode } = config;
     if (!nodeId) return;
+
+    console.log('🚀 initializeDrag called for:', nodeId, { domNode, config });
 
     // 清理該節點的現有實例
     if (this.xyDragInstances.has(nodeId)) {
+      console.log('🧹 Destroying existing instance for:', nodeId);
       this.xyDragInstances.get(nodeId)?.destroy();
     }
 
@@ -37,7 +40,7 @@ export class AngularFlowDragService implements OnDestroy {
     const xyDragInstance = XYDrag({
       getStoreItems: () => this.getStoreItems(),
       onNodeMouseDown: (id: string) => {
-        console.log('🎯 Node mouse down:', id);
+        console.log('🎯 XYDrag onNodeMouseDown called:', id);
         // 處理節點選擇邏輯
         this.handleNodeClick(id);
       },
@@ -54,14 +57,19 @@ export class AngularFlowDragService implements OnDestroy {
       }
     });
 
+    console.log('✅ XYDrag instance created for:', nodeId);
+
     // 更新拖拽配置 - noDragClassName 屬於 update 方法參數
     xyDragInstance.update({
       ...config,
       noDragClassName: 'non-draggable'
     });
+
+    console.log('✅ XYDrag instance updated with config for:', nodeId);
     
     // 儲存實例
     this.xyDragInstances.set(nodeId, xyDragInstance);
+    console.log('✅ XYDrag instance stored for:', nodeId);
   }
 
   // 更新拖拽配置
@@ -104,7 +112,7 @@ export class AngularFlowDragService implements OnDestroy {
     const nodes = this.flowService.nodes();
     const edges = this.flowService.edges();
     const viewport = this.flowService.viewport();
-    
+
     // 創建 nodeLookup Map
     const nodeLookup = new Map();
     nodes.forEach(node => {
@@ -165,7 +173,7 @@ export class AngularFlowDragService implements OnDestroy {
         // 更新節點位置
         const flowInstance = this.flowService.getFlowInstance();
         for (const [nodeId, dragItem] of dragItems) {
-          flowInstance.updateNode(nodeId, { 
+          flowInstance.updateNode(nodeId, {
             position: dragItem.position,
             dragging: dragging || false
           });
@@ -175,24 +183,35 @@ export class AngularFlowDragService implements OnDestroy {
     };
   }
 
-  // 處理節點點擊
+  // 處理節點點擊 - 對應 XYDrag 的 onNodeMouseDown 回調
   private handleNodeClick(nodeId: string): void {
-    const { selectNodesOnDrag, nodeDragThreshold, nodesDraggable } = this.getStoreItems();
-    const node = this.flowService.nodeLookup().get(nodeId);
+    console.log('🔍 handleNodeClick called for:', nodeId);
     
+    const node = this.flowService.nodeLookup().get(nodeId);
+
     if (!node) {
-      console.error('Node not found:', nodeId);
+      console.error('❌ Node not found:', nodeId);
       return;
     }
-    
-    // 根據 React Flow 邏輯，當 selectNodesOnDrag=true 且節點可拖拽時，在 mousedown 時選中節點
-    if (selectNodesOnDrag && nodesDraggable && nodeDragThreshold === 0) {
-      // 檢查節點是否可選中
-      const isSelectable = this.flowService.elementsSelectable();
-      if (isSelectable) {
+
+    console.log('🔍 Node data:', { id: nodeId, selected: node.selected });
+
+    const isSelectable = this.flowService.elementsSelectable();
+    console.log('🔍 Is selectable:', isSelectable);
+
+    // 根據 React Flow 實際邏輯：
+    // XYDrag 的 onNodeMouseDown 回調總是會嘗試選中節點，無論 selectNodesOnDrag 設置如何
+    // 這個函數對應 React 版本的 handleNodeClick，會無條件選中未選中的節點
+    if (isSelectable) {
+      if (!node.selected) {
+        console.log('✅ Selecting node on mousedown:', nodeId);
         this.flowService.selectNode(nodeId, false);
-        console.log('Node selected on mousedown:', nodeId);
+      } else {
+        console.log('ℹ️ Node already selected:', nodeId);
       }
+      // 如果節點已經選中，不需要做任何事情（冪等性）
+    } else {
+      console.log('❌ Node not selectable');
     }
   }
 
@@ -200,14 +219,14 @@ export class AngularFlowDragService implements OnDestroy {
   setNodeDraggable(nodeId: string, draggable: boolean): void {
     const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement;
     const instance = this.xyDragInstances.get(nodeId);
-    
+
     if (nodeElement && instance) {
       if (draggable) {
         nodeElement.classList.remove('non-draggable');
       } else {
         nodeElement.classList.add('non-draggable');
       }
-      
+
       // 更新拖拽實例的 noDragClassName
       instance.update({
         domNode: nodeElement,
@@ -216,7 +235,7 @@ export class AngularFlowDragService implements OnDestroy {
         isSelectable: true,
         nodeClickDistance: 0
       });
-      
+
       console.log('🔧 節點拖動狀態已更新', { nodeId, draggable });
     }
   }

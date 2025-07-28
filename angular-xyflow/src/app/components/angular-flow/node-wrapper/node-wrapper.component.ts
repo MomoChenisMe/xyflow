@@ -308,7 +308,9 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       nodeId: nodeData.id,
       isDraggable,
       element: element,
-      elementClasses: element.className
+      elementClasses: element.className,
+      elementId: element.id,
+      dataNodeId: element.getAttribute('data-node-id')
     });
 
     // 總是初始化拖動服務，但根據狀態啟用或禁用
@@ -327,6 +329,11 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       isDraggable,
       globalDraggable,
       nodeDraggable 
+    });
+
+    // 測試：手動添加 mousedown 事件監聽器來確認事件是否被觸發
+    element.addEventListener('mousedown', (e) => {
+      console.log('🖱️ 原生 mousedown 事件觸發:', nodeData.id, e.target);
     });
   }
 
@@ -349,7 +356,6 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   onNodeClick(event: MouseEvent) {
     // 避免在拖動後觸發點擊
     if (!this.isDragging()) {
-      // 檢查是否允許選取元素
       const isSelectable = this.flowService.elementsSelectable();
       const globalDraggable = this.flowService.nodesDraggable();
       const nodeDraggable = this.node().draggable !== false;
@@ -357,16 +363,18 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       
       /*
        * 根據 React Flow 邏輯：
+       * 當 selectNodesOnDrag=false 或節點不可拖拽或 nodeDragThreshold > 0 時，
+       * 在 click 事件中處理節點選中
        * 當 selectNodesOnDrag=true 且節點可拖拽且 nodeDragThreshold=0 時，
        * 節點選中已經在 mousedown 時處理，這裡不需要再次處理
-       * 只有當 selectNodesOnDrag=false 或節點不可拖拽或 nodeDragThreshold > 0 時才在這裡處理選中
        */
-      const selectNodesOnDrag = true; // 目前我們設為 true
-      const nodeDragThreshold = 0;   // 目前我們設為 0
+      const selectNodesOnDrag = false; // 目前設為 false，對應 React Basic 例子
+      const nodeDragThreshold = 0;    // 目前設為 0
       
       if (isSelectable && (!selectNodesOnDrag || !isDraggable || nodeDragThreshold > 0)) {
         // 這種情況下需要在點擊時選中節點
         this.flowService.selectNode(this.node().id, false);
+        console.log('Node selected on click:', this.node().id);
       }
       
       this.nodeClick.emit(event);
