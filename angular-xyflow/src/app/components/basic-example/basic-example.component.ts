@@ -60,7 +60,7 @@ import { Connection, Position } from '@xyflow/system';
           [variant]="backgroundVariant.Dots"
         />
         
-        <angular-flow-minimap />
+        <angular-flow-minimap [pannable]="true" [zoomable]="true" />
         
         <angular-flow-controls />
 

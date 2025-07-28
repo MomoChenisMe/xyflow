@@ -507,6 +507,7 @@ export class AngularFlowComponent<
       Math.abs(rect.height - currentSize.height) > 1
     ) {
       this.containerSize.set({ width: rect.width, height: rect.height });
+      this.flowService.setDimensions({ width: rect.width, height: rect.height });
     }
   }
 
@@ -516,6 +517,7 @@ export class AngularFlowComponent<
     if (container) {
       const rect = container.getBoundingClientRect();
       this.containerSize.set({ width: rect.width, height: rect.height });
+      this.flowService.setDimensions({ width: rect.width, height: rect.height });
     }
   }
 
@@ -547,6 +549,12 @@ export class AngularFlowComponent<
       defaultViewport: { x: 0, y: 0, zoom: 1 },
     });
 
+    // 設置 flowService 的 panZoom 實例
+    const panZoomInstance = this.panZoomService.getPanZoomInstance();
+    if (panZoomInstance) {
+      this.flowService.setPanZoom(panZoomInstance);
+    }
+
     this.panZoomInitialized.set(true);
   }
 
@@ -572,6 +580,12 @@ export class AngularFlowComponent<
       paneClickDistance: 0,
       defaultViewport: { x: 0, y: 0, zoom: 1 },
     });
+
+    // 設置 flowService 的 panZoom 實例
+    const panZoomInstance = this.panZoomService.getPanZoomInstance();
+    if (panZoomInstance) {
+      this.flowService.setPanZoom(panZoomInstance);
+    }
   }
 
   // 安全處理初始 fit view - 只執行一次

@@ -23,9 +23,8 @@ export type PanelPosition =
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div 
-      class="angular-flow__panel"
       [class]="panelClasses()"
-      [style]="panelStyles()"
+      [ngStyle]="panelStyles()"
     >
       <ng-content />
     </div>
@@ -74,6 +73,7 @@ export class PanelComponent {
   // 輸入屬性
   readonly position = input<PanelPosition>('top-left');
   readonly className = input<string>('');
+  readonly style = input<Record<string, any>>({});
   
   // 計算屬性
   readonly panelClasses = computed(() => {
@@ -126,6 +126,8 @@ export class PanelComponent {
         break;
     }
     
-    return styles;
+    // 合併自定義樣式
+    const customStyle = this.style();
+    return { ...styles, ...customStyle };
   });
 }

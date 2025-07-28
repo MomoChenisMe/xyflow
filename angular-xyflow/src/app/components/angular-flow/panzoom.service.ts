@@ -30,6 +30,11 @@ export class AngularFlowPanZoomService implements OnDestroy {
   // 公開狀態
   readonly isDragging = computed(() => this._isDragging());
 
+  // 獲取PanZoom實例
+  getPanZoomInstance(): PanZoomInstance | undefined {
+    return this.panZoomInstance;
+  }
+
   constructor(private flowService: AngularFlowService) {}
 
 

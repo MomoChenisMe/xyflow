@@ -37,6 +37,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   private _nodesConnectable: WritableSignal<boolean> = signal(true);
   private _elementsSelectable: WritableSignal<boolean> = signal(true);
   private _selectNodesOnDrag: WritableSignal<boolean> = signal(false);
+  private _dimensions: WritableSignal<{width: number, height: number}> = signal({width: 0, height: 0});
 
   // 計算信號
   readonly nodes: Signal<NodeType[]> = computed(() => this._nodes());
@@ -54,6 +55,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   readonly nodesConnectable: Signal<boolean> = computed(() => this._nodesConnectable());
   readonly elementsSelectable: Signal<boolean> = computed(() => this._elementsSelectable());
   readonly selectNodesOnDrag: Signal<boolean> = computed(() => this._selectNodesOnDrag());
+  readonly dimensions: Signal<{width: number, height: number}> = computed(() => this._dimensions());
   readonly isInteractive: Signal<boolean> = computed(() => 
     this._nodesDraggable() || this._nodesConnectable() || this._elementsSelectable()
   );
@@ -400,8 +402,18 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   }
 
   // 獲取 PanZoom 實例
-  getPanZoom(): PanZoomInstance | null {
+  getPanZoomInstance(): PanZoomInstance | null {
     return this.panZoom;
+  }
+
+  // 設置 PanZoom 實例
+  setPanZoom(panZoomInstance: PanZoomInstance) {
+    this.panZoom = panZoomInstance;
+  }
+
+  // 設置容器尺寸
+  setDimensions(dimensions: {width: number, height: number}) {
+    this._dimensions.set(dimensions);
   }
 
   // 獲取 Drag 實例
