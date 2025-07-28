@@ -47,6 +47,7 @@ import { type Connection, Position } from '@xyflow/system';
       [style.overflow]="'hidden'"
       [style.background]="'#fafafa'"
       (click)="handlePaneClick($event)"
+      (dblclick)="handlePaneDoubleClick($event)"
     >
       <!-- Viewport container -->
       <div
@@ -847,6 +848,22 @@ export class AngularFlowComponent<
   handleNodeDragStop(event: MouseEvent, node: NodeType) {
     const nodes = this.visibleNodes();
     this.onNodeDragStop.emit({ event, node, nodes });
+  }
+
+  handlePaneDoubleClick(event: MouseEvent) {
+    // 檢查事件是否來自 controls 或其子元素
+    const target = event.target as HTMLElement;
+    const isFromControls = target.closest('.angular-flow__controls') !== null;
+    
+    if (isFromControls) {
+      // 如果是來自 controls，阻止事件繼續傳播
+      event.stopPropagation();
+      event.preventDefault();
+      console.log('🚫 已阻止來自 Controls 的雙擊事件');
+      return;
+    }
+    
+    // 其他雙擊事件正常處理（由 PanZoom 服務處理縮放）
   }
 
   handleConnectStart(_event: MouseEvent, _node: NodeType) {

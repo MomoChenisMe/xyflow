@@ -20,7 +20,7 @@ import { AngularFlowPanZoomService } from '../panzoom.service';
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div 
-      class="angular-flow__controls"
+      class="angular-flow__controls nopan"
       [style.position]="'absolute'"
       [style.bottom]="'10px'"
       [style.left]="'10px'"
@@ -28,13 +28,16 @@ import { AngularFlowPanZoomService } from '../panzoom.service';
       [style.display]="'flex'"
       [style.flex-direction]="'column'"
       [style.gap]="'4px'"
+      [style.pointer-events]="'auto'"
+      (dblclick)="onDoubleClick($event)"
+      (mousedown)="onMouseDown($event)"
     >
       <!-- Zoom In Button -->
       <button 
         type="button"
-        class="angular-flow__controls-button angular-flow__controls-zoomin"
+        class="angular-flow__controls-button angular-flow__controls-zoomin nopan"
         [disabled]="!canZoomIn()"
-        (click)="onZoomIn()"
+        (click)="onZoomIn($event)"
         [attr.aria-label]="'Zoom in'"
         [title]="'Zoom in'"
       >
@@ -49,9 +52,9 @@ import { AngularFlowPanZoomService } from '../panzoom.service';
       <!-- Zoom Out Button -->
       <button 
         type="button"
-        class="angular-flow__controls-button angular-flow__controls-zoomout"
+        class="angular-flow__controls-button angular-flow__controls-zoomout nopan"
         [disabled]="!canZoomOut()"
-        (click)="onZoomOut()"
+        (click)="onZoomOut($event)"
         [attr.aria-label]="'Zoom out'"
         [title]="'Zoom out'"
       >
@@ -65,8 +68,8 @@ import { AngularFlowPanZoomService } from '../panzoom.service';
       <!-- Fit View Button -->
       <button 
         type="button"
-        class="angular-flow__controls-button angular-flow__controls-fitview"
-        (click)="onFitView()"
+        class="angular-flow__controls-button angular-flow__controls-fitview nopan"
+        (click)="onFitView($event)"
         [attr.aria-label]="'Fit view'"
         [title]="'Fit view'"
       >
@@ -79,9 +82,9 @@ import { AngularFlowPanZoomService } from '../panzoom.service';
       @if (showInteractive()) {
         <button 
           type="button"
-          class="angular-flow__controls-button angular-flow__controls-interactive"
+          class="angular-flow__controls-button angular-flow__controls-interactive nopan"
           [class.active]="!isInteractive()"
-          (click)="onToggleInteractivity()"
+          (click)="onToggleInteractivity($event)"
           [attr.aria-label]="isInteractive() ? 'Disable interaction' : 'Enable interaction'"
           [title]="isInteractive() ? 'Disable interaction' : 'Enable interaction'"
         >
@@ -113,6 +116,7 @@ import { AngularFlowPanZoomService } from '../panzoom.service';
       display: flex;
       flex-direction: column;
       gap: 4px;
+      pointer-events: auto;
     }
 
     .angular-flow__controls-button {
@@ -128,6 +132,8 @@ import { AngularFlowPanZoomService } from '../panzoom.service';
       color: #222;
       font-size: 14px;
       transition: all 0.2s;
+      pointer-events: auto;
+      user-select: none;
     }
 
     .angular-flow__controls-button:hover:not(:disabled) {
@@ -199,29 +205,60 @@ export class ControlsComponent {
   });
 
   // 事件處理方法
-  onZoomIn() {
+  // 捕獲並阻止雙擊事件，防止觸發 angular-flow 的雙擊縮放
+  onDoubleClick(event: MouseEvent) {
+    event.stopPropagation();
+    event.preventDefault();
+    console.log('🚫 Controls 已阻止雙擊事件傳播');
+  }
+
+  // 捕獲並阻止 mousedown 事件，防止觸發拖動
+  onMouseDown(event: MouseEvent) {
+    // 只阻止傳播，不阻止默認行為（以保留按鈕點擊功能）
+    event.stopPropagation();
+    console.log('🚫 Controls 已阻止 mousedown 事件傳播');
+  }
+
+  onZoomIn(event: MouseEvent) {
+    // 阻止事件冒泡，防止觸發 angular-flow 的 double click
+    event.stopPropagation();
+    
     if (!this.canZoomIn()) return;
     
+    console.log('🔍 Controls ZoomIn 點擊（已阻止事件冒泡）');
     this.panZoomService.zoomIn();
     this.onZoomInClick.emit();
   }
 
-  onZoomOut() {
+  onZoomOut(event: MouseEvent) {
+    // 阻止事件冒泡，防止觸發 angular-flow 的 double click
+    event.stopPropagation();
+    
     if (!this.canZoomOut()) return;
     
+    console.log('🔍 Controls ZoomOut 點擊（已阻止事件冒泡）');
     this.panZoomService.zoomOut();
     this.onZoomOutClick.emit();
   }
 
-  onFitView() {
+  onFitView(event: MouseEvent) {
+    // 阻止事件冒泡，防止觸發 angular-flow 的 double click
+    event.stopPropagation();
+    
+    console.log('🎯 Controls FitView 點擊（已阻止事件冒泡）');
     const options = this.fitViewOptions();
     this.panZoomService.fitView(options);
     this.onFitViewClick.emit();
   }
 
-  onToggleInteractivity() {
+  onToggleInteractivity(event: MouseEvent) {
+    // 阻止事件冒泡，防止觸發 angular-flow 的 double click
+    event.stopPropagation();
+    
     const currentState = this.isInteractive();
     const newValue = !currentState;
+    
+    console.log('🔧 Controls Interactivity 切換（已阻止事件冒泡）:', newValue);
     
     // 只更新 Node/Edge 交互性狀態，不影響 viewport 交互
     this.flowService.setInteractivity(newValue);
