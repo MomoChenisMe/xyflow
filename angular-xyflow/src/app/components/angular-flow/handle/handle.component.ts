@@ -113,10 +113,11 @@ import { Handle } from '../types';
     }
 
     .angular-flow__handle.selected {
-      background: #ff0072;
+      /* Handle 點擊不應該改變位置和樣式，參考 React Flow 行為 */
+      /* background: #ff0072;
       border-color: #ff0072;
       box-shadow: 0 0 8px 2px rgba(255, 0, 114, 0.4);
-      transform: scale(1.2);
+      transform: scale(1.2); */
     }
   `]
 })
