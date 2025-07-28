@@ -6,32 +6,34 @@ import {
   signal,
   computed,
   ChangeDetectionStrategy,
-  CUSTOM_ELEMENTS_SCHEMA
+  CUSTOM_ELEMENTS_SCHEMA,
+  ViewEncapsulation
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AngularFlowService } from '../angular-flow.service';
 import { AngularFlowPanZoomService } from '../panzoom.service';
+import { PanelComponent, type PanelPosition } from '../panel/panel.component';
 
 @Component({
   selector: 'angular-flow-controls',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <div 
-      class="angular-flow__controls nopan"
-      [style.position]="'absolute'"
-      [style.bottom]="'10px'"
-      [style.left]="'10px'"
-      [style.z-index]="'5'"
-      [style.display]="'flex'"
-      [style.flex-direction]="'column'"
-      [style.gap]="'4px'"
-      [style.pointer-events]="'auto'"
-      (dblclick)="onDoubleClick($event)"
-      (mousedown)="onMouseDown($event)"
+    <angular-flow-panel
+      [position]="position()"
+      [style]="style()"
+      [className]="'angular-flow__controls ' + orientation() + ' ' + (className() || '')"
+      [attr.data-testid]="'af__controls'"
+      [attr.aria-label]="ariaLabel()"
     >
+      <div 
+        class="angular-flow__controls-inner nopan"
+        (dblclick)="onDoubleClick($event)"
+        (mousedown)="onMouseDown($event)"
+      >
       <!-- Zoom In Button -->
       <button 
         type="button"
@@ -105,17 +107,32 @@ import { AngularFlowPanZoomService } from '../panzoom.service';
           }
         </button>
       }
-    </div>
+      </div>
+    </angular-flow-panel>
   `,
   styles: [`
     .angular-flow__controls {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      z-index: 5;
       display: flex;
-      flex-direction: column;
       gap: 4px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .angular-flow__controls.vertical {
+      flex-direction: column;
+    }
+    
+    .angular-flow__controls.horizontal {
+      flex-direction: row;
+    }
+    
+    .angular-flow__controls-inner {
+      display: flex;
+      gap: 4px;
+      flex-direction: inherit;
       pointer-events: auto;
     }
 
@@ -178,6 +195,11 @@ export class ControlsComponent {
   readonly showFitView = input<boolean>(true);
   readonly showInteractive = input<boolean>(true);
   readonly fitViewOptions = input<any>();
+  readonly position = input<PanelPosition>('bottom-left');
+  readonly orientation = input<'vertical' | 'horizontal'>('vertical');
+  readonly style = input<Record<string, any>>({});
+  readonly className = input<string>('');
+  readonly ariaLabel = input<string>('Controls');
   
   // 輸出事件
   readonly onZoomInClick = output<void>();
