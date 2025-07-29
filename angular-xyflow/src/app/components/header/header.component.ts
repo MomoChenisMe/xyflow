@@ -1,10 +1,9 @@
 import { Component, effect, signal, OnDestroy } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
-import { Location } from '@angular/common';
 import { Title } from '@angular/platform-browser';
 import { filter, takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
-import { routeList, IRoute } from '../../app.routes';
+import { routeList } from '../../app.routes';
 
 @Component({
   selector: 'app-header',
@@ -14,9 +13,9 @@ import { routeList, IRoute } from '../../app.routes';
       <a class="logo" href="https://github.com/xyflow/xyflow">
         Angular Flow Dev
       </a>
-      <select [value]="currentPath()" (change)="onPathChange($event)">
+      <select [value]="currentPath()" (change)="onPathChange($event)" class="route-select">
         @for (route of routes; track route.path) {
-          <option [value]="route.path">{{ route.name }}</option>
+          <option [value]="route.path" [selected]="currentPath() === route.path">{{ route.name }}</option>
         }
       </select>
     </header>
@@ -46,18 +45,24 @@ import { routeList, IRoute } from '../../app.routes';
       color: #0ea5e9;
     }
     
-    select {
+    .route-select {
       padding: 0.5rem;
       border: 1px solid #e5e5e5;
       border-radius: 4px;
       background: #fff;
       font-size: 0.9rem;
       min-width: 200px;
+      cursor: pointer;
     }
     
-    select:focus {
+    .route-select:focus {
       outline: none;
       border-color: #0ea5e9;
+      box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+    }
+    
+    .route-select:hover {
+      border-color: #94a3b8;
     }
   `]
 })
@@ -68,11 +73,18 @@ export class HeaderComponent implements OnDestroy {
 
   constructor(
     private router: Router,
-    private location: Location,
     private titleService: Title
   ) {
-    // 初始化當前路徑（移除前導斜線）
-    const initialPath = this.location.path().replace(/^\//, '') || 'basic';
+    // 提取路徑的統一方法
+    const extractPath = (url: string): string => {
+      // 移除前導斜線和查詢參數/片段
+      const cleanPath = url.split('?')[0].split('#')[0].replace(/^\//, '');
+      // 確保返回有效路徑，如果為空則返回 'basic'
+      return cleanPath || 'basic';
+    };
+
+    // 初始化當前路徑
+    const initialPath = extractPath(this.router.url);
     this.currentPath.set(initialPath);
     
     // 監聽路由變化事件
@@ -82,10 +94,15 @@ export class HeaderComponent implements OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe((event: NavigationEnd) => {
-        const newPath = event.urlAfterRedirects.replace(/^\//, '') || 'basic';
-        // 只有在路徑確實不同時才更新，避免觸發不必要的更新
-        if (this.currentPath() !== newPath) {
-          this.currentPath.set(newPath);
+        const newPath = extractPath(event.urlAfterRedirects);
+        
+        // 確保新路徑是有效的路由
+        const isValidRoute = this.routes.some(route => route.path === newPath);
+        const finalPath = isValidRoute ? newPath : 'basic';
+        
+        // 只有在路徑確實不同時才更新
+        if (this.currentPath() !== finalPath) {
+          this.currentPath.set(finalPath);
         }
       });
     
@@ -108,7 +125,19 @@ export class HeaderComponent implements OnDestroy {
     const select = event.target as HTMLSelectElement;
     const newPath = select.value;
     
-    // 直接導航到新路徑，路由事件會自動更新 currentPath
-    this.router.navigate([`/${newPath}`]);
+    // 驗證新路徑是否有效
+    const isValidRoute = this.routes.some(route => route.path === newPath);
+    
+    if (isValidRoute && newPath !== this.currentPath()) {
+      // 導航到新路徑
+      this.router.navigate([`/${newPath}`]).catch((error) => {
+        console.error('導航失敗:', error);
+        // 如果導航失敗，重置 select 的值
+        select.value = this.currentPath();
+      });
+    } else if (!isValidRoute) {
+      // 如果路徑無效，重置 select 的值
+      select.value = this.currentPath();
+    }
   }
 }
