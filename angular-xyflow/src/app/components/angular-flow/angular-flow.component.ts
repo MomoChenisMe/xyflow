@@ -310,6 +310,7 @@ export class AngularFlowComponent<
   elevateNodesOnSelect = input<boolean>(false);
   defaultEdgeOptions = input<Partial<EdgeType>>();
   nodeDragThreshold = input<number>(0);
+  autoPanOnNodeFocus = input<boolean>(false);
 
   // 輸出事件
   onNodesChange = output<NodeType[]>();
@@ -476,6 +477,7 @@ export class AngularFlowComponent<
           minZoom: this.minZoom(),
           maxZoom: this.maxZoom(),
           selectNodesOnDrag: this.selectNodesOnDrag(),
+          autoPanOnNodeFocus: this.autoPanOnNodeFocus(),
         });
       }
     });
@@ -659,15 +661,18 @@ export class AngularFlowComponent<
     const x = node.position.x;
     const y = node.position.y;
 
+    // Handle 偏移量（基於 CSS 中的 -4px 定位）
+    const handleOffset = 4;
+
     switch (position) {
       case Position.Top:
-        return { x: x + nodeWidth / 2, y: y };
+        return { x: x + nodeWidth / 2, y: y - handleOffset };
       case Position.Right:
-        return { x: x + nodeWidth, y: y + nodeHeight / 2 };
+        return { x: x + nodeWidth + handleOffset, y: y + nodeHeight / 2 };
       case Position.Bottom:
-        return { x: x + nodeWidth / 2, y: y + nodeHeight };
+        return { x: x + nodeWidth / 2, y: y + nodeHeight + handleOffset };
       case Position.Left:
-        return { x: x, y: y + nodeHeight / 2 };
+        return { x: x - handleOffset, y: y + nodeHeight / 2 };
       default:
         return { x: x + nodeWidth / 2, y: y + nodeHeight / 2 };
     }
@@ -686,11 +691,38 @@ export class AngularFlowComponent<
     sourcePosition: Position;
     targetPosition: Position;
   } {
-    // 使用節點的實際尺寸，如果沒有則使用默認值
-    const sourceWidth = (sourceNode as any).width || 150;
-    const sourceHeight = (sourceNode as any).height || 40;
-    const targetWidth = (targetNode as any).width || 150;
-    const targetHeight = (targetNode as any).height || 40;
+    // 獲取節點的實際尺寸，優先使用 measured 尺寸，其次是設定的尺寸，最後使用預設值
+    const getNodeDimensions = (node: NodeType) => {
+      // 優先使用 measured 屬性（由 ResizeObserver 測量的實際尺寸）
+      if ((node as any).measured) {
+        return {
+          width: (node as any).measured.width || 150,
+          height: (node as any).measured.height || 32, // 預設高度：10px padding * 2 + 12px font-size
+        };
+      }
+      
+      // 其次使用手動設定的尺寸
+      if ((node as any).width || (node as any).height) {
+        return {
+          width: (node as any).width || 150,
+          height: (node as any).height || 32,
+        };
+      }
+      
+      // 最後使用預設值（匹配 CSS 的 width: 150px + padding）
+      return {
+        width: 150,
+        height: 32, // 12px font-size + 10px padding top + 10px padding bottom
+      };
+    };
+
+    const sourceDimensions = getNodeDimensions(sourceNode);
+    const targetDimensions = getNodeDimensions(targetNode);
+    
+    const sourceWidth = sourceDimensions.width;
+    const sourceHeight = sourceDimensions.height;
+    const targetWidth = targetDimensions.width;
+    const targetHeight = targetDimensions.height;
 
     // 獲取 handle 位置，如果沒有設定則使用預設值
     const sourcePosition = sourceNode.sourcePosition || Position.Bottom;

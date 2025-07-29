@@ -5,6 +5,13 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
+.example-container {
+  width: 100vw;
+  height: calc(100vh - 60px); // 扣除 header 高度
+  background: #fafafa;
+  position: relative;
+}
+
 .angular-flow-basic-example {
   width: 100%;
   height: 100%;

@@ -42,6 +42,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   private _nodesConnectable = signal<boolean>(true);
   private _elementsSelectable = signal<boolean>(true);
   private _selectNodesOnDrag = signal<boolean>(false);
+  private _autoPanOnNodeFocus = signal<boolean>(false);
   private _dimensions = signal<{width: number, height: number}>({width: 0, height: 0});
 
   // 計算信號 - 唯讀訪問器
@@ -60,6 +61,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   readonly nodesConnectable: Signal<boolean> = computed(() => this._nodesConnectable());
   readonly elementsSelectable: Signal<boolean> = computed(() => this._elementsSelectable());
   readonly selectNodesOnDrag: Signal<boolean> = computed(() => this._selectNodesOnDrag());
+  readonly autoPanOnNodeFocus: Signal<boolean> = computed(() => this._autoPanOnNodeFocus());
   readonly dimensions: Signal<{width: number, height: number}> = computed(() => this._dimensions());
   readonly isInteractive: Signal<boolean> = computed(() => 
     this._nodesDraggable() || this._nodesConnectable() || this._elementsSelectable()
@@ -179,6 +181,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     minZoom?: number;
     maxZoom?: number;
     selectNodesOnDrag?: boolean;
+    autoPanOnNodeFocus?: boolean;
   }): void {
     if (options?.nodes) {
       this._nodes.set([...options.nodes]);
@@ -197,6 +200,9 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     }
     if (options?.selectNodesOnDrag !== undefined) {
       this._selectNodesOnDrag.set(options.selectNodesOnDrag);
+    }
+    if (options?.autoPanOnNodeFocus !== undefined) {
+      this._autoPanOnNodeFocus.set(options.autoPanOnNodeFocus);
     }
 
     // 初始化 PanZoom, Drag, Handle 會在實際需要時創建
@@ -644,5 +650,62 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     this._nodesDraggable.set(interactive);
     this._nodesConnectable.set(interactive);
     this._elementsSelectable.set(interactive);
+  }
+
+  // 更新節點的測量尺寸
+  updateNodeMeasuredSize(nodeId: string, dimensions: { width: number; height: number }) {
+    this.store.updateNode(nodeId, (node) => ({
+      ...node,
+      measured: {
+        width: dimensions.width,
+        height: dimensions.height
+      }
+    }));
+  }
+
+  // 自動平移到節點功能
+  panToNodeOnFocus(nodeId: string): void {
+    if (!this._autoPanOnNodeFocus()) {
+      return; // 如果未啟用自動平移，直接返回
+    }
+
+    const node = this.nodeLookup().get(nodeId);
+    if (!node || !this.panZoom) {
+      return;
+    }
+
+    const dimensions = this._dimensions();
+    const viewport = this._viewport();
+    
+    // 計算節點在視窗中的理想位置（中心位置）
+    const nodeWidth = (node as any).width || 150;
+    const nodeHeight = (node as any).height || 40;
+    
+    // 計算節點中心點
+    const nodeCenterX = node.position.x + nodeWidth / 2;
+    const nodeCenterY = node.position.y + nodeHeight / 2;
+    
+    // 計算視窗中心點
+    const viewportCenterX = dimensions.width / 2;
+    const viewportCenterY = dimensions.height / 2;
+    
+    // 計算需要的平移量
+    const targetX = viewportCenterX - nodeCenterX * viewport.zoom;
+    const targetY = viewportCenterY - nodeCenterY * viewport.zoom;
+    
+    // 使用 PanZoom 實例進行平滑移動
+    const newViewport = {
+      x: targetX,
+      y: targetY,
+      zoom: viewport.zoom
+    };
+    
+    // 更新視窗位置
+    this._viewport.set(newViewport);
+    
+    // 如果有 PanZoom 實例，也更新它
+    if (this.panZoom && typeof this.panZoom.setViewport === 'function') {
+      this.panZoom.setViewport(newViewport, { duration: 300 }); // 300ms 動畫
+    }
   }
 }

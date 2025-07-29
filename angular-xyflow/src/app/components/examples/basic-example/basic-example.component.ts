@@ -23,7 +23,7 @@ import {
   AngularEdge,
   BackgroundVariant,
   AngularFlowInstance,
-} from '../angular-flow';
+} from '../../angular-flow';
 
 @Component({
   selector: 'app-basic-example',
@@ -38,59 +38,62 @@ import {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="basic-example-container">
-      <angular-flow
-        #angularFlow
-        [defaultNodes]="initialNodes()"
-        [defaultEdges]="initialEdges()"
-        [minZoom]="0.2"
-        [maxZoom]="4"
-        [fitView]="true"
-        [fitViewOptions]="fitViewOptions()"
-        [defaultEdgeOptions]="defaultEdgeOptions()"
-        [selectNodesOnDrag]="false"
-        [elevateEdgesOnSelect]="true"
-        [elevateNodesOnSelect]="false"
-        [nodeDragThreshold]="0"
-        className="angular-flow-basic-example"
-        (onNodesChange)="onNodesChange($event)"
-        (onConnect)="onConnect($event)"
-        (onNodeClick)="onNodeClick($event)"
-        (onNodeDragStart)="onNodeDragStart($event)"
-        (onNodeDrag)="onNodeDrag($event)"
-        (onNodeDragStop)="onNodeDragStop($event)"
-        (onSelectionDragStart)="onSelectionDragStart($event)"
-        (onSelectionDrag)="onSelectionDrag($event)"
-        (onSelectionDragStop)="onSelectionDragStop($event)"
-      >
-        <angular-flow-background [variant]="backgroundVariant.Dots" />
+    <angular-flow
+      #angularFlow
+      [defaultNodes]="initialNodes()"
+      [defaultEdges]="initialEdges()"
+      [minZoom]="0.2"
+      [maxZoom]="4"
+      [fitView]="true"
+      [fitViewOptions]="fitViewOptions()"
+      [defaultEdgeOptions]="defaultEdgeOptions()"
+      [selectNodesOnDrag]="false"
+      [elevateEdgesOnSelect]="true"
+      [elevateNodesOnSelect]="false"
+      [nodeDragThreshold]="0"
+      className="angular-flow-basic-example"
+      (onNodesChange)="onNodesChange($event)"
+      (onConnect)="onConnect($event)"
+      (onNodeClick)="onNodeClick($event)"
+      (onNodeDragStart)="onNodeDragStart($event)"
+      (onNodeDrag)="onNodeDrag($event)"
+      (onNodeDragStop)="onNodeDragStop($event)"
+      (onSelectionDragStart)="onSelectionDragStart($event)"
+      (onSelectionDrag)="onSelectionDrag($event)"
+      (onSelectionDragStop)="onSelectionDragStop($event)"
+    >
+      <angular-flow-background [variant]="backgroundVariant.Dots" />
 
-        <angular-flow-minimap [pannable]="true" [zoomable]="true" />
+      <angular-flow-minimap [pannable]="true" [zoomable]="true" />
 
-        <angular-flow-controls />
+      <angular-flow-controls />
 
-        <angular-flow-panel position="top-right">
-          <button (click)="resetTransform()">reset transform</button>
-          <button (click)="updatePos()">change pos</button>
-          <button (click)="toggleClassnames()">toggle classnames</button>
-          <button (click)="logToObject()">toObject</button>
-          <button (click)="deleteSelectedElements()">
-            deleteSelectedElements
-          </button>
-          <button (click)="deleteSomeElements()">deleteSomeElements</button>
-          <button (click)="onSetNodes()">setNodes</button>
-          <button (click)="onUpdateNode()">updateNode</button>
-          <button (click)="addNode()">addNode</button>
-        </angular-flow-panel>
-      </angular-flow>
-    </div>
+      <angular-flow-panel position="top-right">
+        <button (click)="resetTransform()">reset transform</button>
+        <button (click)="updatePos()">change pos</button>
+        <button (click)="toggleClassnames()">toggle classnames</button>
+        <button (click)="logToObject()">toObject</button>
+        <button (click)="deleteSelectedElements()">
+          deleteSelectedElements
+        </button>
+        <button (click)="deleteSomeElements()">deleteSomeElements</button>
+        <button (click)="onSetNodes()">setNodes</button>
+        <button (click)="onUpdateNode()">updateNode</button>
+        <button (click)="addNode()">addNode</button>
+      </angular-flow-panel>
+    </angular-flow>
   `,
   styles: [
     `
-      .basic-example-container {
-        width: 100vw;
-        height: 100vh;
-        background: #fafafa;
+      :host {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      angular-flow {
+        width: 100%;
+        height: 100%;
       }
 
       angular-flow-panel button {
@@ -225,7 +228,10 @@ export class BasicExampleComponent {
     console.log('drag stop', data.node, data.nodes);
   }
 
-  onSelectionDragStart(data: { event: MouseEvent; nodes: AngularNode[] }): void {
+  onSelectionDragStart(data: {
+    event: MouseEvent;
+    nodes: AngularNode[];
+  }): void {
     console.log('selection drag start', data.nodes);
   }
 
