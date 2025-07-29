@@ -382,8 +382,10 @@ export class AngularFlowComponent<
     return `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`;
   });
 
-  // 流程實例
-  flowInstance = computed(() => this._flowService.getFlowInstance());
+  // 流程實例 - 直接 getter 而非 computed，因為 getFlowInstance() 不是 Signal
+  get flowInstance() {
+    return this._flowService.getFlowInstance();
+  }
 
   // 連接狀態
   connectionState = computed(() => this._flowService.connectionState());
@@ -944,7 +946,7 @@ export class AngularFlowComponent<
 
   // 公開方法來獲取流程實例
   getFlow(): AngularFlowInstance<NodeType, EdgeType> {
-    return this.flowInstance();
+    return this.flowInstance;
   }
 
   // PanZoom 相關公開方法

@@ -29,7 +29,7 @@ export class AngularFlowDragService implements OnDestroy {
   // 公開拖拽狀態
   readonly dragging = computed(() => this._dragging());
 
-  constructor(private flowService: AngularFlowService) {}
+  constructor(private _flowService: AngularFlowService) {}
 
   // 初始化拖拽功能
   initializeDrag(config: DragConfig): void {
@@ -114,16 +114,16 @@ export class AngularFlowDragService implements OnDestroy {
 
   // 獲取 XYDrag 需要的存儲數據
   private getStoreItems(currentNodeId?: string) {
-    const nodes = this.flowService.nodes();
-    const edges = this.flowService.edges();
-    const viewport = this.flowService.viewport();
+    const nodes = this._flowService.nodes();
+    const edges = this._flowService.edges();
+    const viewport = this._flowService.viewport();
 
 
     // 創建 nodeLookup Map，確保選中狀態的絕對一致性
     // 使用臨時覆寫狀態（如果存在）或服務中的狀態
     const selectedNodeIds = this.tempSelectedNodeIds !== null 
       ? this.tempSelectedNodeIds 
-      : this.flowService.selectedNodes();
+      : this._flowService.selectedNodes();
     const nodeLookup = new Map();
     nodes.forEach(node => {
       const isSelected = selectedNodeIds.includes(node.id);
@@ -154,12 +154,12 @@ export class AngularFlowDragService implements OnDestroy {
       domNode: flowContainer,
       transform: [viewport.x, viewport.y, viewport.zoom] as [number, number, number],
       autoPanOnNodeDrag: true,
-      nodesDraggable: this.flowService.nodesDraggable(),
-      selectNodesOnDrag: this.flowService.selectNodesOnDrag(),
+      nodesDraggable: this._flowService.nodesDraggable(),
+      selectNodesOnDrag: this._flowService.selectNodesOnDrag(),
       nodeDragThreshold: 0,
       panBy: async (delta: { x: number; y: number }) => {
-        const currentViewport = this.flowService.viewport();
-        const flowInstance = this.flowService.getFlowInstance();
+        const currentViewport = this._flowService.viewport();
+        const flowInstance = this._flowService.getFlowInstance();
         flowInstance.setViewport({
           x: currentViewport.x + delta.x,
           y: currentViewport.y + delta.y,
@@ -174,7 +174,7 @@ export class AngularFlowDragService implements OnDestroy {
         this.tempSelectedNodeIds = [];
         
         // 異步更新服務狀態
-        this.flowService.clearSelection();
+        this._flowService.clearSelection();
         
         // 不要立即清除臨時狀態，讓它在整個拖拽操作期間保持
         // 它會在 onDragStop 中被清除
@@ -195,14 +195,14 @@ export class AngularFlowDragService implements OnDestroy {
         // 更新節點位置
         
         // 當 selectNodesOnDrag=false 時，只更新實際被拖拽的節點
-        const selectNodesOnDrag = this.flowService.selectNodesOnDrag();
+        const selectNodesOnDrag = this._flowService.selectNodesOnDrag();
         
         
         if (!selectNodesOnDrag && currentNodeId) {
           // 只更新當前被拖拽的節點
           const dragItem = dragItems.get(currentNodeId);
           if (dragItem) {
-            const flowInstance = this.flowService.getFlowInstance();
+            const flowInstance = this._flowService.getFlowInstance();
             flowInstance.updateNode(currentNodeId, {
               position: dragItem.position,
               dragging: dragging || false
@@ -210,7 +210,7 @@ export class AngularFlowDragService implements OnDestroy {
           }
         } else {
           // 正常更新所有拖拽項目
-          const flowInstance = this.flowService.getFlowInstance();
+          const flowInstance = this._flowService.getFlowInstance();
           for (const [nodeId, dragItem] of dragItems) {
             flowInstance.updateNode(nodeId, {
               position: dragItem.position,
@@ -226,7 +226,7 @@ export class AngularFlowDragService implements OnDestroy {
   // 處理節點點擊 - 對應 XYDrag 的 onNodeMouseDown 回調
   private handleNodeClick(nodeId: string): void {
     
-    const node = this.flowService.nodeLookup().get(nodeId);
+    const node = this._flowService.nodeLookup().get(nodeId);
 
     if (!node) {
       console.error('Node not found:', nodeId);
@@ -234,7 +234,7 @@ export class AngularFlowDragService implements OnDestroy {
     }
 
 
-    const isSelectable = this.flowService.elementsSelectable();
+    const isSelectable = this._flowService.elementsSelectable();
 
     if (isSelectable) {
       const multiSelectionActive = false; // 目前不支持多選
@@ -243,7 +243,7 @@ export class AngularFlowDragService implements OnDestroy {
         
         // 強制同步更新：直接修改服務中的節點狀態
         // 這確保 getDragItems 能立即看到更新後的狀態
-        this.flowService.selectNode(nodeId, false);
+        this._flowService.selectNode(nodeId, false);
         
         // 為了確保立即生效，我們還需要手動觸發一次狀態檢查
         

@@ -1,5 +1,5 @@
 // Angular 核心模組
-import { Injectable, inject, signal, computed, WritableSignal, Signal } from '@angular/core';
+import { Injectable, inject, signal, computed, Signal } from '@angular/core';
 
 // XyFlow 系統模組
 import { 
@@ -26,23 +26,23 @@ import { AngularNode, AngularEdge, Viewport, AngularFlowInstance, ConnectionStat
 })
 export class AngularFlowService<NodeType extends AngularNode = AngularNode, EdgeType extends AngularEdge = AngularEdge> {
   // 核心信號狀態
-  private _nodes: WritableSignal<NodeType[]> = signal([]);
-  private _edges: WritableSignal<EdgeType[]> = signal([]);
-  private _viewport: WritableSignal<Viewport> = signal({ x: 0, y: 0, zoom: 1 });
-  private _selectedNodes: WritableSignal<string[]> = signal([]);
-  private _selectedEdges: WritableSignal<string[]> = signal([]);
-  private _selectedHandles: WritableSignal<Array<{nodeId: string, handleId?: string, type: 'source' | 'target'}>> = signal([]);
-  private _connectionState: WritableSignal<ConnectionState<NodeType>> = signal<NoConnection>({ inProgress: false });
-  private _initialized: WritableSignal<boolean> = signal(false);
-  private _minZoom: WritableSignal<number> = signal(0.5);
-  private _maxZoom: WritableSignal<number> = signal(2);
-  private _connectionRadius: WritableSignal<number> = signal(20);
-  private _fitViewQueued: WritableSignal<boolean> = signal(false);
-  private _nodesDraggable: WritableSignal<boolean> = signal(true);
-  private _nodesConnectable: WritableSignal<boolean> = signal(true);
-  private _elementsSelectable: WritableSignal<boolean> = signal(true);
-  private _selectNodesOnDrag: WritableSignal<boolean> = signal(false);
-  private _dimensions: WritableSignal<{width: number, height: number}> = signal({width: 0, height: 0});
+  private _nodes = signal<NodeType[]>([]);
+  private _edges = signal<EdgeType[]>([]);
+  private _viewport = signal<Viewport>({ x: 0, y: 0, zoom: 1 });
+  private _selectedNodes = signal<string[]>([]);
+  private _selectedEdges = signal<string[]>([]);
+  private _selectedHandles = signal<Array<{nodeId: string, handleId?: string, type: 'source' | 'target'}>>([]);
+  private _connectionState = signal<ConnectionState<NodeType>>({ inProgress: false } as NoConnection);
+  private _initialized = signal<boolean>(false);
+  private _minZoom = signal<number>(0.5);
+  private _maxZoom = signal<number>(2);
+  private _connectionRadius = signal<number>(20);
+  private _fitViewQueued = signal<boolean>(false);
+  private _nodesDraggable = signal<boolean>(true);
+  private _nodesConnectable = signal<boolean>(true);
+  private _elementsSelectable = signal<boolean>(true);
+  private _selectNodesOnDrag = signal<boolean>(false);
+  private _dimensions = signal<{width: number, height: number}>({width: 0, height: 0});
 
   // 計算信號 - 唯讀訪問器
   readonly nodes: Signal<NodeType[]> = computed(() => this._nodes());

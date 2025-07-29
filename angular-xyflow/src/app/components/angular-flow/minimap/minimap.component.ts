@@ -39,11 +39,11 @@ import type { XYPosition } from '@xyflow/system';
         [attr.viewBox]="viewBox()"
         class="angular-flow__minimap-svg"
         role="img"
-        [attr.aria-labelledby]="labelledBy()"
+        [attr.aria-labelledby]="labelledBy"
         (click)="onSvgClick($event)"
       >
         @if (ariaLabel()) {
-          <title [id]="labelledBy()">{{ ariaLabel() }}</title>
+          <title [id]="labelledBy">{{ ariaLabel() }}</title>
         }
         
         <!-- 節點渲染 -->
@@ -59,7 +59,7 @@ import type { XYPosition } from '@xyflow/system';
             [attr.rx]="nodeBorderRadius()"
             [attr.ry]="nodeBorderRadius()"
             [class]="'angular-flow__minimap-node ' + (node.selected ? 'selected' : '') + ' ' + (nodeClassName() || '')"
-            [attr.shape-rendering]="shapeRendering()"
+            [attr.shape-rendering]="shapeRendering"
             (click)="onSvgNodeClick($event, node.id)"
           />
         }
@@ -109,20 +109,20 @@ import type { XYPosition } from '@xyflow/system';
 })
 export class MinimapComponent implements OnInit, OnDestroy {
   // 注入服務
-  private flowService = inject(AngularFlowService);
+  private _flowService = inject(AngularFlowService);
   
   constructor() {
     // 設置XYMinimap實例
     effect(() => {
       const svgEl = this.svg()?.nativeElement;
-      const panZoom = this.flowService.getPanZoomInstance();
+      const panZoom = this._flowService.getPanZoomInstance();
       
       if (svgEl && panZoom) {
         this.minimapInstance = XYMinimap({
           domNode: svgEl,
           panZoom,
           getTransform: () => {
-            const viewport = this.flowService.viewport();
+            const viewport = this._flowService.viewport();
             return [viewport.x, viewport.y, viewport.zoom];
           },
           getViewScale: () => this.viewScaleRef,
@@ -184,17 +184,17 @@ export class MinimapComponent implements OnInit, OnDestroy {
   
   // 計算屬性
   readonly visibleNodes = computed(() => {
-    const nodes = this.flowService.nodes();
+    const nodes = this._flowService.nodes();
     return nodes.filter(node => !node.hidden);
   });
   
   readonly boundingRect = computed(() => {
-    const viewport = this.flowService.viewport();
+    const viewport = this._flowService.viewport();
     const viewBB: Rect = {
       x: -viewport.x / viewport.zoom,
       y: -viewport.y / viewport.zoom,
-      width: this.flowService.dimensions().width / viewport.zoom,
-      height: this.flowService.dimensions().height / viewport.zoom,
+      width: this._flowService.dimensions().width / viewport.zoom,
+      height: this._flowService.dimensions().height / viewport.zoom,
     };
     
     const nodes = this.visibleNodes();
@@ -269,12 +269,12 @@ export class MinimapComponent implements OnInit, OnDestroy {
   });
   
   readonly viewBB = computed(() => {
-    const viewport = this.flowService.viewport();
+    const viewport = this._flowService.viewport();
     return {
       x: -viewport.x / viewport.zoom,
       y: -viewport.y / viewport.zoom,
-      width: this.flowService.dimensions().width / viewport.zoom,
-      height: this.flowService.dimensions().height / viewport.zoom,
+      width: this._flowService.dimensions().width / viewport.zoom,
+      height: this._flowService.dimensions().height / viewport.zoom,
     };
   });
   
@@ -293,11 +293,11 @@ export class MinimapComponent implements OnInit, OnDestroy {
         M${viewBB.x},${viewBB.y}h${viewBB.width}v${viewBB.height}h${-viewBB.width}z`;
   });
   
-  readonly labelledBy = computed(() => `angular-flow__minimap-desc-${Math.random().toString(36).substr(2, 9)}`);
+  // 生成唯一ID - 不在 computed 中因為 Math.random() 不是純函數
+  readonly labelledBy = `angular-flow__minimap-desc-${Math.random().toString(36).substr(2, 9)}`;
   
-  readonly shapeRendering = computed(() => {
-    return typeof window === 'undefined' || !!(window as any).chrome ? 'crispEdges' : 'geometricPrecision';
-  });
+  // 形狀渲染模式 - 不在 computed 中因為訪問 window 不是純函數
+  readonly shapeRendering = typeof window === 'undefined' || !!(window as any).chrome ? 'crispEdges' : 'geometricPrecision';
   
   readonly computedStyle = computed(() => {
     const baseStyle = {
@@ -330,7 +330,7 @@ export class MinimapComponent implements OnInit, OnDestroy {
   private updateMinimap() {
     if (!this.minimapInstance) return;
     
-    const dimensions = this.flowService.dimensions();
+    const dimensions = this._flowService.dimensions();
     this.minimapInstance.update({
       translateExtent: [[-Infinity, -Infinity], [Infinity, Infinity]],
       width: dimensions.width,

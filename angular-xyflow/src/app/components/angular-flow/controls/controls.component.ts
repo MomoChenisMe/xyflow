@@ -187,7 +187,7 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
 })
 export class ControlsComponent {
   // 注入服務
-  private flowService = inject(AngularFlowService);
+  private _flowService = inject(AngularFlowService);
   private panZoomService = inject(AngularFlowPanZoomService);
   
   // 輸入屬性
@@ -211,19 +211,19 @@ export class ControlsComponent {
 
   // 計算屬性
   readonly canZoomIn = computed(() => {
-    const viewport = this.flowService.viewport();
-    const maxZoom = this.flowService.maxZoom();
+    const viewport = this._flowService.viewport();
+    const maxZoom = this._flowService.maxZoom();
     return viewport.zoom < maxZoom;
   });
 
   readonly canZoomOut = computed(() => {
-    const viewport = this.flowService.viewport();
-    const minZoom = this.flowService.minZoom();
+    const viewport = this._flowService.viewport();
+    const minZoom = this._flowService.minZoom();
     return viewport.zoom > minZoom;
   });
 
   readonly isInteractive = computed(() => {
-    return this.flowService.isInteractive();
+    return this._flowService.isInteractive();
   });
 
   // 事件處理方法
@@ -277,7 +277,7 @@ export class ControlsComponent {
     
     
     // 只更新 Node/Edge 交互性狀態，不影響 viewport 交互
-    this.flowService.setInteractivity(newValue);
+    this._flowService.setInteractivity(newValue);
     
     // ✅ 不修改 PanZoom 設置，保留 viewport 交互功能
     // viewport 的 panOnDrag, zoomOnScroll 等應該始終保持啟用

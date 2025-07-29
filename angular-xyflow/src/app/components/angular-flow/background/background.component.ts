@@ -84,7 +84,7 @@ import { BackgroundVariant } from '../types';
 })
 export class BackgroundComponent {
   // 注入服務
-  private flowService = inject(AngularFlowService);
+  private _flowService = inject(AngularFlowService);
   
   // 輸入屬性
   readonly id = input<string>();
@@ -108,7 +108,7 @@ export class BackgroundComponent {
   };
   
   // 計算信號
-  readonly viewport = computed(() => this.flowService.viewport());
+  readonly viewport = computed(() => this._flowService.viewport());
   
   readonly patternId = computed(() => {
     const baseId = this.id() || '';

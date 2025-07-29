@@ -664,6 +664,32 @@ const invalidComputed = computed(() => {
   return data.processed;
 });
 
+// ❌ 錯誤：調用非 Signal 方法
+const flowInstance = computed(() => this._flowService.getFlowInstance()); // getFlowInstance() 不是 Signal
+const currentUser = computed(() => this.userService.getCurrentUser()); // getCurrentUser() 不是 Signal
+
+// ❌ 錯誤：計算中包含方法調用
+const processedValue = computed(() => {
+  const data = this.data();
+  return this.processData(data); // processData() 不是純函數
+});
+
+// ✅ 正確：只讀取 Signal 並返回純函數計算
+const processedData = computed(() => {
+  const data = this.data();
+  return data.processed; // 純屬性訪問
+});
+
+const transformedItems = computed(() => {
+  const items = this.items();
+  const filter = this.filter();
+  // 只使用純函數和 Signal 值
+  return items.filter(item => item.type === filter).map(item => ({
+    ...item,
+    displayName: item.name.toUpperCase()
+  }));
+});
+
 // ✅ 正確：將副作用移至 effect
 constructor() {
   effect(() => {
@@ -671,10 +697,6 @@ constructor() {
     console.log('Data changed:', data); // 副作用在 effect 中
   });
 }
-
-const processedData = computed(() => 
-  this.data().processed // 純函數計算
-);
 ```
 
 ### 4. 避免在 Signal 中存儲大型對象
@@ -765,7 +787,23 @@ effect(async () => {
 });
 ```
 
-### 8. 性能優化
+### 8. WritableSignal 類型推斷
+```typescript
+// ❌ 錯誤：不必要的明確類型宣告
+private _nodes: WritableSignal<NodeType[]> = signal([]);
+private _edges: WritableSignal<EdgeType[]> = signal([]);
+private _viewport: WritableSignal<Viewport> = signal({ x: 0, y: 0, zoom: 1 });
+
+// ✅ 正確：使用 signal() 的隱式類型推斷
+private _nodes = signal<NodeType[]>([]);
+private _edges = signal<EdgeType[]>([]);
+private _viewport = signal<Viewport>({ x: 0, y: 0, zoom: 1 });
+
+// signal() 函數本身就返回 WritableSignal，無需明確宣告類型
+// 這樣代碼更簡潔，減少冗餘的類型標註
+```
+
+### 9. 性能優化
 ```typescript
 // 使用細粒度的信號減少更新
 interface UserProfile {
