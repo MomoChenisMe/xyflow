@@ -126,6 +126,7 @@ export class AngularFlowService<
   private panZoom: PanZoomInstance | null = null;
   private drag: XYDragInstance | null = null;
   private handle: any | null = null;
+  private containerElement: HTMLElement | null = null;
 
   // 流程實例API
   getFlowInstance(): AngularFlowInstance<NodeType, EdgeType> {
@@ -259,6 +260,7 @@ export class AngularFlowService<
       autoPanOnNodeFocus?: boolean;
     }
   ): void {
+    this.containerElement = container;
     if (options?.nodes) {
       this._nodes.set([...options.nodes]);
     }
@@ -526,6 +528,44 @@ export class AngularFlowService<
   // 獲取 Handle 實例
   getHandle(): any | null {
     return this.handle;
+  }
+
+  // 座標轉換方法：螢幕座標轉流座標
+  screenToFlow(clientPosition: { x: number; y: number }): { x: number; y: number } {
+    const container = this.containerElement;
+    if (!container) return clientPosition;
+
+    const rect = container.getBoundingClientRect();
+    const viewport = this._viewport();
+    
+    // 轉換為容器相對座標
+    const containerX = clientPosition.x - rect.left;
+    const containerY = clientPosition.y - rect.top;
+    
+    // 套用視口變換（考慮平移和縮放）
+    return {
+      x: (containerX - viewport.x) / viewport.zoom,
+      y: (containerY - viewport.y) / viewport.zoom
+    };
+  }
+
+  // 座標轉換方法：流座標轉螢幕座標
+  flowToScreen(flowPosition: { x: number; y: number }): { x: number; y: number } {
+    const container = this.containerElement;
+    if (!container) return flowPosition;
+
+    const rect = container.getBoundingClientRect();
+    const viewport = this._viewport();
+    
+    // 套用視口變換
+    const containerX = flowPosition.x * viewport.zoom + viewport.x;
+    const containerY = flowPosition.y * viewport.zoom + viewport.y;
+    
+    // 轉換為螢幕座標
+    return {
+      x: containerX + rect.left,
+      y: containerY + rect.top
+    };
   }
 
   // 連接狀態管理方法

@@ -415,17 +415,17 @@ export class AngularFlowComponent<
     const isSelecting = this._isSelecting();
     const panOnDragEnabled = this.panOnDrag();
     const elementsSelectable = this._flowService.elementsSelectable();
-    
+
     // 當用戶選擇模式啟用且可選擇時，顯示指針鼠標
     if (isSelecting && elementsSelectable) {
       return 'angular-flow__pane--selection';
     }
-    
+
     // 當拖拽功能啟用時，根據拖拽狀態顯示對應鼠標
     if (panOnDragEnabled) {
       return isDragging ? 'angular-flow__pane--dragging' : 'angular-flow__pane--draggable';
     }
-    
+
     return '';
   });
 
@@ -747,7 +747,7 @@ export class AngularFlowComponent<
           height: (node as any).measured.height || 32, // 預設高度：10px padding * 2 + 12px font-size
         };
       }
-      
+
       // 其次使用手動設定的尺寸
       if ((node as any).width || (node as any).height) {
         return {
@@ -755,7 +755,7 @@ export class AngularFlowComponent<
           height: (node as any).height || 32,
         };
       }
-      
+
       // 最後使用預設值（匹配 CSS 的 width: 150px + padding）
       return {
         width: 150,
@@ -765,7 +765,7 @@ export class AngularFlowComponent<
 
     const sourceDimensions = getNodeDimensions(sourceNode);
     const targetDimensions = getNodeDimensions(targetNode);
-    
+
     const sourceWidth = sourceDimensions.width;
     const sourceHeight = sourceDimensions.height;
     const targetWidth = targetDimensions.width;

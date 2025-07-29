@@ -211,14 +211,20 @@ export class HandleComponent implements OnDestroy {
     
     this.isConnecting.set(true);
     
-    // 計算 handle 的視窗座標
-    const handleElement = this.handleElement().nativeElement;
-    const rect = handleElement.getBoundingClientRect();
-    const viewport = this._flowService.viewport();
-    const handlePosition = {
-      x: (rect.left + rect.width / 2 - viewport.x) / viewport.zoom,
-      y: (rect.top + rect.height / 2 - viewport.y) / viewport.zoom
-    };
+    // 獲取當前節點
+    const node = this._flowService.nodeLookup().get(this.nodeId());
+    if (!node) return;
+
+    // 計算 handle 的正確位置（使用流座標系統）
+    const nodeWidth = node.width || 150;
+    const nodeHeight = node.height || 40;
+    const handlePosition = this._flowService.calculateHandlePosition(
+      node,
+      this.type(),
+      this.position(),
+      nodeWidth,
+      nodeHeight
+    );
 
     // 創建 Handle 對象
     const handle: Handle = {
@@ -229,10 +235,6 @@ export class HandleComponent implements OnDestroy {
       x: handlePosition.x,
       y: handlePosition.y
     };
-
-    // 獲取當前節點
-    const node = this._flowService.nodeLookup().get(this.nodeId());
-    if (!node) return;
 
     // 開始連接
     this._flowService.startConnection(node, handle, handlePosition);
@@ -328,12 +330,11 @@ export class HandleComponent implements OnDestroy {
   private updateConnectionLine(event: MouseEvent): void {
     if (!this.isConnecting()) return;
     
-    // 獲取當前鼠標位置並轉換為視窗座標
-    const viewport = this._flowService.viewport();
-    const mousePosition = {
-      x: (event.clientX - viewport.x) / viewport.zoom,
-      y: (event.clientY - viewport.y) / viewport.zoom
-    };
+    // 使用服務的座標轉換方法將螢幕座標轉換為流座標
+    const flowPosition = this._flowService.screenToFlow({
+      x: event.clientX,
+      y: event.clientY
+    });
     
     // 創建來源 handle 對象用於查找最近的 handle
     const fromHandle = {
@@ -343,9 +344,9 @@ export class HandleComponent implements OnDestroy {
     };
 
     // 尋找最近的有效 handle 進行磁吸
-    const closestHandle = this._flowService.findClosestHandle(mousePosition, fromHandle);
+    const closestHandle = this._flowService.findClosestHandle(flowPosition, fromHandle);
     
-    let finalPosition = mousePosition;
+    let finalPosition = flowPosition;
     let toHandle: Handle | null = null;
     let toNode = null;
 
