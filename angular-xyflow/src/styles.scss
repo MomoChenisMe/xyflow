@@ -2,7 +2,7 @@
 @import '../../packages/system/src/styles/init.css';
 @import '../../packages/system/src/styles/style.css';
 
-/* Angular XyFlow 全局樣式 - 基於 React Flow 樣式 */
+/* Angular XyFlow 全局樣式 - 基於 Angular Flow 樣式 */
 
 * {
   box-sizing: border-box;
@@ -20,8 +20,8 @@ html, body {
   background-color: #f8f8f8;
 }
 
-/* React Flow 相容類名 */
-.react-flow-basic-example {
+/* Angular Flow 相容類名 */
+.angular-flow-basic-example {
   background-color: #f8f8f8;
 }
 

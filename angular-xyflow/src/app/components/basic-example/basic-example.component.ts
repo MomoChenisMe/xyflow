@@ -48,7 +48,7 @@ import {
         [fitView]="true"
         [fitViewOptions]="fitViewOptions()"
         [selectNodesOnDrag]="false"
-        className="react-flow-basic-example"
+        className="angular-flow-basic-example"
         (onNodesChange)="onNodesChange($event)"
         (onConnect)="onConnect($event)"
         (onNodeClick)="onNodeClick($event)"
