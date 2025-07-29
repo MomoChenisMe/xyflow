@@ -396,7 +396,7 @@ export class NodeWrapperComponent implements OnDestroy {
   }
 
   getTargetPosition(): Position {
-    return (this.node().targetPosition as Position) || 'bottom';
+    return (this.node().targetPosition as Position) || 'top';
   }
 
   getCursor(): string {

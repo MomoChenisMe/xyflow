@@ -9,7 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
-import { Connection, Position } from '@xyflow/system';
+import { Connection } from '@xyflow/system';
 
 // 專案內部模組
 import {
@@ -47,7 +47,11 @@ import {
         [maxZoom]="4"
         [fitView]="true"
         [fitViewOptions]="fitViewOptions()"
+        [defaultEdgeOptions]="defaultEdgeOptions()"
         [selectNodesOnDrag]="false"
+        [elevateEdgesOnSelect]="true"
+        [elevateNodesOnSelect]="false"
+        [nodeDragThreshold]="0"
         className="angular-flow-basic-example"
         (onNodesChange)="onNodesChange($event)"
         (onConnect)="onConnect($event)"
@@ -140,72 +144,43 @@ export class BasicExampleComponent {
     {
       id: '1',
       type: 'input',
-      data: { label: 'Input Node' },
+      data: { label: 'Node 1' },
       position: { x: 250, y: 5 },
       className: 'light',
-      sourcePosition: Position.Bottom,
     },
     {
       id: '2',
-      type: 'default',
-      data: { label: 'Default Node' },
+      data: { label: 'Node 2' },
       position: { x: 100, y: 100 },
       className: 'light',
-      sourcePosition: Position.Bottom,
-      targetPosition: Position.Top,
     },
     {
       id: '3',
-      type: 'default',
-      data: { label: 'Processing Node' },
+      data: { label: 'Node 3' },
       position: { x: 400, y: 100 },
       className: 'light',
-      sourcePosition: Position.Bottom,
-      targetPosition: Position.Top,
     },
     {
       id: '4',
-      type: 'default',
-      data: { label: 'Output Node' },
-      position: { x: 300, y: 200 },
+      data: { label: 'Node 4' },
+      position: { x: 400, y: 200 },
       className: 'light',
-      targetPosition: Position.Top,
     },
   ]);
 
   // 初始邊數據
   readonly initialEdges = signal<AngularEdge[]>([
-    {
-      id: 'e1-2',
-      source: '1',
-      target: '2',
-      animated: true,
-      type: 'default',
-    },
-    {
-      id: 'e1-3',
-      source: '1',
-      target: '3',
-      type: 'default',
-    },
-    {
-      id: 'e2-4',
-      source: '2',
-      target: '4',
-      type: 'default',
-    },
-    {
-      id: 'e3-4',
-      source: '3',
-      target: '4',
-      type: 'default',
-    },
+    { id: 'e1-2', source: '1', target: '2', animated: true },
+    { id: 'e1-3', source: '1', target: '3' },
   ]);
 
   // FitView 選項
   readonly fitViewOptions = signal({
-    padding: { top: 100, left: 0, right: 50, bottom: 10 },
+    padding: { top: '100px', left: '0%', right: '10%', bottom: 0.1 },
   });
+
+  // 默認邊選項
+  readonly defaultEdgeOptions = signal({});
 
   // 獲取流程實例
   private get _flow(): AngularFlowInstance<AngularNode, AngularEdge> {
@@ -316,18 +291,8 @@ export class BasicExampleComponent {
 
   onSetNodes(): void {
     this._flow.setNodes([
-      {
-        id: 'a',
-        position: { x: 0, y: 0 },
-        data: { label: 'Node a' },
-        sourcePosition: Position.Bottom,
-      },
-      {
-        id: 'b',
-        position: { x: 0, y: 150 },
-        data: { label: 'Node b' },
-        targetPosition: Position.Bottom,
-      },
+      { id: 'a', position: { x: 0, y: 0 }, data: { label: 'Node a' } },
+      { id: 'b', position: { x: 0, y: 150 }, data: { label: 'Node b' } },
     ]);
 
     this._flow.setEdges([{ id: 'a-b', source: 'a', target: 'b' }]);
@@ -340,24 +305,12 @@ export class BasicExampleComponent {
   }
 
   addNode(): void {
-    const nodeTypes = ['input', 'default', 'output'];
-    const randomType = nodeTypes[Math.floor(Math.random() * nodeTypes.length)];
-
-    const newNode: AngularNode = {
+    this._flow.addNodes({
       id: `${Math.random()}`,
-      type: randomType,
-      data: {
-        label: `${
-          randomType.charAt(0).toUpperCase() + randomType.slice(1)
-        } Node`,
-      },
+      data: { label: 'Node' },
       position: { x: Math.random() * 300, y: Math.random() * 300 },
       className: 'light',
-      sourcePosition: Position.Bottom,
-      targetPosition: Position.Top,
-    };
-
-    this._flow.addNodes(newNode);
+    });
     this._flow.fitView();
   }
 }
