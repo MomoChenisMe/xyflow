@@ -662,7 +662,7 @@ export class AngularFlowService<
     this._connectionState.set({ inProgress: false });
   }
 
-  // 計算 handle 的世界座標位置
+  // 計算 handle 的世界座標位置（考慮CSS偏移）
   calculateHandlePosition(
     node: NodeType,
     handleType: 'source' | 'target',
@@ -676,15 +676,18 @@ export class AngularFlowService<
     const nodeX = node.position.x;
     const nodeY = node.position.y;
 
+    // Handle 偏移量（對應CSS中的 -4px 定位）
+    const handleOffset = 4;
+
     switch (position) {
       case Position.Top:
-        return { x: nodeX + nodeWidth / 2, y: nodeY };
+        return { x: nodeX + nodeWidth / 2, y: nodeY - handleOffset };
       case Position.Right:
-        return { x: nodeX + nodeWidth, y: nodeY + nodeHeight / 2 };
+        return { x: nodeX + nodeWidth + handleOffset, y: nodeY + nodeHeight / 2 };
       case Position.Bottom:
-        return { x: nodeX + nodeWidth / 2, y: nodeY + nodeHeight };
+        return { x: nodeX + nodeWidth / 2, y: nodeY + nodeHeight + handleOffset };
       case Position.Left:
-        return { x: nodeX, y: nodeY + nodeHeight / 2 };
+        return { x: nodeX - handleOffset, y: nodeY + nodeHeight / 2 };
       default:
         return { x: nodeX + nodeWidth / 2, y: nodeY + nodeHeight / 2 };
     }

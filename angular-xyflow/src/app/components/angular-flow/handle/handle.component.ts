@@ -215,7 +215,7 @@ export class HandleComponent implements OnDestroy {
     const node = this._flowService.nodeLookup().get(this.nodeId());
     if (!node) return;
 
-    // 計算 handle 的正確位置（使用流座標系統）
+    // 計算 handle 的正確位置（使用修復後的流座標系統）
     const nodeWidth = node.width || 150;
     const nodeHeight = node.height || 40;
     const handlePosition = this._flowService.calculateHandlePosition(
@@ -268,11 +268,10 @@ export class HandleComponent implements OnDestroy {
     this.connectionValid.set(null);
     
     // 獲取鼠標位置並檢查是否有磁吸的 handle
-    const viewport = this._flowService.viewport();
-    const mousePosition = {
-      x: (event.clientX - viewport.x) / viewport.zoom,
-      y: (event.clientY - viewport.y) / viewport.zoom
-    };
+    const mousePosition = this._flowService.screenToFlow({
+      x: event.clientX,
+      y: event.clientY
+    });
     
     const fromHandle = {
       nodeId: this.nodeId(),
