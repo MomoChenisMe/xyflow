@@ -9,7 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
-import { Connection } from '@xyflow/system';
+import { Connection, addEdge } from '@xyflow/system';
 
 // 專案內部模組
 import {
@@ -194,16 +194,7 @@ export class BasicExampleComponent {
 
   onConnect(connection: Connection): void {
     console.log('onConnect', connection);
-    this._flow.setEdges((edges) => {
-      const newEdge: AngularEdge = {
-        id: `e${connection.source}-${connection.target}`,
-        source: connection.source,
-        target: connection.target,
-        sourceHandle: connection.sourceHandle || undefined,
-        targetHandle: connection.targetHandle || undefined,
-      };
-      return [...edges, newEdge];
-    });
+    this._flow.setEdges((edges) => addEdge(connection, edges));
   }
 
   onNodeClick(data: { event: MouseEvent; node: AngularNode }): void {
