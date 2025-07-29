@@ -43,8 +43,8 @@ import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
   template: `
     <div
       #flowContainer
-      class="xy-flow angular-flow"
-      [class]="className()"
+      class="xy-flow angular-flow angular-flow__pane"
+      [class]="className() + ' ' + viewportCursorClass()"
       [style.width]="'100%'"
       [style.height]="'100%'"
       [style.position]="'relative'"
@@ -217,6 +217,23 @@ import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
         background: #fafafa;
       }
 
+      /* Viewport cursor styles - 對應 React Flow 的邏輯 */
+      .angular-flow__pane {
+        z-index: 1;
+      }
+
+      .angular-flow__pane--draggable {
+        cursor: grab;
+      }
+
+      .angular-flow__pane--dragging {
+        cursor: grabbing;
+      }
+
+      .angular-flow__pane--selection {
+        cursor: pointer;
+      }
+
       .angular-flow__viewport {
         position: absolute;
         top: 0;
@@ -311,7 +328,8 @@ export class AngularFlowComponent<
   elevateNodesOnSelect = input<boolean>(false);
   defaultEdgeOptions = input<Partial<EdgeType>>();
   nodeDragThreshold = input<number>(0);
-  autoPanOnNodeFocus = input<boolean>(false);
+  autoPanOnNodeFocus = input<boolean>(true);
+  panOnDrag = input<boolean>(true);
 
   // 輸出事件
   onNodesChange = output<NodeType[]>();
@@ -353,6 +371,8 @@ export class AngularFlowComponent<
   private _containerSize = signal({ width: 0, height: 0 });
   private _panZoomInitialized = signal(false);
   private _initialFitViewExecuted = signal(false);
+  private _isDragging = signal(false);
+  private _isSelecting = signal(false);
   markerType = MarkerType;
 
   // 計算信號
@@ -388,6 +408,26 @@ export class AngularFlowComponent<
   get flowInstance() {
     return this._flowService.getFlowInstance();
   }
+
+  // 計算 viewport 鼠標樣式
+  viewportCursorClass = computed(() => {
+    const isDragging = this._isDragging();
+    const isSelecting = this._isSelecting();
+    const panOnDragEnabled = this.panOnDrag();
+    const elementsSelectable = this._flowService.elementsSelectable();
+    
+    // 當用戶選擇模式啟用且可選擇時，顯示指針鼠標
+    if (isSelecting && elementsSelectable) {
+      return 'angular-flow__pane--selection';
+    }
+    
+    // 當拖拽功能啟用時，根據拖拽狀態顯示對應鼠標
+    if (panOnDragEnabled) {
+      return isDragging ? 'angular-flow__pane--dragging' : 'angular-flow__pane--draggable';
+    }
+    
+    return '';
+  });
 
   // 連接狀態
   connectionState = computed(() => this._flowService.connectionState());
@@ -483,6 +523,12 @@ export class AngularFlowComponent<
       }
     });
 
+    // 監聽 PanZoom 服務的拖拽狀態
+    effect(() => {
+      const isDragging = this._panZoomService.isDragging();
+      this._isDragging.set(isDragging);
+    });
+
     // 渲染後副作用
     afterRenderEffect(() => {
       this.safeUpdateContainerSize();
@@ -548,7 +594,7 @@ export class AngularFlowComponent<
       panOnScroll: false,
       panOnScrollSpeed: 0.5,
       zoomOnDoubleClick: true, // 雙擊縮放：以雙擊位置為基準
-      panOnDrag: true,
+      panOnDrag: this.panOnDrag(),
       preventScrolling: true,
       paneClickDistance: 0,
       defaultViewport: { x: 0, y: 0, zoom: 1 },
@@ -580,7 +626,7 @@ export class AngularFlowComponent<
       panOnScroll: false,
       panOnScrollSpeed: 0.5,
       zoomOnDoubleClick: true, // 雙擊縮放：以雙擊位置為基準
-      panOnDrag: true,
+      panOnDrag: this.panOnDrag(),
       preventScrolling: true,
       paneClickDistance: 0,
       defaultViewport: { x: 0, y: 0, zoom: 1 },

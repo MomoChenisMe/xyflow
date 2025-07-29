@@ -49,6 +49,7 @@ import {
       [elevateEdgesOnSelect]="true"
       [elevateNodesOnSelect]="false"
       [nodeDragThreshold]="0"
+      [panOnDrag]="true"
       className="angular-flow-basic-example"
       (onNodesChange)="onNodesChange($event)"
       (onConnect)="onConnect($event)"
