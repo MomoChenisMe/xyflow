@@ -1,5 +1,10 @@
+// Angular 核心模組
 import { Injectable, signal, computed, OnDestroy } from '@angular/core';
+
+// XyFlow 系統模組
 import { XYPanZoom, type PanZoomInstance, type Viewport, type Transform, PanOnScrollMode } from '@xyflow/system';
+
+// 專案內部模組
 import { AngularFlowService } from './angular-flow.service';
 
 interface PanZoomConfig {
@@ -35,7 +40,7 @@ export class AngularFlowPanZoomService implements OnDestroy {
     return this.panZoomInstance;
   }
 
-  constructor(private flowService: AngularFlowService) {}
+  constructor(private _flowService: AngularFlowService) {}
 
 
   // 初始化 PanZoom 功能
@@ -211,7 +216,7 @@ export class AngularFlowPanZoomService implements OnDestroy {
     }
 
     
-    const nodes = this.flowService.nodes();
+    const nodes = this._flowService.nodes();
     if (nodes.length === 0) {
       this.resetViewport();
       return;
@@ -306,7 +311,7 @@ export class AngularFlowPanZoomService implements OnDestroy {
 
   // 更新 FlowService 的 viewport
   private updateFlowViewport(viewport: Viewport): void {
-    const flowInstance = this.flowService.getFlowInstance();
+    const flowInstance = this._flowService.getFlowInstance();
     flowInstance.setViewport(viewport);
   }
 

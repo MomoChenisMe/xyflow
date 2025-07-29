@@ -1,3 +1,4 @@
+// Angular 核心模組
 import {
   Component,
   input,
@@ -9,17 +10,20 @@ import {
   effect,
   afterRenderEffect,
   ChangeDetectionStrategy,
-  OnInit,
   OnDestroy,
   inject,
   CUSTOM_ELEMENTS_SCHEMA
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
+// XyFlow 系統模組
+import { type Connection, type Position } from '@xyflow/system';
+
+// 專案內部模組
 import { AngularNode } from '../types';
 import { HandleComponent } from '../handle/handle.component';
 import { AngularFlowDragService } from '../drag.service';
 import { AngularFlowService } from '../angular-flow.service';
-import { type Connection, type Position } from '@xyflow/system';
 
 @Component({
   selector: 'angular-flow-node',
@@ -183,7 +187,7 @@ import { type Connection, type Position } from '@xyflow/system';
     }
   `]
 })
-export class NodeWrapperComponent implements OnInit, OnDestroy {
+export class NodeWrapperComponent implements OnDestroy {
   // 輸入屬性
   readonly node = input.required<AngularNode>();
   readonly selected = input<boolean>(false);
@@ -204,8 +208,8 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   // 內部狀態
   private readonly isDragging = signal(false);
   private resizeObserver?: ResizeObserver;
-  private dragService = inject(AngularFlowDragService);
-  private flowService = inject(AngularFlowService);
+  private _dragService = inject(AngularFlowDragService);
+  private _flowService = inject(AngularFlowService);
 
   // 計算屬性
   readonly nodeClasses = computed(() => {
@@ -264,8 +268,8 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
     // 但避免在拖動過程中重新初始化
     effect(() => {
       const nodeData = this.node();
-      const globalDraggable = this.flowService.nodesDraggable(); // 監聽全局狀態
-      const isDragging = this.isDragging() || this.dragService.dragging(); // 檢查是否正在拖動
+      const globalDraggable = this._flowService.nodesDraggable(); // 監聽全局狀態
+      const isDragging = this.isDragging() || this._dragService.dragging(); // 檢查是否正在拖動
       
       if (nodeData && !isDragging) {
         // 只在不拖動時重新設置拖拽，確保 DOM 元素已準備好
@@ -279,16 +283,13 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnInit() {
-    // 初始化邏輯
-  }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
     // 清理此節點的拖拽實例
     const nodeData = this.node();
     if (nodeData) {
-      this.dragService.destroyNodeDrag(nodeData.id);
+      this._dragService.destroyNodeDrag(nodeData.id);
     }
   }
 
@@ -302,13 +303,13 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
     }
 
     // 檢查節點是否可拖拽 - 需要同時滿足全局設置和節點設置
-    const globalDraggable = this.flowService.nodesDraggable();
+    const globalDraggable = this._flowService.nodesDraggable();
     const nodeDraggable = nodeData.draggable !== false;
     const isDraggable = globalDraggable && nodeDraggable;
 
 
     // 總是初始化拖動服務，但根據狀態啟用或禁用
-    this.dragService.initializeDrag({
+    this._dragService.initializeDrag({
       nodeId: nodeData.id,
       domNode: element,
       isSelectable: true,
@@ -316,7 +317,7 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
     });
 
     // 根據狀態啟用或禁用拖動
-    this.dragService.setNodeDraggable(nodeData.id, isDraggable);
+    this._dragService.setNodeDraggable(nodeData.id, isDraggable);
 
 
   }
@@ -340,8 +341,8 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   onNodeClick(event: MouseEvent) {
     // 避免在拖動後觸發點擊
     if (!this.isDragging()) {
-      const isSelectable = this.flowService.elementsSelectable();
-      const globalDraggable = this.flowService.nodesDraggable();
+      const isSelectable = this._flowService.elementsSelectable();
+      const globalDraggable = this._flowService.nodesDraggable();
       const nodeDraggable = this.node().draggable !== false;
       const isDraggable = globalDraggable && nodeDraggable;
       
@@ -353,12 +354,12 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
        * 節點選中已經在 mousedown 時處理，這裡不需要再次處理
        */
       // 從服務獲取實際的設定值
-      const selectNodesOnDrag = this.flowService.selectNodesOnDrag();
+      const selectNodesOnDrag = this._flowService.selectNodesOnDrag();
       const nodeDragThreshold = 0;    // 目前設為 0
       
       if (isSelectable && (!selectNodesOnDrag || !isDraggable || nodeDragThreshold > 0)) {
         // 這種情況下需要在點擊時選中節點
-        this.flowService.selectNode(this.node().id, false);
+        this._flowService.selectNode(this.node().id, false);
       }
       
       this.nodeClick.emit(event);
@@ -368,11 +369,11 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   // 處理 mousedown 事件 - 確保在 selectNodesOnDrag=false 時節點能立即被選中
   onNodeMouseDown(event: MouseEvent) {
     // 檢查是否需要在 mousedown 時選中節點
-    const isSelectable = this.flowService.elementsSelectable();
-    const globalDraggable = this.flowService.nodesDraggable();
+    const isSelectable = this._flowService.elementsSelectable();
+    const globalDraggable = this._flowService.nodesDraggable();
     const nodeDraggable = this.node().draggable !== false;
     const isDraggable = globalDraggable && nodeDraggable;
-    const selectNodesOnDrag = this.flowService.selectNodesOnDrag();
+    const selectNodesOnDrag = this._flowService.selectNodesOnDrag();
     
     /*
      * 在以下情況下在 mousedown 時選中節點：
@@ -384,7 +385,7 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
       // 檢查節點是否已經被選中
       const currentNode = this.node();
       if (!currentNode.selected) {
-        this.flowService.selectNode(currentNode.id, false);
+        this._flowService.selectNode(currentNode.id, false);
       }
     }
   }
@@ -400,7 +401,7 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
 
   getCursor(): string {
     const node = this.node();
-    const globalDraggable = this.flowService.nodesDraggable();
+    const globalDraggable = this._flowService.nodesDraggable();
     const nodeDraggable = node.draggable !== false;
     
     // 只有在全局和節點都允許拖動時才顯示拖動游標
@@ -413,6 +414,6 @@ export class NodeWrapperComponent implements OnInit, OnDestroy {
   // 檢查 Handle 是否被選中
   isHandleSelected(type: 'source' | 'target'): boolean {
     const nodeId = this.node().id;
-    return this.flowService.isHandleSelected(nodeId, undefined, type);
+    return this._flowService.isHandleSelected(nodeId, undefined, type);
   }
 }

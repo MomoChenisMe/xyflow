@@ -1,3 +1,4 @@
+// Angular 核心模組
 import {
   Component,
   input,
@@ -10,16 +11,19 @@ import {
   ElementRef,
   ChangeDetectionStrategy,
   OnDestroy,
-  OnInit,
   inject,
   CUSTOM_ELEMENTS_SCHEMA,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
+// XyFlow 系統模組
+import { type Connection, Position } from '@xyflow/system';
+
+// 專案內部模組
 import { AngularFlowService } from './angular-flow.service';
 import { AngularFlowDragService } from './drag.service';
 import { AngularFlowPanZoomService } from './panzoom.service';
 import {
-  AngularFlowProps,
   AngularNode,
   AngularEdge,
   Viewport,
@@ -28,7 +32,6 @@ import {
   MarkerType,
 } from './types';
 import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
-import { type Connection, Position } from '@xyflow/system';
 
 @Component({
   selector: 'angular-flow',
@@ -284,84 +287,84 @@ import { type Connection, Position } from '@xyflow/system';
 export class AngularFlowComponent<
   NodeType extends AngularNode = AngularNode,
   EdgeType extends AngularEdge = AngularEdge
-> implements OnInit, OnDestroy
+> implements OnDestroy
 {
-  // 注入服務
-  private flowService = inject(AngularFlowService<NodeType, EdgeType>);
-  private dragService = inject(AngularFlowDragService);
-  private panZoomService = inject(AngularFlowPanZoomService);
+  // 注入依賴
+  private _flowService = inject(AngularFlowService<NodeType, EdgeType>);
+  private _dragService = inject(AngularFlowDragService);
+  private _panZoomService = inject(AngularFlowPanZoomService);
 
   // 輸入信號
-  readonly defaultNodes = input<NodeType[]>([]);
-  readonly defaultEdges = input<EdgeType[]>([]);
-  readonly nodes = input<NodeType[]>();
-  readonly edges = input<EdgeType[]>();
-  readonly className = input<string>('');
-  readonly minZoom = input<number>(0.5);
-  readonly maxZoom = input<number>(2);
-  readonly fitView = input<boolean>(false);
-  readonly fitViewOptions = input<any>();
-  readonly selectNodesOnDrag = input<boolean>(false);
-  readonly nodeOrigin = input<[number, number]>([0, 0]);
-  readonly elevateEdgesOnSelect = input<boolean>(true);
-  readonly elevateNodesOnSelect = input<boolean>(false);
-  readonly defaultEdgeOptions = input<Partial<EdgeType>>();
-  readonly nodeDragThreshold = input<number>(0);
+  defaultNodes = input<NodeType[]>([]);
+  defaultEdges = input<EdgeType[]>([]);
+  nodes = input<NodeType[]>();
+  edges = input<EdgeType[]>();
+  className = input<string>('');
+  minZoom = input<number>(0.5);
+  maxZoom = input<number>(2);
+  fitView = input<boolean>(false);
+  fitViewOptions = input<any>();
+  selectNodesOnDrag = input<boolean>(false);
+  nodeOrigin = input<[number, number]>([0, 0]);
+  elevateEdgesOnSelect = input<boolean>(true);
+  elevateNodesOnSelect = input<boolean>(false);
+  defaultEdgeOptions = input<Partial<EdgeType>>();
+  nodeDragThreshold = input<number>(0);
 
   // 輸出事件
-  readonly onNodesChange = output<NodeType[]>();
-  readonly onEdgesChange = output<EdgeType[]>();
-  readonly onConnect = output<Connection>();
-  readonly onNodeClick = output<{ event: MouseEvent; node: NodeType }>();
-  readonly onNodeDragStart = output<{
+  onNodesChange = output<NodeType[]>();
+  onEdgesChange = output<EdgeType[]>();
+  onConnect = output<Connection>();
+  onNodeClick = output<{ event: MouseEvent; node: NodeType }>();
+  onNodeDragStart = output<{
     event: MouseEvent;
     node: NodeType;
     nodes: NodeType[];
   }>();
-  readonly onNodeDrag = output<{
+  onNodeDrag = output<{
     event: MouseEvent;
     node: NodeType;
     nodes: NodeType[];
   }>();
-  readonly onNodeDragStop = output<{
+  onNodeDragStop = output<{
     event: MouseEvent;
     node: NodeType;
     nodes: NodeType[];
   }>();
-  readonly onSelectionDragStart = output<{
+  onSelectionDragStart = output<{
     event: MouseEvent;
     nodes: NodeType[];
   }>();
-  readonly onSelectionDrag = output<{ event: MouseEvent; nodes: NodeType[] }>();
-  readonly onSelectionDragStop = output<{
+  onSelectionDrag = output<{ event: MouseEvent; nodes: NodeType[] }>();
+  onSelectionDragStop = output<{
     event: MouseEvent;
     nodes: NodeType[];
   }>();
 
   // 視圖子元素
-  readonly flowContainer =
+  flowContainer =
     viewChild.required<ElementRef<HTMLDivElement>>('flowContainer');
-  readonly viewportElement =
+  viewportElement =
     viewChild.required<ElementRef<HTMLDivElement>>('viewport');
 
   // 內部狀態信號
-  private readonly containerSize = signal({ width: 0, height: 0 });
-  private readonly panZoomInitialized = signal(false);
-  private readonly initialFitViewExecuted = signal(false);
-  readonly markerType = MarkerType;
+  private _containerSize = signal({ width: 0, height: 0 });
+  private _panZoomInitialized = signal(false);
+  private _initialFitViewExecuted = signal(false);
+  markerType = MarkerType;
 
   // 計算信號
-  readonly visibleNodes = computed(() => {
+  visibleNodes = computed(() => {
     const controlledNodes = this.nodes();
     if (controlledNodes && controlledNodes.length > 0) {
       return controlledNodes;
     }
-    return this.flowService.nodes();
+    return this._flowService.nodes();
   });
 
-  readonly visibleEdges = computed(() => {
+  visibleEdges = computed(() => {
     const controlledEdges = this.edges();
-    const serviceEdges = this.flowService.edges();
+    const serviceEdges = this._flowService.edges();
 
     let result: EdgeType[];
     if (controlledEdges && controlledEdges.length > 0) {
@@ -374,19 +377,19 @@ export class AngularFlowComponent<
     return result;
   });
 
-  readonly viewportTransform = computed(() => {
-    const viewport = this.flowService.viewport();
+  viewportTransform = computed(() => {
+    const viewport = this._flowService.viewport();
     return `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`;
   });
 
   // 流程實例
-  readonly flowInstance = computed(() => this.flowService.getFlowInstance());
+  flowInstance = computed(() => this._flowService.getFlowInstance());
 
   // 連接狀態
-  readonly connectionState = computed(() => this.flowService.connectionState());
+  connectionState = computed(() => this._flowService.connectionState());
 
   // 連接進行中狀態 - 類型安全的計算信號
-  readonly connectionInProgress = computed(() => {
+  connectionInProgress = computed(() => {
     const state = this.connectionState();
     if (!state.inProgress) return null;
 
@@ -395,14 +398,14 @@ export class AngularFlowComponent<
   });
 
   // 連接線路徑計算
-  readonly connectionLinePath = computed(() => {
+  connectionLinePath = computed(() => {
     const connState = this.connectionInProgress();
     if (!connState) return null;
 
     const { from, to, fromPosition, toPosition } = connState;
 
     // 使用貝茲曲線路徑
-    return this.getBezierPath(
+    return this._getBezierPath(
       from.x,
       from.y,
       fromPosition,
@@ -413,12 +416,12 @@ export class AngularFlowComponent<
   });
 
   // 邊線標記相關計算
-  readonly hasEdgeMarkers = computed(() => {
+  hasEdgeMarkers = computed(() => {
     const edges = this.visibleEdges();
     return edges.some((edge) => edge.markerStart || edge.markerEnd);
   });
 
-  readonly edgeMarkers = computed(() => {
+  edgeMarkers = computed(() => {
     const edges = this.visibleEdges();
     const markers: Array<{
       id: string;
@@ -437,7 +440,7 @@ export class AngularFlowComponent<
           typeof edge.markerStart === 'string'
             ? { type: MarkerType.ArrowClosed }
             : edge.markerStart;
-        const markerId = this.getMarkerId(edge, 'start', markerData);
+        const markerId = this._getMarkerId(edge, 'start', markerData);
         if (!markers.find((m) => m.id === markerId)) {
           markers.push({ id: markerId, ...markerData });
         }
@@ -448,7 +451,7 @@ export class AngularFlowComponent<
           typeof edge.markerEnd === 'string'
             ? { type: MarkerType.ArrowClosed }
             : edge.markerEnd;
-        const markerId = this.getMarkerId(edge, 'end', markerData);
+        const markerId = this._getMarkerId(edge, 'end', markerData);
         if (!markers.find((m) => m.id === markerId)) {
           markers.push({ id: markerId, ...markerData });
         }
@@ -465,7 +468,7 @@ export class AngularFlowComponent<
       const edges = this.defaultEdges();
 
       if (nodes.length > 0 || edges.length > 0) {
-        this.flowService.initialize(this.flowContainer().nativeElement, {
+        this._flowService.initialize(this.flowContainer().nativeElement, {
           nodes: nodes,
           edges: edges,
           minZoom: this.minZoom(),
@@ -483,14 +486,11 @@ export class AngularFlowComponent<
     });
   }
 
-  ngOnInit() {
-    // 初始化
-  }
 
   ngOnDestroy() {
-    this.panZoomService.destroy();
-    this.dragService.destroy();
-    this.flowService.destroy();
+    this._panZoomService.destroy();
+    this._dragService.destroy();
+    this._flowService.destroy();
   }
 
   // 安全更新容器大小 - 只在尺寸真正改變時更新
@@ -499,15 +499,15 @@ export class AngularFlowComponent<
     if (!container) return;
 
     const rect = container.getBoundingClientRect();
-    const currentSize = this.containerSize();
+    const currentSize = this._containerSize();
 
     // 只有在尺寸真正改變時才更新（避免浮點數精度問題）
     if (
       Math.abs(rect.width - currentSize.width) > 1 ||
       Math.abs(rect.height - currentSize.height) > 1
     ) {
-      this.containerSize.set({ width: rect.width, height: rect.height });
-      this.flowService.setDimensions({ width: rect.width, height: rect.height });
+      this._containerSize.set({ width: rect.width, height: rect.height });
+      this._flowService.setDimensions({ width: rect.width, height: rect.height });
     }
   }
 
@@ -516,15 +516,15 @@ export class AngularFlowComponent<
     const container = this.flowContainer()?.nativeElement;
     if (container) {
       const rect = container.getBoundingClientRect();
-      this.containerSize.set({ width: rect.width, height: rect.height });
-      this.flowService.setDimensions({ width: rect.width, height: rect.height });
+      this._containerSize.set({ width: rect.width, height: rect.height });
+      this._flowService.setDimensions({ width: rect.width, height: rect.height });
     }
   }
 
   // 安全設置 PanZoom 功能 - 只初始化一次
   private safeSetupPanZoom() {
     // 如果已經初始化過，則跳過
-    if (this.panZoomInitialized()) {
+    if (this._panZoomInitialized()) {
       return;
     }
 
@@ -534,7 +534,7 @@ export class AngularFlowComponent<
     }
 
 
-    this.panZoomService.initializePanZoom({
+    this._panZoomService.initializePanZoom({
       domNode: container,
       minZoom: this.minZoom(),
       maxZoom: this.maxZoom(),
@@ -550,12 +550,12 @@ export class AngularFlowComponent<
     });
 
     // 設置 flowService 的 panZoom 實例
-    const panZoomInstance = this.panZoomService.getPanZoomInstance();
+    const panZoomInstance = this._panZoomService.getPanZoomInstance();
     if (panZoomInstance) {
-      this.flowService.setPanZoom(panZoomInstance);
+      this._flowService.setPanZoom(panZoomInstance);
     }
 
-    this.panZoomInitialized.set(true);
+    this._panZoomInitialized.set(true);
   }
 
   // 傳統的設置 PanZoom 方法（供外部調用或強制重新初始化）
@@ -566,7 +566,7 @@ export class AngularFlowComponent<
     }
 
 
-    this.panZoomService.initializePanZoom({
+    this._panZoomService.initializePanZoom({
       domNode: container,
       minZoom: this.minZoom(),
       maxZoom: this.maxZoom(),
@@ -582,22 +582,22 @@ export class AngularFlowComponent<
     });
 
     // 設置 flowService 的 panZoom 實例
-    const panZoomInstance = this.panZoomService.getPanZoomInstance();
+    const panZoomInstance = this._panZoomService.getPanZoomInstance();
     if (panZoomInstance) {
-      this.flowService.setPanZoom(panZoomInstance);
+      this._flowService.setPanZoom(panZoomInstance);
     }
   }
 
   // 安全處理初始 fit view - 只執行一次
   private safeHandleInitialFitView() {
     // 如果已經執行過初始 fit view，則跳過
-    if (this.initialFitViewExecuted()) {
+    if (this._initialFitViewExecuted()) {
       return;
     }
 
     // 檢查是否需要執行初始 fit view
     if (!this.fitView()) {
-      this.initialFitViewExecuted.set(true); // 標記為已處理，即使沒有執行
+      this._initialFitViewExecuted.set(true); // 標記為已處理，即使沒有執行
       return;
     }
 
@@ -608,14 +608,14 @@ export class AngularFlowComponent<
     }
 
     // 確保 PanZoom 已初始化
-    if (!this.panZoomInitialized()) {
+    if (!this._panZoomInitialized()) {
       return; // 等待 PanZoom 初始化完成
     }
 
 
     // 執行 fit view，傳遞選項
     this.performFitView(this.fitViewOptions());
-    this.initialFitViewExecuted.set(true);
+    this._initialFitViewExecuted.set(true);
   }
 
   // 傳統的處理初始 fit view 方法（供外部調用）
@@ -632,7 +632,7 @@ export class AngularFlowComponent<
     }
 
     // 確保 PanZoom 已初始化
-    if (!this.panZoomService) {
+    if (!this._panZoomService) {
       return;
     }
 
@@ -719,7 +719,7 @@ export class AngularFlowComponent<
   }
 
   // 計算貝茲曲線路徑
-  private getBezierPath(
+  private _getBezierPath(
     sourceX: number,
     sourceY: number,
     sourcePosition: Position,
@@ -799,7 +799,7 @@ export class AngularFlowComponent<
       case 'smoothstep':
         // 簡化的 smooth step 實現
         const offsetX = Math.abs(targetX - sourceX) * 0.5;
-        const offsetY = Math.abs(targetY - sourceY) * 0.5;
+        // const offsetY = Math.abs(targetY - sourceY) * 0.5; // 保留供未來擴展使用
 
         if (
           sourcePosition === Position.Right &&
@@ -815,7 +815,7 @@ export class AngularFlowComponent<
           },${targetY} L ${targetX},${targetY}`;
         }
 
-        return this.getBezierPath(
+        return this._getBezierPath(
           sourceX,
           sourceY,
           sourcePosition,
@@ -828,7 +828,7 @@ export class AngularFlowComponent<
       case 'default':
       case 'bezier':
       default:
-        return this.getBezierPath(
+        return this._getBezierPath(
           sourceX,
           sourceY,
           sourcePosition,
@@ -848,7 +848,7 @@ export class AngularFlowComponent<
     const multiSelect = event.ctrlKey || event.metaKey;
 
     // 選擇節點
-    this.flowService.selectNode(node.id, multiSelect);
+    this._flowService.selectNode(node.id, multiSelect);
 
     this.onNodeClick.emit({ event, node });
   }
@@ -858,7 +858,7 @@ export class AngularFlowComponent<
     event.stopPropagation();
 
     // 檢查是否允許選取元素
-    if (!this.flowService.elementsSelectable()) {
+    if (!this._flowService.elementsSelectable()) {
       return;
     }
 
@@ -866,7 +866,7 @@ export class AngularFlowComponent<
     const multiSelect = event.ctrlKey || event.metaKey;
 
     // 選擇邊線
-    this.flowService.selectEdge(edge.id, multiSelect);
+    this._flowService.selectEdge(edge.id, multiSelect);
 
   }
 
@@ -881,7 +881,7 @@ export class AngularFlowComponent<
       target.classList.contains('angular-flow__viewport') ||
       target.classList.contains('xy-flow__viewport')
     ) {
-      this.flowService.clearSelection();
+      this._flowService.clearSelection();
     }
   }
 
@@ -898,7 +898,7 @@ export class AngularFlowComponent<
     const multiSelect = event.ctrlKey || event.metaKey;
 
     // 選擇 Handle
-    this.flowService.selectHandle(nodeId, handleId, type, multiSelect);
+    this._flowService.selectHandle(nodeId, handleId, type, multiSelect);
 
   }
 
@@ -938,7 +938,7 @@ export class AngularFlowComponent<
   }
 
   handleConnectEnd(connection: Connection) {
-    this.flowService.onConnect(connection);
+    this._flowService.onConnect(connection);
     this.onConnect.emit(connection);
   }
 
@@ -949,31 +949,31 @@ export class AngularFlowComponent<
 
   // PanZoom 相關公開方法
   setViewport(viewport: Viewport, options?: { duration?: number }): void {
-    this.panZoomService.setViewport(viewport, options);
+    this._panZoomService.setViewport(viewport, options);
   }
 
   getViewport(): Viewport {
-    return this.panZoomService.getViewport();
+    return this._panZoomService.getViewport();
   }
 
   performFitView(options?: any): void {
-    this.panZoomService.fitView(options);
+    this._panZoomService.fitView(options);
   }
 
   zoomIn(): void {
-    this.panZoomService.zoomIn();
+    this._panZoomService.zoomIn();
   }
 
   zoomOut(): void {
-    this.panZoomService.zoomOut();
+    this._panZoomService.zoomOut();
   }
 
   resetViewport(): void {
-    this.panZoomService.resetViewport();
+    this._panZoomService.resetViewport();
   }
 
   // 獲取標記 ID
-  private getMarkerId(
+  private _getMarkerId(
     _edge: EdgeType,
     position: 'start' | 'end',
     marker: EdgeMarker
@@ -990,7 +990,7 @@ export class AngularFlowComponent<
 
     const markerData =
       typeof marker === 'string' ? { type: MarkerType.ArrowClosed } : marker;
-    const markerId = this.getMarkerId(edge, position, markerData);
+    const markerId = this._getMarkerId(edge, position, markerData);
     return `url(#${markerId})`;
   }
 }

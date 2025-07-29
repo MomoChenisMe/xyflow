@@ -1,13 +1,17 @@
+// Angular 核心模組
 import {
   Component,
   signal,
-  computed,
   inject,
   viewChild,
-  ElementRef,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
+// XyFlow 系統模組
+import { Connection, Position } from '@xyflow/system';
+
+// 專案內部模組
 import {
   AngularFlowComponent,
   AngularFlowService,
@@ -20,7 +24,6 @@ import {
   BackgroundVariant,
   AngularFlowInstance,
 } from '../angular-flow';
-import { Connection, Position } from '@xyflow/system';
 
 @Component({
   selector: 'app-basic-example',
@@ -123,8 +126,8 @@ import { Connection, Position } from '@xyflow/system';
   ],
 })
 export class BasicExampleComponent {
-  // 注入服務
-  private flowService = inject(AngularFlowService<AngularNode, AngularEdge>);
+  // 注入服務 - 保留供未來擴展使用
+  private _flowService = inject(AngularFlowService<AngularNode, AngularEdge>);
 
   // 視圖子元素引用
   readonly angularFlow = viewChild.required(AngularFlowComponent);
@@ -205,18 +208,18 @@ export class BasicExampleComponent {
   });
 
   // 獲取流程實例
-  private get flow(): AngularFlowInstance<AngularNode, AngularEdge> {
+  private get _flow(): AngularFlowInstance<AngularNode, AngularEdge> {
     return this.angularFlow().getFlow();
   }
 
   // 事件處理方法
-  onNodesChange(nodes: AngularNode[]) {
+  onNodesChange(nodes: AngularNode[]): void {
     console.log('nodes change', nodes);
   }
 
-  onConnect(connection: Connection) {
+  onConnect(connection: Connection): void {
     console.log('onConnect', connection);
-    this.flow.setEdges((edges) => {
+    this._flow.setEdges((edges) => {
       const newEdge: AngularEdge = {
         id: `e${connection.source}-${connection.target}`,
         source: connection.source,
@@ -228,7 +231,7 @@ export class BasicExampleComponent {
     });
   }
 
-  onNodeClick(data: { event: MouseEvent; node: AngularNode }) {
+  onNodeClick(data: { event: MouseEvent; node: AngularNode }): void {
     console.log('click', data.node);
   }
 
@@ -236,7 +239,7 @@ export class BasicExampleComponent {
     event: MouseEvent;
     node: AngularNode;
     nodes: AngularNode[];
-  }) {
+  }): void {
     console.log('drag start', data.node, data.nodes);
   }
 
@@ -244,7 +247,7 @@ export class BasicExampleComponent {
     event: MouseEvent;
     node: AngularNode;
     nodes: AngularNode[];
-  }) {
+  }): void {
     console.log('drag', data.node, data.nodes);
   }
 
@@ -252,29 +255,29 @@ export class BasicExampleComponent {
     event: MouseEvent;
     node: AngularNode;
     nodes: AngularNode[];
-  }) {
+  }): void {
     console.log('drag stop', data.node, data.nodes);
   }
 
-  onSelectionDragStart(data: { event: MouseEvent; nodes: AngularNode[] }) {
+  onSelectionDragStart(data: { event: MouseEvent; nodes: AngularNode[] }): void {
     console.log('selection drag start', data.nodes);
   }
 
-  onSelectionDrag(data: { event: MouseEvent; nodes: AngularNode[] }) {
+  onSelectionDrag(data: { event: MouseEvent; nodes: AngularNode[] }): void {
     console.log('selection drag', data.nodes);
   }
 
-  onSelectionDragStop(data: { event: MouseEvent; nodes: AngularNode[] }) {
+  onSelectionDragStop(data: { event: MouseEvent; nodes: AngularNode[] }): void {
     console.log('selection drag stop', data.nodes);
   }
 
   // Panel 按鈕方法
-  resetTransform() {
+  resetTransform(): void {
     this.angularFlow().resetViewport();
   }
 
-  updatePos() {
-    this.flow.setNodes((nodes) =>
+  updatePos(): void {
+    this._flow.setNodes((nodes) =>
       nodes.map((node) => ({
         ...node,
         position: {
@@ -285,8 +288,8 @@ export class BasicExampleComponent {
     );
   }
 
-  toggleClassnames() {
-    this.flow.setNodes((nodes) =>
+  toggleClassnames(): void {
+    this._flow.setNodes((nodes) =>
       nodes.map((node) => ({
         ...node,
         className: node.className === 'light' ? 'dark' : 'light',
@@ -294,25 +297,25 @@ export class BasicExampleComponent {
     );
   }
 
-  logToObject() {
-    console.log(this.flow.toObject());
+  logToObject(): void {
+    console.log(this._flow.toObject());
   }
 
-  deleteSelectedElements() {
-    const selectedNodes = this.flow.getNodes().filter((node) => node.selected);
-    const selectedEdges = this.flow.getEdges().filter((edge) => edge.selected);
-    this.flow.deleteElements({ nodes: selectedNodes, edges: selectedEdges });
+  deleteSelectedElements(): void {
+    const selectedNodes = this._flow.getNodes().filter((node) => node.selected);
+    const selectedEdges = this._flow.getEdges().filter((edge) => edge.selected);
+    this._flow.deleteElements({ nodes: selectedNodes, edges: selectedEdges });
   }
 
-  deleteSomeElements() {
-    this.flow.deleteElements({
+  deleteSomeElements(): void {
+    this._flow.deleteElements({
       nodes: [{ id: '2' }],
       edges: [{ id: 'e1-3' }],
     });
   }
 
-  onSetNodes() {
-    this.flow.setNodes([
+  onSetNodes(): void {
+    this._flow.setNodes([
       {
         id: 'a',
         position: { x: 0, y: 0 },
@@ -327,16 +330,16 @@ export class BasicExampleComponent {
       },
     ]);
 
-    this.flow.setEdges([{ id: 'a-b', source: 'a', target: 'b' }]);
-    this.flow.fitView();
+    this._flow.setEdges([{ id: 'a-b', source: 'a', target: 'b' }]);
+    this._flow.fitView();
   }
 
-  onUpdateNode() {
-    this.flow.updateNodeData('1', { label: 'update' });
-    this.flow.updateNodeData('2', { label: 'update' });
+  onUpdateNode(): void {
+    this._flow.updateNodeData('1', { label: 'update' });
+    this._flow.updateNodeData('2', { label: 'update' });
   }
 
-  addNode() {
+  addNode(): void {
     const nodeTypes = ['input', 'default', 'output'];
     const randomType = nodeTypes[Math.floor(Math.random() * nodeTypes.length)];
 
@@ -354,7 +357,7 @@ export class BasicExampleComponent {
       targetPosition: Position.Top,
     };
 
-    this.flow.addNodes(newNode);
-    this.flow.fitView();
+    this._flow.addNodes(newNode);
+    this._flow.fitView();
   }
 }

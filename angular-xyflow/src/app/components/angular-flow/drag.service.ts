@@ -1,5 +1,10 @@
+// Angular 核心模組
 import { Injectable, signal, computed, OnDestroy } from '@angular/core';
+
+// XyFlow 系統模組
 import { XYDrag, type XYDragInstance } from '@xyflow/system';
+
+// 專案內部模組
 import { AngularFlowService } from './angular-flow.service';
 
 interface DragConfig {
@@ -16,7 +21,7 @@ interface DragConfig {
 })
 export class AngularFlowDragService implements OnDestroy {
   private xyDragInstances = new Map<string, XYDragInstance>();
-  private readonly _dragging = signal(false);
+  private _dragging = signal(false);
   
   // 臨時狀態覆寫，用於處理同步更新問題
   private tempSelectedNodeIds: string[] | null = null;
@@ -28,7 +33,7 @@ export class AngularFlowDragService implements OnDestroy {
 
   // 初始化拖拽功能
   initializeDrag(config: DragConfig): void {
-    const { nodeId, domNode } = config;
+    const { nodeId } = config;
     if (!nodeId) return;
 
 
@@ -55,7 +60,8 @@ export class AngularFlowDragService implements OnDestroy {
         // 清除任何剩餘的臨時狀態
         this.tempSelectedNodeIds = null;
       },
-      onDrag: (event, dragItems, node, nodes) => {
+      onDrag: (_event, _dragItems, _node, _nodes) => {
+        // 拖拽過程中的處理邏輯
       }
     });
 
@@ -99,7 +105,7 @@ export class AngularFlowDragService implements OnDestroy {
 
   // 清理所有拖拽實例
   destroy(): void {
-    for (const [nodeId, instance] of this.xyDragInstances) {
+    for (const [, instance] of this.xyDragInstances) {
       instance.destroy();
     }
     this.xyDragInstances.clear();
@@ -176,11 +182,14 @@ export class AngularFlowDragService implements OnDestroy {
       onError: (error: string) => {
         console.error('XYDrag error:', error);
       },
-      onNodeDragStart: (event: MouseEvent, node: any, nodes: any[]) => {
+      onNodeDragStart: (_event: MouseEvent, _node: any, _nodes: any[]) => {
+        // 節點拖拽開始處理
       },
-      onNodeDrag: (event: MouseEvent, node: any, nodes: any[]) => {
+      onNodeDrag: (_event: MouseEvent, _node: any, _nodes: any[]) => {
+        // 節點拖拽中處理
       },
-      onNodeDragStop: (event: MouseEvent, node: any, nodes: any[]) => {
+      onNodeDragStop: (_event: MouseEvent, _node: any, _nodes: any[]) => {
+        // 節點拖拽結束處理
       },
       updateNodePositions: (dragItems: Map<string, any>, dragging?: boolean) => {
         // 更新節點位置
@@ -234,14 +243,6 @@ export class AngularFlowDragService implements OnDestroy {
         
         // 強制同步更新：直接修改服務中的節點狀態
         // 這確保 getDragItems 能立即看到更新後的狀態
-        const currentNodes = this.flowService.nodes();
-        const updatedNodes = currentNodes.map(n => ({
-          ...n,
-          selected: n.id === nodeId
-        }));
-        
-        // 使用私有方法強制立即更新（如果可用）
-        // 或者使用一個同步的更新方法
         this.flowService.selectNode(nodeId, false);
         
         // 為了確保立即生效，我們還需要手動觸發一次狀態檢查

@@ -1,3 +1,4 @@
+// Angular 核心模組
 import { 
   Component, 
   input, 
@@ -8,13 +9,16 @@ import {
   signal,
   inject,
   ChangeDetectionStrategy,
-  OnInit,
   OnDestroy,
   CUSTOM_ELEMENTS_SCHEMA
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
+// XyFlow 系統模組
 import { Position } from '@xyflow/system';
 import { type Connection } from '@xyflow/system';
+
+// 專案內部模組
 import { AngularFlowService } from '../angular-flow.service';
 import { Handle } from '../types';
 
@@ -121,7 +125,7 @@ import { Handle } from '../types';
     }
   `]
 })
-export class HandleComponent implements OnInit, OnDestroy {
+export class HandleComponent implements OnDestroy {
   // 輸入屬性
   readonly type = input.required<'source' | 'target'>();
   readonly position = input.required<Position>();
@@ -144,11 +148,11 @@ export class HandleComponent implements OnInit, OnDestroy {
   private readonly isHovered = signal(false);
   
   // 注入服務
-  private flowService = inject(AngularFlowService);
+  private _flowService = inject(AngularFlowService);
   
   // 計算屬性
   readonly canConnect = computed(() => {
-    const globalConnectable = this.flowService.nodesConnectable();
+    const globalConnectable = this._flowService.nodesConnectable();
     const handleConnectable = this.isConnectable();
     return globalConnectable && handleConnectable;
   });
@@ -193,16 +197,12 @@ export class HandleComponent implements OnInit, OnDestroy {
     return '#1a192b';
   });
 
-  ngOnInit() {
-    // 初始化邏輯
-  }
-
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     // 清理邏輯
   }
 
   // 事件處理方法
-  handleMouseDown(event: MouseEvent) {
+  handleMouseDown(event: MouseEvent): void {
     // 檢查是否允許連接
     if (!this.canConnect()) return;
     
@@ -214,7 +214,7 @@ export class HandleComponent implements OnInit, OnDestroy {
     // 計算 handle 的視窗座標
     const handleElement = this.handleElement().nativeElement;
     const rect = handleElement.getBoundingClientRect();
-    const viewport = this.flowService.viewport();
+    const viewport = this._flowService.viewport();
     const handlePosition = {
       x: (rect.left + rect.width / 2 - viewport.x) / viewport.zoom,
       y: (rect.top + rect.height / 2 - viewport.y) / viewport.zoom
@@ -231,11 +231,11 @@ export class HandleComponent implements OnInit, OnDestroy {
     };
 
     // 獲取當前節點
-    const node = this.flowService.nodeLookup().get(this.nodeId());
+    const node = this._flowService.nodeLookup().get(this.nodeId());
     if (!node) return;
 
     // 開始連接
-    this.flowService.startConnection(node, handle, handlePosition);
+    this._flowService.startConnection(node, handle, handlePosition);
     
     this.connectStart.emit({
       event,
@@ -259,14 +259,14 @@ export class HandleComponent implements OnInit, OnDestroy {
     document.addEventListener('mouseup', handleMouseUp);
   }
 
-  handleMouseUp(event: MouseEvent) {
+  handleMouseUp(event: MouseEvent): void {
     if (!this.isConnecting()) return;
     
     this.isConnecting.set(false);
     this.connectionValid.set(null);
     
     // 獲取鼠標位置並檢查是否有磁吸的 handle
-    const viewport = this.flowService.viewport();
+    const viewport = this._flowService.viewport();
     const mousePosition = {
       x: (event.clientX - viewport.x) / viewport.zoom,
       y: (event.clientY - viewport.y) / viewport.zoom
@@ -278,7 +278,7 @@ export class HandleComponent implements OnInit, OnDestroy {
       id: this.handleId() || null
     };
 
-    const closestHandle = this.flowService.findClosestHandle(mousePosition, fromHandle);
+    const closestHandle = this._flowService.findClosestHandle(mousePosition, fromHandle);
     
     let connection: Connection | undefined;
     
@@ -301,18 +301,18 @@ export class HandleComponent implements OnInit, OnDestroy {
     }
     
     // 結束連接
-    this.flowService.endConnection(connection);
+    this._flowService.endConnection(connection);
   }
 
-  handleMouseEnter(_event: MouseEvent) {
+  handleMouseEnter(_event: MouseEvent): void {
     this.isHovered.set(true);
   }
 
-  handleMouseLeave(_event: MouseEvent) {
+  handleMouseLeave(_event: MouseEvent): void {
     this.isHovered.set(false);
   }
 
-  onHandleClick(event: MouseEvent) {
+  onHandleClick(event: MouseEvent): void {
     // 阻止事件冒泡
     event.stopPropagation();
     
@@ -325,11 +325,11 @@ export class HandleComponent implements OnInit, OnDestroy {
   }
 
   // 更新連接線位置和狀態
-  private updateConnectionLine(event: MouseEvent) {
+  private updateConnectionLine(event: MouseEvent): void {
     if (!this.isConnecting()) return;
     
     // 獲取當前鼠標位置並轉換為視窗座標
-    const viewport = this.flowService.viewport();
+    const viewport = this._flowService.viewport();
     const mousePosition = {
       x: (event.clientX - viewport.x) / viewport.zoom,
       y: (event.clientY - viewport.y) / viewport.zoom
@@ -343,7 +343,7 @@ export class HandleComponent implements OnInit, OnDestroy {
     };
 
     // 尋找最近的有效 handle 進行磁吸
-    const closestHandle = this.flowService.findClosestHandle(mousePosition, fromHandle);
+    const closestHandle = this._flowService.findClosestHandle(mousePosition, fromHandle);
     
     let finalPosition = mousePosition;
     let toHandle: Handle | null = null;
@@ -353,18 +353,18 @@ export class HandleComponent implements OnInit, OnDestroy {
       // 磁吸到最近的 handle
       finalPosition = { x: closestHandle.x, y: closestHandle.y };
       toHandle = closestHandle;
-      toNode = this.flowService.nodeLookup().get(closestHandle.nodeId) || null;
+      toNode = this._flowService.nodeLookup().get(closestHandle.nodeId) || null;
     }
     
     // 更新連接狀態
-    this.flowService.updateConnection(finalPosition, toHandle, toNode);
+    this._flowService.updateConnection(finalPosition, toHandle, toNode);
     
     // 更新連接有效性顯示
     this.updateConnectionValidity(toHandle, toNode);
   }
   
   // 更新連接有效性
-  private updateConnectionValidity(toHandle: Handle | null, toNode: any) {
+  private updateConnectionValidity(toHandle: Handle | null, toNode: any): void {
     if (toHandle && toNode && toNode.id !== this.nodeId()) {
       // 檢查是否是有效的連接目標
       const isSourceToTarget = this.type() === 'source' && toHandle.type === 'target';

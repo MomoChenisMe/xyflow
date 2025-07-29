@@ -1,4 +1,7 @@
+// Angular 核心模組
 import { Injectable, inject, signal, computed, WritableSignal, Signal } from '@angular/core';
+
+// XyFlow 系統模組
 import { 
   type PanZoomInstance,
   type XYDragInstance, 
@@ -14,6 +17,8 @@ import {
   getIncomers,
   getOutgoers
 } from '@xyflow/system';
+
+// 專案內部模組
 import { AngularNode, AngularEdge, Viewport, AngularFlowInstance, ConnectionState, NoConnection, ConnectionInProgress, Handle } from './types';
 
 @Injectable({
@@ -39,7 +44,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   private _selectNodesOnDrag: WritableSignal<boolean> = signal(false);
   private _dimensions: WritableSignal<{width: number, height: number}> = signal({width: 0, height: 0});
 
-  // 計算信號
+  // 計算信號 - 唯讀訪問器
   readonly nodes: Signal<NodeType[]> = computed(() => this._nodes());
   readonly edges: Signal<EdgeType[]> = computed(() => this._edges());
   readonly viewport: Signal<Viewport> = computed(() => this._viewport());
@@ -60,7 +65,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     this._nodesDraggable() || this._nodesConnectable() || this._elementsSelectable()
   );
 
-  // 節點和邊的查找映射
+  // 節點和邊的查找映射 - 效能優化的查找表
   readonly nodeLookup: Signal<Map<string, NodeType>> = computed(() => {
     const lookup = new Map<string, NodeType>();
     this._nodes().forEach(node => lookup.set(node.id, node));
@@ -73,7 +78,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     return lookup;
   });
 
-  // PanZoom 和 Drag 實例
+  // PanZoom 和 Drag 實例 - 型別安全
   private panZoom: PanZoomInstance | null = null;
   private drag: XYDragInstance | null = null;
   private handle: any | null = null;
@@ -166,7 +171,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     };
   }
 
-  // 初始化方法
+  // 初始化方法 - 配置流程现境
   initialize(container: HTMLElement, options?: {
     nodes?: NodeType[];
     edges?: EdgeType[];
@@ -174,7 +179,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     minZoom?: number;
     maxZoom?: number;
     selectNodesOnDrag?: boolean;
-  }) {
+  }): void {
     if (options?.nodes) {
       this._nodes.set([...options.nodes]);
     }
@@ -202,8 +207,8 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     this._initialized.set(true);
   }
 
-  // 連接處理
-  onConnect(connection: Connection) {
+  // 連接處理 - 建立節點間的連接
+  onConnect(connection: Connection): void {
     if (this.isValidConnection(connection)) {
       const newEdge = this.createEdgeFromConnection(connection);
       this._edges.update(edges => systemAddEdge(newEdge as any, edges as any) as EdgeType[]);
@@ -257,16 +262,16 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     } as EdgeType;
   }
 
-  // 清理方法
-  destroy() {
+  // 清理方法 - 釋放資源
+  destroy(): void {
     this.panZoom?.destroy();
     this.drag?.destroy();
     this.handle?.destroy();
     this._initialized.set(false);
   }
 
-  // 節點選擇
-  selectNode(nodeId: string, multiSelect = false) {
+  // 節點選擇 - 支援單選和多選
+  selectNode(nodeId: string, multiSelect = false): void {
     let newSelectedNodes: string[];
     
     if (multiSelect) {
@@ -299,8 +304,8 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     
   }
 
-  // 邊選擇
-  selectEdge(edgeId: string, multiSelect = false) {
+  // 邊選擇 - 支援單選和多選
+  selectEdge(edgeId: string, multiSelect = false): void {
     if (multiSelect) {
       this._selectedEdges.update(selected => 
         selected.includes(edgeId) 
@@ -328,8 +333,8 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     }
   }
 
-  // Handle 選擇
-  selectHandle(nodeId: string, handleId: string | undefined, type: 'source' | 'target', multiSelect = false) {
+  // Handle 選擇 - 連接點的選擇狀態
+  selectHandle(nodeId: string, handleId: string | undefined, type: 'source' | 'target', multiSelect = false): void {
     const handleKey = { nodeId, handleId, type };
     
     if (multiSelect) {
@@ -371,8 +376,8 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     );
   }
 
-  // 清除選擇
-  clearSelection() {
+  // 清除選擇 - 重置所有選擇狀態
+  clearSelection(): void {
     this._selectedNodes.set([]);
     this._selectedEdges.set([]);
     this._selectedHandles.set([]);
