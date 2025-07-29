@@ -136,7 +136,7 @@ export class HandleComponent implements OnDestroy {
   
   // 輸出事件
   readonly connectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }>();
-  readonly connectEnd = output<Connection>();
+  readonly connectEnd = output<{ connection?: Connection; event: MouseEvent }>();
   readonly handleClick = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }>();
   
   // 視圖子元素
@@ -297,8 +297,13 @@ export class HandleComponent implements OnDestroy {
           targetHandle: this.type() === 'source' ? closestHandle.id : (this.handleId() || null)
         };
         
-        this.connectEnd.emit(connection);
+        this.connectEnd.emit({ connection, event });
       }
+    }
+    
+    // 無論是否有連接，都發出connectEnd事件（用於AddNodeOnEdgeDrop等功能） 
+    if (!connection) {
+      this.connectEnd.emit({ event });
     }
     
     // 結束連接

@@ -204,7 +204,7 @@ export class NodeWrapperComponent implements OnDestroy {
   readonly nodeDrag = output<MouseEvent>();
   readonly nodeDragStop = output<MouseEvent>();
   readonly connectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target' }>();
-  readonly connectEnd = output<Connection>();
+  readonly connectEnd = output<{ connection?: Connection; event: MouseEvent }>();
   readonly handleClick = output<{ event: MouseEvent; nodeId: string; handleId?: string; handleType: 'source' | 'target' }>();
 
   // 視圖子元素

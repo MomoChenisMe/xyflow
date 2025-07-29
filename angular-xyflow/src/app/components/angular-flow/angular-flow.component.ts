@@ -335,6 +335,8 @@ export class AngularFlowComponent<
   onNodesChange = output<NodeType[]>();
   onEdgesChange = output<EdgeType[]>();
   onConnect = output<Connection>();
+  onConnectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }>();
+  onConnectEnd = output<{ connection?: Connection; event: MouseEvent }>();
   onNodeClick = output<{ event: MouseEvent; node: NodeType }>();
   onNodeDragStart = output<{
     event: MouseEvent;
@@ -1014,13 +1016,25 @@ export class AngularFlowComponent<
     // Node 和 Edge 上的雙擊事件會被 noPanClassName 機制阻止
   }
 
-  handleConnectStart(_event: MouseEvent, _node: NodeType) {
-    // 連接開始邏輯
+  handleConnectStart(event: MouseEvent, node: NodeType) {
+    // 發出連接開始事件，包含節點資訊
+    this.onConnectStart.emit({ 
+      event, 
+      nodeId: node.id,
+      handleType: 'source', // 默認為source，實際可能需要從事件中獲取
+      handleId: undefined // 實際可能需要從事件中獲取
+    });
   }
 
-  handleConnectEnd(connection: Connection) {
-    this._flowService.onConnect(connection);
-    this.onConnect.emit(connection);
+  handleConnectEnd(eventData: { connection?: Connection; event: MouseEvent }) {
+    // 發出連接結束事件
+    this.onConnectEnd.emit(eventData);
+    
+    // 如果有連接，處理連接邏輯
+    if (eventData.connection) {
+      this._flowService.onConnect(eventData.connection);
+      this.onConnect.emit(eventData.connection);
+    }
   }
 
   // 公開方法來獲取流程實例
@@ -1051,6 +1065,11 @@ export class AngularFlowComponent<
 
   resetViewport(): void {
     this._panZoomService.resetViewport();
+  }
+
+  // 座標轉換方法
+  screenToFlowPosition(clientPosition: { x: number; y: number }): { x: number; y: number } {
+    return this._flowService.screenToFlow(clientPosition);
   }
 
   // 獲取標記 ID
