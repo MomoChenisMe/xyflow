@@ -472,16 +472,22 @@ export class NodeWrapperComponent implements OnDestroy {
     const nodeId = this.node().id;
     const currentNode = this.node();
     
-    // 如果啟用了自動平移功能，優先執行平移（避免閃爍）
-    this._flowService.panToNodeOnFocus(nodeId);
+    // 檢查是否是鍵盤焦點 (類似 React 版本的 :focus-visible 檢查)
+    const isKeyboardFocus = this.isKeyboardFocused(event);
+    
+    // 只在鍵盤焦點時執行自動平移（與 React 版本一致）
+    if (isKeyboardFocus) {
+      this._flowService.panToNodeOnFocus(nodeId);
+    }
     
     // 延遲選擇操作，避免與平移動畫衝突
     const isSelectable = this._flowService.elementsSelectable();
     if (isSelectable && !currentNode.selected) {
       // 只有當節點未被選中時才進行選擇，避免不必要的更新
+      const delay = isKeyboardFocus ? 50 : 0; // 鍵盤焦點時延遲，滑鼠焦點時立即執行
       setTimeout(() => {
         this._flowService.selectNode(nodeId, false);
-      }, 50); // 短暫延遲，讓平移動畫先開始
+      }, delay);
     }
   }
 
@@ -512,5 +518,29 @@ export class NodeWrapperComponent implements OnDestroy {
     // 這個功能可以讓用戶使用鍵盤移動節點
     // 目前先留空，可以根據需要實現
     console.log('Keyboard move:', key, 'for node:', this.node().id);
+  }
+
+  // 檢查焦點是否來自鍵盤（類似 React 版本的 :focus-visible 檢查）
+  private isKeyboardFocused(event: FocusEvent): boolean {
+    const target = event.target as HTMLElement;
+    
+    // 使用現代瀏覽器的 :focus-visible 偽類檢查
+    if (target && target.matches && typeof target.matches === 'function') {
+      try {
+        return target.matches(':focus-visible');
+      } catch (e) {
+        // 某些較舊的瀏覽器可能不支持 :focus-visible
+      }
+    }
+    
+    // 備用檢查：如果沒有 :focus-visible 支持，使用簡單的啟發式判斷
+    // 這個方法不完美，但通常有效
+    return this.wasRecentKeyboardInteraction();
+  }
+
+  private wasRecentKeyboardInteraction(): boolean {
+    // 簡單的啟發式判斷：檢查最近是否有鍵盤事件
+    // 這是一個簡化的實現，在生產環境中可能需要更複雜的邏輯
+    return document.activeElement?.tagName !== 'BODY';
   }
 }

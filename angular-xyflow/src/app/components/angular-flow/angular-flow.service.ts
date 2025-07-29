@@ -10,12 +10,15 @@ import {
   type XYPosition,
   type Viewport as SystemViewport,
   type Connection,
+  type Transform,
+  type Rect,
   Position,
   addEdge as systemAddEdge,
   evaluateAbsolutePosition,
   getConnectedEdges,
   getIncomers,
   getOutgoers,
+  getNodesInside,
 } from '@xyflow/system';
 
 // 專案內部模組
@@ -119,6 +122,27 @@ export class AngularFlowService<
   readonly edgeLookup: Signal<Map<string, EdgeType>> = computed(() => {
     const lookup = new Map<string, EdgeType>();
     this._edges().forEach((edge) => lookup.set(edge.id, edge));
+    return lookup;
+  });
+
+  // 內部節點查找表 - 用於 getNodesInside 函數
+  readonly internalNodeLookup = computed(() => {
+    const lookup = new Map();
+    this._nodes().forEach((node) => {
+      lookup.set(node.id, {
+        ...node,
+        measured: {
+          width: (node as any).width || 150,
+          height: (node as any).height || 32,
+        },
+        selectable: true,
+        hidden: false,
+        internals: {
+          positionAbsolute: { x: node.position.x, y: node.position.y },
+          handleBounds: true, // 避免強制初始渲染
+        },
+      });
+    });
     return lookup;
   });
 
@@ -835,7 +859,7 @@ export class AngularFlowService<
     this._elementsSelectable.set(interactive);
   }
 
-  // 自動平移到節點功能
+  // 自動平移到節點功能 - 與 React 版本一致的行為
   panToNodeOnFocus(nodeId: string): void {
     if (!this._autoPanOnNodeFocus()) {
       return; // 如果未啟用自動平移，直接返回
@@ -849,37 +873,59 @@ export class AngularFlowService<
     const dimensions = this._dimensions();
     const viewport = this._viewport();
 
-    // 計算節點在視窗中的理想位置（中心位置）
-    const nodeWidth = (node as any).width || 150;
-    const nodeHeight = (node as any).height || 40;
+    // 檢查節點是否已經在視窗範圍內（與 React 版本一致）
+    const transform: Transform = [viewport.x, viewport.y, viewport.zoom];
+    const viewportRect: Rect = { x: 0, y: 0, width: dimensions.width, height: dimensions.height };
+    
+    // 創建只包含當前節點的 Map 來檢查是否在視窗內
+    const singleNodeLookup = new Map();
+    const internalNode = this.internalNodeLookup().get(nodeId);
+    if (internalNode) {
+      singleNodeLookup.set(nodeId, internalNode);
+    }
 
+    // 使用 getNodesInside 檢查節點是否在視窗範圍內
+    const nodesInViewport = getNodesInside(
+      singleNodeLookup,
+      viewportRect,
+      transform,
+      true // partially = true，與 React 版本一致
+    );
+
+    // 如果節點已經在視窗範圍內，不需要移動（與 React 版本一致）
+    if (nodesInViewport.length > 0) {
+      return;
+    }
+
+    // 節點不在視窗範圍內，移動到節點中心
+    const nodeWidth = (node as any).width || 150;
+    const nodeHeight = (node as any).height || 32;
+    
     // 計算節點中心點
     const nodeCenterX = node.position.x + nodeWidth / 2;
     const nodeCenterY = node.position.y + nodeHeight / 2;
-
+    
     // 計算視窗中心點
     const viewportCenterX = dimensions.width / 2;
     const viewportCenterY = dimensions.height / 2;
-
-    // 計算需要的平移量
+    
+    // 計算需要的平移量，與 React 版本的 setCenter 邏輯一致
     const targetX = viewportCenterX - nodeCenterX * viewport.zoom;
     const targetY = viewportCenterY - nodeCenterY * viewport.zoom;
-
+    
     const newViewport = {
       x: targetX,
       y: targetY,
       zoom: viewport.zoom,
     };
 
-    // 只使用 PanZoom 實例進行平滑動畫，避免重複更新造成閃爍
+    // 使用 PanZoom 實例進行平滑動畫（保留平滑動畫效果）
     if (this.panZoom && typeof this.panZoom.setViewport === 'function') {
-      // 使用 PanZoom 進行平滑動畫
-      // PanZoom 會通過 onPanZoom 和 onTransformChange 回調自動更新 viewport signal
       this.panZoom.setViewport(newViewport, { 
-        duration: 200 // 稍微縮短動畫時間以提高響應性
+        duration: 200 // 保留 200ms 平滑動畫
       });
     } else {
-      // 如果沒有 PanZoom 實例，直接更新 viewport
+      // 如果沒有 PanZoom 實例，直接更新 viewport  
       this._viewport.set(newViewport);
     }
   }
