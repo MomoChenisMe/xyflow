@@ -37,6 +37,9 @@ import { AngularFlowService } from '../angular-flow.service';
       class="xy-flow__node angular-flow__node"
       [class]="nodeClasses()"
       [attr.data-node-id]="node().id"
+      [attr.tabindex]="getTabIndex()"
+      [attr.role]="getNodeRole()"
+      [attr.aria-label]="getAriaLabel()"
       [style.position]="'absolute'"
       [style.transform]="nodeTransform()"
       [style.z-index]="node().zIndex || 1"
@@ -48,6 +51,8 @@ import { AngularFlowService } from '../angular-flow.service';
       [style.cursor]="getCursor()"
       (click)="onNodeClick($event)"
       (mousedown)="onNodeMouseDown($event)"
+      (focus)="onNodeFocus($event)"
+      (keydown)="onNodeKeyDown($event)"
     >
       <!-- Source handles -->
       @if (shouldShowHandles()) {
@@ -415,5 +420,97 @@ export class NodeWrapperComponent implements OnDestroy {
   isHandleSelected(type: 'source' | 'target'): boolean {
     const nodeId = this.node().id;
     return this._flowService.isHandleSelected(nodeId, undefined, type);
+  }
+
+  // A11y 相關方法
+  getTabIndex(): number {
+    const nodeData = this.node();
+    const globalSelectable = this._flowService.elementsSelectable();
+    
+    // 檢查是否有自定義的 tabIndex
+    const domAttributes = nodeData.data?.['domAttributes'] as any;
+    if (domAttributes && typeof domAttributes.tabIndex === 'number') {
+      return domAttributes.tabIndex;
+    }
+    
+    // 如果節點可選擇，設為 0 讓它可以被鍵盤聚焦
+    return globalSelectable ? 0 : -1;
+  }
+
+  getNodeRole(): string {
+    const nodeData = this.node();
+    
+    // 檢查是否有自定義的 aria role
+    if (nodeData.data?.['ariaRole']) {
+      return nodeData.data['ariaRole'] as string;
+    }
+    
+    // 預設使用 'button' role，因為節點是可交互的
+    return 'button';
+  }
+
+  getAriaLabel(): string {
+    const nodeData = this.node();
+    
+    // 檢查是否有自定義的 aria-label
+    if (nodeData.data?.['ariaLabel']) {
+      return nodeData.data['ariaLabel'] as string;
+    }
+    
+    // 檢查是否有自定義的 aria-roledescription
+    const domAttributes = nodeData.data?.['domAttributes'] as any;
+    if (domAttributes && domAttributes['aria-roledescription']) {
+      return domAttributes['aria-roledescription'] as string;
+    }
+    
+    // 預設使用節點的 label 或 id
+    const label = nodeData.data?.['label'] || nodeData.id;
+    return `Node ${label}`;
+  }
+
+  onNodeFocus(event: FocusEvent): void {
+    const nodeId = this.node().id;
+    const currentNode = this.node();
+    
+    // 如果啟用了自動平移功能，優先執行平移（避免閃爍）
+    this._flowService.panToNodeOnFocus(nodeId);
+    
+    // 延遲選擇操作，避免與平移動畫衝突
+    const isSelectable = this._flowService.elementsSelectable();
+    if (isSelectable && !currentNode.selected) {
+      // 只有當節點未被選中時才進行選擇，避免不必要的更新
+      setTimeout(() => {
+        this._flowService.selectNode(nodeId, false);
+      }, 50); // 短暫延遲，讓平移動畫先開始
+    }
+  }
+
+  onNodeKeyDown(event: KeyboardEvent): void {
+    const nodeId = this.node().id;
+    
+    // 處理 Enter 或 Space 鍵，模擬點擊
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      
+      // 觸發節點點擊事件
+      const mouseEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+      });
+      
+      this.onNodeClick(mouseEvent);
+    }
+    
+    // 處理方向鍵移動（可選功能）
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+      event.preventDefault();
+      this.handleKeyboardMove(event.key);
+    }
+  }
+
+  private handleKeyboardMove(key: string): void {
+    // 這個功能可以讓用戶使用鍵盤移動節點
+    // 目前先留空，可以根據需要實現
+    console.log('Keyboard move:', key, 'for node:', this.node().id);
   }
 }

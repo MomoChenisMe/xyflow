@@ -802,7 +802,7 @@ export class AngularFlowService<
     }
 
     const node = this.nodeLookup().get(nodeId);
-    if (!node || !this.panZoom) {
+    if (!node) {
       return;
     }
 
@@ -825,19 +825,22 @@ export class AngularFlowService<
     const targetX = viewportCenterX - nodeCenterX * viewport.zoom;
     const targetY = viewportCenterY - nodeCenterY * viewport.zoom;
 
-    // 使用 PanZoom 實例進行平滑移動
     const newViewport = {
       x: targetX,
       y: targetY,
       zoom: viewport.zoom,
     };
 
-    // 更新視窗位置
-    this._viewport.set(newViewport);
-
-    // 如果有 PanZoom 實例，也更新它
+    // 只使用 PanZoom 實例進行平滑動畫，避免重複更新造成閃爍
     if (this.panZoom && typeof this.panZoom.setViewport === 'function') {
-      this.panZoom.setViewport(newViewport, { duration: 300 }); // 300ms 動畫
+      // 使用 PanZoom 進行平滑動畫
+      // PanZoom 會通過 onPanZoom 和 onTransformChange 回調自動更新 viewport signal
+      this.panZoom.setViewport(newViewport, { 
+        duration: 200 // 稍微縮短動畫時間以提高響應性
+      });
+    } else {
+      // 如果沒有 PanZoom 實例，直接更新 viewport
+      this._viewport.set(newViewport);
     }
   }
 }
