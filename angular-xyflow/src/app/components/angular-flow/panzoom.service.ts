@@ -24,9 +24,7 @@ interface PanZoomConfig {
   defaultViewport?: Viewport;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class AngularFlowPanZoomService implements OnDestroy {
   private panZoomInstance?: PanZoomInstance;
   private readonly _isDragging = signal(false);

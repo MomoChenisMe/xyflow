@@ -2,9 +2,9 @@
 import { Injectable, inject, signal, computed, Signal } from '@angular/core';
 
 // XyFlow 系統模組
-import { 
+import {
   type PanZoomInstance,
-  type XYDragInstance, 
+  type XYDragInstance,
   type NodeBase,
   type EdgeBase,
   type XYPosition,
@@ -15,24 +15,38 @@ import {
   evaluateAbsolutePosition,
   getConnectedEdges,
   getIncomers,
-  getOutgoers
+  getOutgoers,
 } from '@xyflow/system';
 
 // 專案內部模組
-import { AngularNode, AngularEdge, Viewport, AngularFlowInstance, ConnectionState, NoConnection, ConnectionInProgress, Handle } from './types';
+import {
+  AngularNode,
+  AngularEdge,
+  Viewport,
+  AngularFlowInstance,
+  ConnectionState,
+  NoConnection,
+  ConnectionInProgress,
+  Handle,
+} from './types';
 
-@Injectable({
-  providedIn: 'root'
-})
-export class AngularFlowService<NodeType extends AngularNode = AngularNode, EdgeType extends AngularEdge = AngularEdge> {
+@Injectable()
+export class AngularFlowService<
+  NodeType extends AngularNode = AngularNode,
+  EdgeType extends AngularEdge = AngularEdge
+> {
   // 核心信號狀態
   private _nodes = signal<NodeType[]>([]);
   private _edges = signal<EdgeType[]>([]);
   private _viewport = signal<Viewport>({ x: 0, y: 0, zoom: 1 });
   private _selectedNodes = signal<string[]>([]);
   private _selectedEdges = signal<string[]>([]);
-  private _selectedHandles = signal<Array<{nodeId: string, handleId?: string, type: 'source' | 'target'}>>([]);
-  private _connectionState = signal<ConnectionState<NodeType>>({ inProgress: false } as NoConnection);
+  private _selectedHandles = signal<
+    Array<{ nodeId: string; handleId?: string; type: 'source' | 'target' }>
+  >([]);
+  private _connectionState = signal<ConnectionState<NodeType>>({
+    inProgress: false,
+  } as NoConnection);
   private _initialized = signal<boolean>(false);
   private _minZoom = signal<number>(0.5);
   private _maxZoom = signal<number>(2);
@@ -43,40 +57,68 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   private _elementsSelectable = signal<boolean>(true);
   private _selectNodesOnDrag = signal<boolean>(false);
   private _autoPanOnNodeFocus = signal<boolean>(false);
-  private _dimensions = signal<{width: number, height: number}>({width: 0, height: 0});
+  private _dimensions = signal<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
 
   // 計算信號 - 唯讀訪問器
   readonly nodes: Signal<NodeType[]> = computed(() => this._nodes());
   readonly edges: Signal<EdgeType[]> = computed(() => this._edges());
   readonly viewport: Signal<Viewport> = computed(() => this._viewport());
-  readonly selectedNodes: Signal<string[]> = computed(() => this._selectedNodes());
-  readonly selectedEdges: Signal<string[]> = computed(() => this._selectedEdges());
-  readonly selectedHandles: Signal<Array<{nodeId: string, handleId?: string, type: 'source' | 'target'}>> = computed(() => this._selectedHandles());
-  readonly connectionState: Signal<ConnectionState<NodeType>> = computed(() => this._connectionState());
+  readonly selectedNodes: Signal<string[]> = computed(() =>
+    this._selectedNodes()
+  );
+  readonly selectedEdges: Signal<string[]> = computed(() =>
+    this._selectedEdges()
+  );
+  readonly selectedHandles: Signal<
+    Array<{ nodeId: string; handleId?: string; type: 'source' | 'target' }>
+  > = computed(() => this._selectedHandles());
+  readonly connectionState: Signal<ConnectionState<NodeType>> = computed(() =>
+    this._connectionState()
+  );
   readonly initialized: Signal<boolean> = computed(() => this._initialized());
   readonly minZoom: Signal<number> = computed(() => this._minZoom());
   readonly maxZoom: Signal<number> = computed(() => this._maxZoom());
-  readonly connectionRadius: Signal<number> = computed(() => this._connectionRadius());
-  readonly nodesDraggable: Signal<boolean> = computed(() => this._nodesDraggable());
-  readonly nodesConnectable: Signal<boolean> = computed(() => this._nodesConnectable());
-  readonly elementsSelectable: Signal<boolean> = computed(() => this._elementsSelectable());
-  readonly selectNodesOnDrag: Signal<boolean> = computed(() => this._selectNodesOnDrag());
-  readonly autoPanOnNodeFocus: Signal<boolean> = computed(() => this._autoPanOnNodeFocus());
-  readonly dimensions: Signal<{width: number, height: number}> = computed(() => this._dimensions());
-  readonly isInteractive: Signal<boolean> = computed(() => 
-    this._nodesDraggable() || this._nodesConnectable() || this._elementsSelectable()
+  readonly connectionRadius: Signal<number> = computed(() =>
+    this._connectionRadius()
+  );
+  readonly nodesDraggable: Signal<boolean> = computed(() =>
+    this._nodesDraggable()
+  );
+  readonly nodesConnectable: Signal<boolean> = computed(() =>
+    this._nodesConnectable()
+  );
+  readonly elementsSelectable: Signal<boolean> = computed(() =>
+    this._elementsSelectable()
+  );
+  readonly selectNodesOnDrag: Signal<boolean> = computed(() =>
+    this._selectNodesOnDrag()
+  );
+  readonly autoPanOnNodeFocus: Signal<boolean> = computed(() =>
+    this._autoPanOnNodeFocus()
+  );
+  readonly dimensions: Signal<{ width: number; height: number }> = computed(
+    () => this._dimensions()
+  );
+  readonly isInteractive: Signal<boolean> = computed(
+    () =>
+      this._nodesDraggable() ||
+      this._nodesConnectable() ||
+      this._elementsSelectable()
   );
 
   // 節點和邊的查找映射 - 效能優化的查找表
   readonly nodeLookup: Signal<Map<string, NodeType>> = computed(() => {
     const lookup = new Map<string, NodeType>();
-    this._nodes().forEach(node => lookup.set(node.id, node));
+    this._nodes().forEach((node) => lookup.set(node.id, node));
     return lookup;
   });
 
   readonly edgeLookup: Signal<Map<string, EdgeType>> = computed(() => {
     const lookup = new Map<string, EdgeType>();
-    this._edges().forEach(edge => lookup.set(edge.id, edge));
+    this._edges().forEach((edge) => lookup.set(edge.id, edge));
     return lookup;
   });
 
@@ -108,53 +150,84 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
       },
       addNodes: (nodes: NodeType | NodeType[]) => {
         const nodesToAdd = Array.isArray(nodes) ? nodes : [nodes];
-        this._nodes.update(existingNodes => [...existingNodes, ...nodesToAdd]);
+        this._nodes.update((existingNodes) => [
+          ...existingNodes,
+          ...nodesToAdd,
+        ]);
       },
       addEdges: (edges: EdgeType | EdgeType[]) => {
         const edgesToAdd = Array.isArray(edges) ? edges : [edges];
-        this._edges.update(existingEdges => [...existingEdges, ...edgesToAdd]);
+        this._edges.update((existingEdges) => [
+          ...existingEdges,
+          ...edgesToAdd,
+        ]);
       },
-      updateNode: (id: string, nodeUpdate: Partial<NodeType> | ((node: NodeType) => Partial<NodeType>)) => {
-        this._nodes.update(nodes => 
-          nodes.map(node => {
+      updateNode: (
+        id: string,
+        nodeUpdate: Partial<NodeType> | ((node: NodeType) => Partial<NodeType>)
+      ) => {
+        this._nodes.update((nodes) =>
+          nodes.map((node) => {
             if (node.id === id) {
-              const update = typeof nodeUpdate === 'function' ? nodeUpdate(node) : nodeUpdate;
+              const update =
+                typeof nodeUpdate === 'function'
+                  ? nodeUpdate(node)
+                  : nodeUpdate;
               return { ...node, ...update };
             }
             return node;
           })
         );
       },
-      updateNodeData: (id: string, dataUpdate: any | ((node: NodeType) => any)) => {
-        this._nodes.update(nodes => 
-          nodes.map(node => {
+      updateNodeData: (
+        id: string,
+        dataUpdate: any | ((node: NodeType) => any)
+      ) => {
+        this._nodes.update((nodes) =>
+          nodes.map((node) => {
             if (node.id === id) {
-              const newData = typeof dataUpdate === 'function' ? dataUpdate(node) : dataUpdate;
+              const newData =
+                typeof dataUpdate === 'function'
+                  ? dataUpdate(node)
+                  : dataUpdate;
               return { ...node, data: { ...node.data, ...newData } };
             }
             return node;
           })
         );
       },
-      updateEdge: (id: string, edgeUpdate: Partial<EdgeType> | ((edge: EdgeType) => Partial<EdgeType>)) => {
-        this._edges.update(edges => 
-          edges.map(edge => {
+      updateEdge: (
+        id: string,
+        edgeUpdate: Partial<EdgeType> | ((edge: EdgeType) => Partial<EdgeType>)
+      ) => {
+        this._edges.update((edges) =>
+          edges.map((edge) => {
             if (edge.id === id) {
-              const update = typeof edgeUpdate === 'function' ? edgeUpdate(edge) : edgeUpdate;
+              const update =
+                typeof edgeUpdate === 'function'
+                  ? edgeUpdate(edge)
+                  : edgeUpdate;
               return { ...edge, ...update };
             }
             return edge;
           })
         );
       },
-      deleteElements: (elements: { nodes?: { id: string }[]; edges?: { id: string }[] }) => {
+      deleteElements: (elements: {
+        nodes?: { id: string }[];
+        edges?: { id: string }[];
+      }) => {
         if (elements.nodes?.length) {
-          const nodeIdsToDelete = new Set(elements.nodes.map(n => n.id));
-          this._nodes.update(nodes => nodes.filter(node => !nodeIdsToDelete.has(node.id)));
+          const nodeIdsToDelete = new Set(elements.nodes.map((n) => n.id));
+          this._nodes.update((nodes) =>
+            nodes.filter((node) => !nodeIdsToDelete.has(node.id))
+          );
         }
         if (elements.edges?.length) {
-          const edgeIdsToDelete = new Set(elements.edges.map(e => e.id));
-          this._edges.update(edges => edges.filter(edge => !edgeIdsToDelete.has(edge.id)));
+          const edgeIdsToDelete = new Set(elements.edges.map((e) => e.id));
+          this._edges.update((edges) =>
+            edges.filter((edge) => !edgeIdsToDelete.has(edge.id))
+          );
         }
       },
       fitView: (options?) => {
@@ -168,21 +241,24 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
       toObject: () => ({
         nodes: [...this._nodes()],
         edges: [...this._edges()],
-        viewport: { ...this._viewport() }
-      })
+        viewport: { ...this._viewport() },
+      }),
     };
   }
 
   // 初始化方法 - 配置流程现境
-  initialize(container: HTMLElement, options?: {
-    nodes?: NodeType[];
-    edges?: EdgeType[];
-    defaultViewport?: Viewport;
-    minZoom?: number;
-    maxZoom?: number;
-    selectNodesOnDrag?: boolean;
-    autoPanOnNodeFocus?: boolean;
-  }): void {
+  initialize(
+    container: HTMLElement,
+    options?: {
+      nodes?: NodeType[];
+      edges?: EdgeType[];
+      defaultViewport?: Viewport;
+      minZoom?: number;
+      maxZoom?: number;
+      selectNodesOnDrag?: boolean;
+      autoPanOnNodeFocus?: boolean;
+    }
+  ): void {
     if (options?.nodes) {
       this._nodes.set([...options.nodes]);
     }
@@ -217,14 +293,16 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   onConnect(connection: Connection): void {
     if (this.isValidConnection(connection)) {
       const newEdge = this.createEdgeFromConnection(connection);
-      this._edges.update(edges => systemAddEdge(newEdge as any, edges as any) as EdgeType[]);
+      this._edges.update(
+        (edges) => systemAddEdge(newEdge as any, edges as any) as EdgeType[]
+      );
     }
   }
 
   // 驗證連接是否有效
   private isValidConnection(connection: Connection): boolean {
     const { source, target, sourceHandle, targetHandle } = connection;
-    
+
     // 基本驗證
     if (!source || !target || source === target) {
       return false;
@@ -233,17 +311,18 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     // 檢查節點是否存在
     const sourceNode = this.nodeLookup().get(source);
     const targetNode = this.nodeLookup().get(target);
-    
+
     if (!sourceNode || !targetNode) {
       return false;
     }
 
     // 檢查是否已存在相同連接
-    const existingEdge = this._edges().find(edge => 
-      edge.source === source && 
-      edge.target === target && 
-      edge.sourceHandle === sourceHandle && 
-      edge.targetHandle === targetHandle
+    const existingEdge = this._edges().find(
+      (edge) =>
+        edge.source === source &&
+        edge.target === target &&
+        edge.sourceHandle === sourceHandle &&
+        edge.targetHandle === targetHandle
     );
 
     if (existingEdge) {
@@ -264,7 +343,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
       target: connection.target,
       sourceHandle: connection.sourceHandle,
       targetHandle: connection.targetHandle,
-      type: 'default'
+      type: 'default',
     } as EdgeType;
   }
 
@@ -279,76 +358,81 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   // 節點選擇 - 支援單選和多選
   selectNode(nodeId: string, multiSelect = false): void {
     let newSelectedNodes: string[];
-    
+
     if (multiSelect) {
       const currentSelected = this._selectedNodes();
-      newSelectedNodes = currentSelected.includes(nodeId) 
-        ? currentSelected.filter(id => id !== nodeId)
+      newSelectedNodes = currentSelected.includes(nodeId)
+        ? currentSelected.filter((id) => id !== nodeId)
         : [...currentSelected, nodeId];
     } else {
       newSelectedNodes = [nodeId];
       this._selectedEdges.set([]); // 清除邊選擇
     }
-    
+
     // 同步更新選中節點列表
     this._selectedNodes.set(newSelectedNodes);
-    
+
     // 立即同步更新節點的選中狀態
-    this._nodes.update(nodes => 
-      nodes.map(node => ({
+    this._nodes.update((nodes) =>
+      nodes.map((node) => ({
         ...node,
-        selected: newSelectedNodes.includes(node.id)
+        selected: newSelectedNodes.includes(node.id),
       }))
     );
-    
+
     // 清除邊的選中狀態（如果不是多選）
     if (!multiSelect) {
-      this._edges.update(edges => 
-        edges.map(edge => ({ ...edge, selected: false }))
+      this._edges.update((edges) =>
+        edges.map((edge) => ({ ...edge, selected: false }))
       );
     }
-    
   }
 
   // 邊選擇 - 支援單選和多選
   selectEdge(edgeId: string, multiSelect = false): void {
     if (multiSelect) {
-      this._selectedEdges.update(selected => 
-        selected.includes(edgeId) 
-          ? selected.filter(id => id !== edgeId)
+      this._selectedEdges.update((selected) =>
+        selected.includes(edgeId)
+          ? selected.filter((id) => id !== edgeId)
           : [...selected, edgeId]
       );
     } else {
       this._selectedEdges.set([edgeId]);
       this._selectedNodes.set([]); // 清除節點選擇
     }
-    
+
     // 更新邊的選中狀態
-    this._edges.update(edges => 
-      edges.map(edge => ({
+    this._edges.update((edges) =>
+      edges.map((edge) => ({
         ...edge,
-        selected: this._selectedEdges().includes(edge.id)
+        selected: this._selectedEdges().includes(edge.id),
       }))
     );
-    
+
     // 清除節點的選中狀態（如果不是多選）
     if (!multiSelect) {
-      this._nodes.update(nodes => 
-        nodes.map(node => ({ ...node, selected: false }))
+      this._nodes.update((nodes) =>
+        nodes.map((node) => ({ ...node, selected: false }))
       );
     }
   }
 
   // Handle 選擇 - 連接點的選擇狀態
-  selectHandle(nodeId: string, handleId: string | undefined, type: 'source' | 'target', multiSelect = false): void {
+  selectHandle(
+    nodeId: string,
+    handleId: string | undefined,
+    type: 'source' | 'target',
+    multiSelect = false
+  ): void {
     const handleKey = { nodeId, handleId, type };
-    
+
     if (multiSelect) {
-      this._selectedHandles.update(selected => {
-        const existingIndex = selected.findIndex(h => 
-          h.nodeId === nodeId && h.handleId === handleId && h.type === type
+      this._selectedHandles.update((selected) => {
+        const existingIndex = selected.findIndex(
+          (h) =>
+            h.nodeId === nodeId && h.handleId === handleId && h.type === type
         );
-        
+
         if (existingIndex >= 0) {
           // 取消選擇
           return selected.filter((_, index) => index !== existingIndex);
@@ -361,24 +445,27 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
       this._selectedHandles.set([handleKey]);
       this._selectedNodes.set([]); // 清除節點選擇
       this._selectedEdges.set([]); // 清除邊選擇
-      
+
       // 更新節點的選中狀態
-      this._nodes.update(nodes => 
-        nodes.map(node => ({ ...node, selected: false }))
+      this._nodes.update((nodes) =>
+        nodes.map((node) => ({ ...node, selected: false }))
       );
-      
+
       // 更新邊的選中狀態
-      this._edges.update(edges => 
-        edges.map(edge => ({ ...edge, selected: false }))
+      this._edges.update((edges) =>
+        edges.map((edge) => ({ ...edge, selected: false }))
       );
     }
-    
   }
 
   // 檢查 Handle 是否被選中
-  isHandleSelected(nodeId: string, handleId: string | undefined, type: 'source' | 'target'): boolean {
-    return this._selectedHandles().some(h => 
-      h.nodeId === nodeId && h.handleId === handleId && h.type === type
+  isHandleSelected(
+    nodeId: string,
+    handleId: string | undefined,
+    type: 'source' | 'target'
+  ): boolean {
+    return this._selectedHandles().some(
+      (h) => h.nodeId === nodeId && h.handleId === handleId && h.type === type
     );
   }
 
@@ -387,28 +474,32 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     this._selectedNodes.set([]);
     this._selectedEdges.set([]);
     this._selectedHandles.set([]);
-    this._nodes.update(nodes => 
-      nodes.map(node => ({ ...node, selected: false }))
+    this._nodes.update((nodes) =>
+      nodes.map((node) => ({ ...node, selected: false }))
     );
-    this._edges.update(edges => 
-      edges.map(edge => ({ ...edge, selected: false }))
+    this._edges.update((edges) =>
+      edges.map((edge) => ({ ...edge, selected: false }))
     );
   }
 
   // 取得選中的節點
   getSelectedNodes(): NodeType[] {
     const selectedIds = this._selectedNodes();
-    return this._nodes().filter(node => selectedIds.includes(node.id));
+    return this._nodes().filter((node) => selectedIds.includes(node.id));
   }
 
   // 取得選中的邊
   getSelectedEdges(): EdgeType[] {
     const selectedIds = this._selectedEdges();
-    return this._edges().filter(edge => selectedIds.includes(edge.id));
+    return this._edges().filter((edge) => selectedIds.includes(edge.id));
   }
 
   // 取得選中的 Handles
-  getSelectedHandles(): Array<{nodeId: string, handleId?: string, type: 'source' | 'target'}> {
+  getSelectedHandles(): Array<{
+    nodeId: string;
+    handleId?: string;
+    type: 'source' | 'target';
+  }> {
     return [...this._selectedHandles()];
   }
 
@@ -423,7 +514,7 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   }
 
   // 設置容器尺寸
-  setDimensions(dimensions: {width: number, height: number}) {
+  setDimensions(dimensions: { width: number; height: number }) {
     this._dimensions.set(dimensions);
   }
 
@@ -438,7 +529,11 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   }
 
   // 連接狀態管理方法
-  startConnection(fromNode: NodeType, fromHandle: Handle, fromPosition: { x: number; y: number }) {
+  startConnection(
+    fromNode: NodeType,
+    fromHandle: Handle,
+    fromPosition: { x: number; y: number }
+  ) {
     const connectionState: ConnectionInProgress<NodeType> = {
       inProgress: true,
       isValid: null,
@@ -451,27 +546,36 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
       toPosition: this.getOppositePosition(fromHandle.position),
       toNode: null,
     };
-    
+
     this._connectionState.set(connectionState);
   }
 
-  updateConnection(to: { x: number; y: number }, toHandle?: Handle | null, toNode?: NodeType | null) {
+  updateConnection(
+    to: { x: number; y: number },
+    toHandle?: Handle | null,
+    toNode?: NodeType | null
+  ) {
     const currentState = this._connectionState();
     if (!currentState.inProgress) return;
 
-    const isValid = toHandle && toNode ? this.isValidConnection({
-      source: currentState.fromNode.id,
-      target: toNode.id,
-      sourceHandle: currentState.fromHandle.id,
-      targetHandle: toHandle.id
-    }) : null;
+    const isValid =
+      toHandle && toNode
+        ? this.isValidConnection({
+            source: currentState.fromNode.id,
+            target: toNode.id,
+            sourceHandle: currentState.fromHandle.id,
+            targetHandle: toHandle.id,
+          })
+        : null;
 
     const updatedState: ConnectionInProgress<NodeType> = {
       ...currentState,
       to,
       toHandle: toHandle || null,
       toNode: toNode || null,
-      toPosition: toHandle?.position || this.getOppositePosition(currentState.fromPosition),
+      toPosition:
+        toHandle?.position ||
+        this.getOppositePosition(currentState.fromPosition),
       isValid,
     };
 
@@ -480,12 +584,12 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
 
   endConnection(connection?: Connection) {
     const currentState = this._connectionState();
-    
+
     if (currentState.inProgress && connection && currentState.isValid) {
       // 創建新的連接
       this.onConnect(connection);
     }
-    
+
     // 重置連接狀態
     this._connectionState.set({ inProgress: false });
   }
@@ -495,8 +599,16 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   }
 
   // 計算 handle 的世界座標位置
-  calculateHandlePosition(node: NodeType, handleType: 'source' | 'target', handlePosition?: Position, nodeWidth: number = 150, nodeHeight: number = 40): { x: number; y: number } {
-    const position = handlePosition || (handleType === 'source' ? Position.Bottom : Position.Top);
+  calculateHandlePosition(
+    node: NodeType,
+    handleType: 'source' | 'target',
+    handlePosition?: Position,
+    nodeWidth: number = 150,
+    nodeHeight: number = 40
+  ): { x: number; y: number } {
+    const position =
+      handlePosition ||
+      (handleType === 'source' ? Position.Bottom : Position.Top);
     const nodeX = node.position.x;
     const nodeY = node.position.y;
 
@@ -517,18 +629,27 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
   // 獲取相對位置
   private getOppositePosition(position: Position): Position {
     switch (position) {
-      case Position.Top: return Position.Bottom;
-      case Position.Bottom: return Position.Top;
-      case Position.Left: return Position.Right;
-      case Position.Right: return Position.Left;
-      default: return Position.Top;
+      case Position.Top:
+        return Position.Bottom;
+      case Position.Bottom:
+        return Position.Top;
+      case Position.Left:
+        return Position.Right;
+      case Position.Right:
+        return Position.Left;
+      default:
+        return Position.Top;
     }
   }
 
   // 尋找最近的有效 handle，基於 React Flow 的邏輯
   findClosestHandle(
-    position: { x: number; y: number }, 
-    fromHandle: { nodeId: string; type: 'source' | 'target'; id?: string | null }
+    position: { x: number; y: number },
+    fromHandle: {
+      nodeId: string;
+      type: 'source' | 'target';
+      id?: string | null;
+    }
   ): Handle | null {
     let closestHandles: Handle[] = [];
     let minDistance = Infinity;
@@ -537,35 +658,39 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
 
     // 獲取在搜索範圍內的節點
     const searchRadius = connectionRadius + ADDITIONAL_DISTANCE;
-    const nearbyNodes = this._nodes().filter(node => {
+    const nearbyNodes = this._nodes().filter((node) => {
       const nodeDistance = Math.sqrt(
-        Math.pow(node.position.x - position.x, 2) + Math.pow(node.position.y - position.y, 2)
+        Math.pow(node.position.x - position.x, 2) +
+          Math.pow(node.position.y - position.y, 2)
       );
       return nodeDistance <= searchRadius;
     });
 
-    nearbyNodes.forEach(node => {
+    nearbyNodes.forEach((node) => {
       const handles = this.getNodeHandles(node);
-      
-      handles.forEach(handle => {
+
+      handles.forEach((handle) => {
         // 跳過來源 handle
-        if (fromHandle.nodeId === handle.nodeId && 
-            fromHandle.type === handle.type && 
-            fromHandle.id === handle.id) {
+        if (
+          fromHandle.nodeId === handle.nodeId &&
+          fromHandle.type === handle.type &&
+          fromHandle.id === handle.id
+        ) {
           return;
         }
 
         // 只允許相對類型的連接：source -> target 或 target -> source
-        const isValidHandleType = 
+        const isValidHandleType =
           (fromHandle.type === 'source' && handle.type === 'target') ||
           (fromHandle.type === 'target' && handle.type === 'source');
-          
+
         if (!isValidHandleType) {
           return;
         }
 
         const distance = Math.sqrt(
-          Math.pow(handle.x - position.x, 2) + Math.pow(handle.y - position.y, 2)
+          Math.pow(handle.x - position.x, 2) +
+            Math.pow(handle.y - position.y, 2)
         );
 
         // 只考慮在連接半徑內的 handle
@@ -589,8 +714,12 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
 
     // 當多個 handle 重疊時，優先選擇相對的 handle 類型
     if (closestHandles.length > 1) {
-      const oppositeHandleType = fromHandle.type === 'source' ? 'target' : 'source';
-      return closestHandles.find(handle => handle.type === oppositeHandleType) ?? closestHandles[0];
+      const oppositeHandleType =
+        fromHandle.type === 'source' ? 'target' : 'source';
+      return (
+        closestHandles.find((handle) => handle.type === oppositeHandleType) ??
+        closestHandles[0]
+      );
     }
 
     return closestHandles[0];
@@ -603,11 +732,19 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     const nodeHeight = 40;
 
     // 根據節點類型決定有哪些 handles
-    const hasSourceHandle = !node.type || node.type === 'default' || node.type === 'input';
-    const hasTargetHandle = !node.type || node.type === 'default' || node.type === 'output';
+    const hasSourceHandle =
+      !node.type || node.type === 'default' || node.type === 'input';
+    const hasTargetHandle =
+      !node.type || node.type === 'default' || node.type === 'output';
 
     if (hasSourceHandle) {
-      const sourcePosition = this.calculateHandlePosition(node, 'source', node.sourcePosition, nodeWidth, nodeHeight);
+      const sourcePosition = this.calculateHandlePosition(
+        node,
+        'source',
+        node.sourcePosition,
+        nodeWidth,
+        nodeHeight
+      );
       handles.push({
         id: null,
         nodeId: node.id,
@@ -619,7 +756,13 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     }
 
     if (hasTargetHandle) {
-      const targetPosition = this.calculateHandlePosition(node, 'target', node.targetPosition, nodeWidth, nodeHeight);
+      const targetPosition = this.calculateHandlePosition(
+        node,
+        'target',
+        node.targetPosition,
+        nodeWidth,
+        nodeHeight
+      );
       handles.push({
         id: null,
         nodeId: node.id,
@@ -652,17 +795,6 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
     this._elementsSelectable.set(interactive);
   }
 
-  // 更新節點的測量尺寸
-  updateNodeMeasuredSize(nodeId: string, dimensions: { width: number; height: number }) {
-    this.store.updateNode(nodeId, (node) => ({
-      ...node,
-      measured: {
-        width: dimensions.width,
-        height: dimensions.height
-      }
-    }));
-  }
-
   // 自動平移到節點功能
   panToNodeOnFocus(nodeId: string): void {
     if (!this._autoPanOnNodeFocus()) {
@@ -676,33 +808,33 @@ export class AngularFlowService<NodeType extends AngularNode = AngularNode, Edge
 
     const dimensions = this._dimensions();
     const viewport = this._viewport();
-    
+
     // 計算節點在視窗中的理想位置（中心位置）
     const nodeWidth = (node as any).width || 150;
     const nodeHeight = (node as any).height || 40;
-    
+
     // 計算節點中心點
     const nodeCenterX = node.position.x + nodeWidth / 2;
     const nodeCenterY = node.position.y + nodeHeight / 2;
-    
+
     // 計算視窗中心點
     const viewportCenterX = dimensions.width / 2;
     const viewportCenterY = dimensions.height / 2;
-    
+
     // 計算需要的平移量
     const targetX = viewportCenterX - nodeCenterX * viewport.zoom;
     const targetY = viewportCenterY - nodeCenterY * viewport.zoom;
-    
+
     // 使用 PanZoom 實例進行平滑移動
     const newViewport = {
       x: targetX,
       y: targetY,
-      zoom: viewport.zoom
+      zoom: viewport.zoom,
     };
-    
+
     // 更新視窗位置
     this._viewport.set(newViewport);
-    
+
     // 如果有 PanZoom 實例，也更新它
     if (this.panZoom && typeof this.panZoom.setViewport === 'function') {
       this.panZoom.setViewport(newViewport, { duration: 300 }); // 300ms 動畫

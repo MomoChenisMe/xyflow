@@ -16,9 +16,7 @@ interface DragConfig {
   nodeClickDistance?: number;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class AngularFlowDragService implements OnDestroy {
   private xyDragInstances = new Map<string, XYDragInstance>();
   private _dragging = signal(false);

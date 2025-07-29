@@ -40,7 +40,7 @@ import { AngularFlowService } from '../angular-flow.service';
       [style.position]="'absolute'"
       [style.transform]="nodeTransform()"
       [style.z-index]="node().zIndex || 1"
-      [style.width]="node().width ? node().width + 'px' : 'auto'"
+      [style.width]="node().width ? node().width + 'px' : '150px'"
       [style.height]="node().height ? node().height + 'px' : 'auto'"
       [style.user-select]="'none'"
       [style.pointer-events]="node().hidden ? 'none' : 'auto'"
@@ -112,7 +112,7 @@ import { AngularFlowService } from '../angular-flow.service';
       border: 1px solid #1a192b;
       background: #fff;
       color: inherit;
-      min-width: 150px;
+      width: 150px;
       font-size: 12px;
       text-align: center;
       padding: 10px;
@@ -270,7 +270,7 @@ export class NodeWrapperComponent implements OnDestroy {
       const nodeData = this.node();
       const globalDraggable = this._flowService.nodesDraggable(); // 監聽全局狀態
       const isDragging = this.isDragging() || this._dragService.dragging(); // 檢查是否正在拖動
-      
+
       if (nodeData && !isDragging) {
         // 只在不拖動時重新設置拖拽，確保 DOM 元素已準備好
         setTimeout(() => this.setupDragForNode(), 0);
@@ -345,7 +345,7 @@ export class NodeWrapperComponent implements OnDestroy {
       const globalDraggable = this._flowService.nodesDraggable();
       const nodeDraggable = this.node().draggable !== false;
       const isDraggable = globalDraggable && nodeDraggable;
-      
+
       /*
        * 根據 React Flow 邏輯：
        * 當 selectNodesOnDrag=false 或節點不可拖拽或 nodeDragThreshold > 0 時，
@@ -356,12 +356,12 @@ export class NodeWrapperComponent implements OnDestroy {
       // 從服務獲取實際的設定值
       const selectNodesOnDrag = this._flowService.selectNodesOnDrag();
       const nodeDragThreshold = 0;    // 目前設為 0
-      
+
       if (isSelectable && (!selectNodesOnDrag || !isDraggable || nodeDragThreshold > 0)) {
         // 這種情況下需要在點擊時選中節點
         this._flowService.selectNode(this.node().id, false);
       }
-      
+
       this.nodeClick.emit(event);
     }
   }
@@ -374,7 +374,7 @@ export class NodeWrapperComponent implements OnDestroy {
     const nodeDraggable = this.node().draggable !== false;
     const isDraggable = globalDraggable && nodeDraggable;
     const selectNodesOnDrag = this._flowService.selectNodesOnDrag();
-    
+
     /*
      * 在以下情況下在 mousedown 時選中節點：
      * 1. 節點是可選中的
@@ -403,7 +403,7 @@ export class NodeWrapperComponent implements OnDestroy {
     const node = this.node();
     const globalDraggable = this._flowService.nodesDraggable();
     const nodeDraggable = node.draggable !== false;
-    
+
     // 只有在全局和節點都允許拖動時才顯示拖動游標
     if (!globalDraggable || !nodeDraggable) {
       return 'default';

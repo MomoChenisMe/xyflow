@@ -37,6 +37,7 @@ import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
   selector: 'angular-flow',
   standalone: true,
   imports: [CommonModule, NodeWrapperComponent],
+  providers: [AngularFlowService, AngularFlowDragService, AngularFlowPanZoomService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `

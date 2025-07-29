@@ -2,7 +2,6 @@
 import {
   Component,
   signal,
-  inject,
   viewChild,
   ChangeDetectionStrategy,
 } from '@angular/core';
@@ -14,7 +13,6 @@ import { Connection, addEdge } from '@xyflow/system';
 // 專案內部模組
 import {
   AngularFlowComponent,
-  AngularFlowService,
   BackgroundComponent,
   ControlsComponent,
   PanelComponent,
@@ -133,9 +131,6 @@ import {
   ],
 })
 export class BasicExampleComponent {
-  // 注入服務 - 保留供未來擴展使用
-  private _flowService = inject(AngularFlowService<AngularNode, AngularEdge>);
-
   // 視圖子元素引用
   readonly angularFlow = viewChild.required(AngularFlowComponent);
 
