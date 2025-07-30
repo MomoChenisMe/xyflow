@@ -49,6 +49,7 @@ import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
   template: `
     <div
       #flowContainer
+      [id]="flowContainerId()"
       class="xy-flow angular-flow angular-flow__pane"
       [class]="className() + ' ' + viewportCursorClass()"
       [style.width]="'100%'"
@@ -319,6 +320,7 @@ export class AngularFlowComponent<
   private _panZoomService = inject(AngularFlowPanZoomService);
 
   // 輸入信號
+  id = input<string>();
   defaultNodes = input<NodeType[]>([]);
   defaultEdges = input<EdgeType[]>([]);
   nodes = input<NodeType[]>();
@@ -336,6 +338,16 @@ export class AngularFlowComponent<
   nodeDragThreshold = input<number>(0);
   autoPanOnNodeFocus = input<boolean>(true);
   panOnDrag = input<boolean>(true);
+
+  // 生成唯一的容器 ID
+  flowContainerId = computed(() => {
+    const baseId = this.id();
+    if (baseId) {
+      return baseId;
+    }
+    // 為沒有明確 ID 的 Flow 實例生成唯一 ID
+    return `angular-flow-${this.generateUniqueId()}`;
+  });
 
   // 輸出事件
   onNodesChange = output<NodeType[]>();
@@ -543,6 +555,11 @@ export class AngularFlowComponent<
       this.safeSetupPanZoom();
       this.safeHandleInitialFitView();
     });
+  }
+
+  // 生成唯一 ID 的私有方法
+  private generateUniqueId(): string {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
 
 
@@ -1044,9 +1061,18 @@ export class AngularFlowComponent<
   }
 
   handlePaneDoubleClick(event: MouseEvent) {
-    // 檢查事件是否來自 controls 或其子元素
+    // 檢查事件是否來自 controls 或其子元素 - 限制在當前Flow實例範圍內
     const target = event.target as HTMLElement;
-    const isFromControls = target.closest('.angular-flow__controls') !== null;
+    const flowContainer = this.flowContainer().nativeElement;
+    
+    // 首先確認事件目標在當前Flow容器內
+    if (!flowContainer.contains(target)) {
+      return;
+    }
+    
+    // 在當前Flow容器範圍內查找controls
+    const controlsElement = flowContainer.querySelector('.angular-flow__controls');
+    const isFromControls = controlsElement && controlsElement.contains(target);
 
     if (isFromControls) {
       // 如果是來自 controls，阻止事件繼續傳播

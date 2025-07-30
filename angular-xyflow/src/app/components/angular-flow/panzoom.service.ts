@@ -64,6 +64,7 @@ export class AngularFlowPanZoomService implements OnDestroy {
     } = config;
 
 
+
     // 創建 XYPanZoom 實例
     this.panZoomInstance = XYPanZoom({
       domNode,
@@ -130,14 +131,21 @@ export class AngularFlowPanZoomService implements OnDestroy {
     // 創建並保存雙點擊處理器
     this.doubleClickHandler = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
+      const container = this.getDomElement();
+      if (!container) return;
       
-      // 檢查是否點擊在 Node、Edge、Controls、MiniMap、Panel、Background 上
-      const isOnNode = target.closest('.angular-flow__node, .xy-flow__node');
-      const isOnEdge = target.closest('.angular-flow__edge, .xy-flow__edge');
-      const isOnControls = target.closest('.angular-flow__controls');
-      const isOnMiniMap = target.closest('.angular-flow__minimap');
-      const isOnPanel = target.closest('.angular-flow__panel');
-      const isOnBackground = target.closest('.angular-flow__background');
+      // 首先確認事件目標在當前Flow容器內
+      if (!container.contains(target)) {
+        return;
+      }
+      
+      // 使用輔助函數在容器範圍內檢查 closest
+      const isOnNode = this.isTargetInContainerElement(target, container, '.angular-flow__node, .xy-flow__node');
+      const isOnEdge = this.isTargetInContainerElement(target, container, '.angular-flow__edge, .xy-flow__edge');
+      const isOnControls = this.isTargetInContainerElement(target, container, '.angular-flow__controls');
+      const isOnMiniMap = this.isTargetInContainerElement(target, container, '.angular-flow__minimap');
+      const isOnPanel = this.isTargetInContainerElement(target, container, '.angular-flow__panel');
+      const isOnBackground = this.isTargetInContainerElement(target, container, '.angular-flow__background');
       
       if (isOnNode || isOnEdge || isOnControls || isOnMiniMap || isOnPanel || isOnBackground) {
         event.stopPropagation();
@@ -279,9 +287,28 @@ export class AngularFlowPanZoomService implements OnDestroy {
 
   // 獲取DOM元素
   private getDomElement(): HTMLElement | null {
-    // 這裡應該返回當前的DOM節點
-    // 暫時通過查詢選擇器獲取
-    return document.querySelector('.angular-flow') as HTMLElement;
+    // 使用正確的流程容器 - 從 AngularFlowService 獲取當前實例的容器
+    return this._flowService.getContainerElement();
+  }
+
+  // 輔助函數：檢查目標元素是否在容器範圍內符合選擇器
+  private isTargetInContainerElement(target: HTMLElement, container: HTMLElement, selector: string): boolean {
+    // 從目標元素開始向上遍歷，但不超出容器範圍
+    let currentElement: HTMLElement | null = target;
+    
+    while (currentElement && container.contains(currentElement)) {
+      if (currentElement.matches(selector)) {
+        return true;
+      }
+      currentElement = currentElement.parentElement;
+      
+      // 如果到達容器本身，停止遍歷
+      if (currentElement === container) {
+        break;
+      }
+    }
+    
+    return false;
   }
 
   // 放大 - 以視口中心為基準（與 React Flow 一致）

@@ -140,8 +140,8 @@ export class AngularFlowDragService implements OnDestroy {
     });
 
 
-    // 嘗試獲取流程容器作為 domNode
-    const flowContainer = document.querySelector('.xy-flow');
+    // 使用正確的流程容器 - 從 AngularFlowService 獲取當前實例的容器
+    const flowContainer = this._flowService.getContainerElement();
 
     return {
       nodes,
@@ -256,7 +256,9 @@ export class AngularFlowDragService implements OnDestroy {
 
   // 設置特定節點的拖動狀態
   setNodeDraggable(nodeId: string, draggable: boolean): void {
-    const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement;
+    // 限制在當前Flow實例的容器範圍內查詢節點
+    const flowContainer = this._flowService.getContainerElement();
+    const nodeElement = flowContainer?.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement;
     const instance = this.xyDragInstances.get(nodeId);
 
     if (nodeElement && instance) {

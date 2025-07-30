@@ -223,7 +223,8 @@ export class HandleComponent implements OnDestroy {
     // 使用 DOM 測量來獲取 handle 的實際位置
     const handleElement = this.handleElement().nativeElement;
     const handleRect = handleElement.getBoundingClientRect();
-    const container = document.querySelector('.angular-flow') as HTMLElement;
+    const container = this._flowService.getContainerElement();
+    if (!container) return;
     const containerRect = container.getBoundingClientRect();
     
     // 將螢幕座標轉換為流座標

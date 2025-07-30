@@ -192,6 +192,11 @@ export class AngularFlowService<
   private handle: any | null = null;
   private containerElement: HTMLElement | null = null;
 
+  // 獲取容器元素方法 - 提供給子服務使用
+  getContainerElement(): HTMLElement | null {
+    return this.containerElement;
+  }
+
   // 流程實例API
   getFlowInstance(): AngularFlowInstance<NodeType, EdgeType> {
     return {
@@ -360,7 +365,11 @@ export class AngularFlowService<
    * 測量節點的實際 Handle bounds（類似 React 版本的 getHandleBounds）
    */
   measureNodeHandleBounds(nodeId: string): { source: any[]; target: any[]; } | null {
-    const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement;
+    // 限制在當前Flow實例的容器範圍內查詢節點
+    const container = this.getContainerElement();
+    if (!container) return null;
+    
+    const nodeElement = container.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement;
     if (!nodeElement) return null;
 
     const nodeBounds = nodeElement.getBoundingClientRect();

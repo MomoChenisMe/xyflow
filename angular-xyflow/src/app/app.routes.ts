@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { BasicExampleComponent } from './components/examples/basic-example/basic-example.component';
 import { A11yExampleComponent } from './components/examples/a11y-example/a11y-example.component';
 import { AddNodeOnEdgeDropComponent } from './components/examples/add-node-on-edge-drop/add-node-on-edge-drop.component';
+import { BackgroundsExampleComponent } from './components/examples/backgrounds-example/backgrounds-example.component';
 
 export interface IRoute {
   name: string;
@@ -21,6 +22,11 @@ export const routeList: IRoute[] = [
     component: AddNodeOnEdgeDropComponent,
   },
   {
+    name: 'Backgrounds',
+    path: 'backgrounds',
+    component: BackgroundsExampleComponent,
+  },
+  {
     name: 'Basic',
     path: 'basic',
     component: BasicExampleComponent,
@@ -31,5 +37,6 @@ export const routes: Routes = [
   { path: '', redirectTo: '/basic', pathMatch: 'full' },
   { path: 'a11y', component: A11yExampleComponent },
   { path: 'add-node-on-edge-drop', component: AddNodeOnEdgeDropComponent },
+  { path: 'backgrounds', component: BackgroundsExampleComponent },
   { path: 'basic', component: BasicExampleComponent },
 ];
