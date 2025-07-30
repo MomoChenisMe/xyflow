@@ -3,6 +3,7 @@ import { BasicExampleComponent } from './components/examples/basic-example/basic
 import { A11yExampleComponent } from './components/examples/a11y-example/a11y-example.component';
 import { AddNodeOnEdgeDropComponent } from './components/examples/add-node-on-edge-drop/add-node-on-edge-drop.component';
 import { BackgroundsExampleComponent } from './components/examples/backgrounds-example/backgrounds-example.component';
+import { BrokenNodesExampleComponent } from './components/examples/broken-nodes-example/broken-nodes-example.component';
 
 export interface IRoute {
   name: string;
@@ -31,6 +32,11 @@ export const routeList: IRoute[] = [
     path: 'basic',
     component: BasicExampleComponent,
   },
+  {
+    name: 'Broken Nodes',
+    path: 'broken-nodes',
+    component: BrokenNodesExampleComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -39,4 +45,5 @@ export const routes: Routes = [
   { path: 'add-node-on-edge-drop', component: AddNodeOnEdgeDropComponent },
   { path: 'backgrounds', component: BackgroundsExampleComponent },
   { path: 'basic', component: BasicExampleComponent },
+  { path: 'broken-nodes', component: BrokenNodesExampleComponent },
 ];

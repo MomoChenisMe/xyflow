@@ -46,7 +46,7 @@ import { AngularFlowService } from '../angular-flow.service';
       [style.width]="node().width ? node().width + 'px' : '150px'"
       [style.height]="node().height ? node().height + 'px' : 'auto'"
       [style.user-select]="'none'"
-      [style.pointer-events]="node().hidden ? 'none' : 'auto'"
+      [style.pointer-events]="'auto'"
       [style.opacity]="node().hidden ? 0 : 1"
       [style.cursor]="getCursor()"
       (click)="onNodeClick($event)"
@@ -201,7 +201,7 @@ export class NodeWrapperComponent implements OnDestroy {
   // 輸出事件
   readonly nodeClick = output<MouseEvent>();
   readonly nodeDragStart = output<MouseEvent>();
-  readonly nodeDrag = output<MouseEvent>();
+  readonly nodeDrag = output<{ event: MouseEvent; position: { x: number; y: number } }>();
   readonly nodeDragStop = output<MouseEvent>();
   readonly connectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target' }>();
   readonly connectEnd = output<{ connection?: Connection; event: MouseEvent }>();
@@ -242,7 +242,8 @@ export class NodeWrapperComponent implements OnDestroy {
 
   readonly nodeTransform = computed(() => {
     const node = this.node();
-    // 使用統一位置計算系統
+    // 使用與 Angular Flow 服務一致的位置計算
+    // 這確保與內部位置狀態保持同步，包括 NaN 值的處理
     const pos = this._flowService.getNodeVisualPosition(node);
     return `translate(${pos.x}px, ${pos.y}px)`;
   });
@@ -320,13 +321,18 @@ export class NodeWrapperComponent implements OnDestroy {
       nodeId: nodeData.id,
       domNode: element,
       isSelectable: true,
-      nodeClickDistance: 0
+      nodeClickDistance: 0,
+      onDragStart: (event: MouseEvent, nodeId: string) => {
+        this.nodeDragStart.emit(event);
+      },
+      onDrag: (event: MouseEvent, nodeId: string, position: { x: number; y: number }) => {
+        // 傳遞拖曳事件和最新位置
+        this.nodeDrag.emit({ event, position });
+      },
+      onDragStop: (event: MouseEvent, nodeId: string) => {
+        this.nodeDragStop.emit(event);
+      }
     });
-
-    // 根據狀態啟用或禁用拖動
-    this._dragService.setNodeDraggable(nodeData.id, isDraggable);
-
-
   }
 
   // 設置大小調整觀察器

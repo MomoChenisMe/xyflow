@@ -1050,9 +1050,14 @@ export class AngularFlowComponent<
     this.onNodeDragStart.emit({ event, node, nodes });
   }
 
-  handleNodeDrag(event: MouseEvent, node: NodeType) {
+  handleNodeDrag(dragData: { event: MouseEvent; position: { x: number; y: number } }, node: NodeType) {
     const nodes = this.visibleNodes();
-    this.onNodeDrag.emit({ event, node, nodes });
+    // 創建一個包含最新位置的節點副本
+    const updatedNode = {
+      ...node,
+      position: dragData.position
+    };
+    this.onNodeDrag.emit({ event: dragData.event, node: updatedNode, nodes });
   }
 
   handleNodeDragStop(event: MouseEvent, node: NodeType) {

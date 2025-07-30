@@ -14,6 +14,9 @@ interface DragConfig {
   handleSelector?: string;
   isSelectable?: boolean;
   nodeClickDistance?: number;
+  onDragStart?: (event: MouseEvent, nodeId: string) => void;
+  onDrag?: (event: MouseEvent, nodeId: string, position: { x: number; y: number }) => void;
+  onDragStop?: (event: MouseEvent, nodeId: string) => void;
 }
 
 @Injectable()
@@ -23,6 +26,13 @@ export class AngularFlowDragService implements OnDestroy {
   
   // 臨時狀態覆寫，用於處理同步更新問題
   private tempSelectedNodeIds: string[] | null = null;
+  
+  // 存儲節點拖曳回調
+  private dragCallbacks = new Map<string, {
+    onDragStart?: (event: MouseEvent, nodeId: string) => void;
+    onDrag?: (event: MouseEvent, nodeId: string, position: { x: number; y: number }) => void;
+    onDragStop?: (event: MouseEvent, nodeId: string) => void;
+  }>();
 
   // 公開拖拽狀態
   readonly dragging = computed(() => this._dragging());
@@ -34,6 +44,12 @@ export class AngularFlowDragService implements OnDestroy {
     const { nodeId } = config;
     if (!nodeId) return;
 
+    // 存儲拖曳回調
+    this.dragCallbacks.set(nodeId, {
+      onDragStart: config.onDragStart,
+      onDrag: config.onDrag,
+      onDragStop: config.onDragStop,
+    });
 
     // 清理該節點的現有實例
     if (this.xyDragInstances.has(nodeId)) {
@@ -50,16 +66,34 @@ export class AngularFlowDragService implements OnDestroy {
         // 處理節點選擇邏輯
         this.handleNodeClick(id);
       },
-      onDragStart: () => {
+      onDragStart: (event: MouseEvent) => {
         this._dragging.set(true);
+        // 調用節點的 onDragStart 回調
+        const callbacks = this.dragCallbacks.get(currentNodeId);
+        if (callbacks?.onDragStart) {
+          callbacks.onDragStart(event, currentNodeId);
+        }
       },
-      onDragStop: () => {
+      onDragStop: (event: MouseEvent) => {
         this._dragging.set(false);
         // 清除任何剩餘的臨時狀態
         this.tempSelectedNodeIds = null;
+        // 調用節點的 onDragStop 回調
+        const callbacks = this.dragCallbacks.get(currentNodeId);
+        if (callbacks?.onDragStop) {
+          callbacks.onDragStop(event, currentNodeId);
+        }
       },
-      onDrag: (_event, _dragItems, _node, _nodes) => {
-        // 拖拽過程中的處理邏輯
+      onDrag: (event: MouseEvent, dragItems, _node, _nodes) => {
+        // 調用節點的 onDrag 回調
+        const callbacks = this.dragCallbacks.get(currentNodeId);
+        if (callbacks?.onDrag) {
+          // 從 dragItems 中獲取當前節點的最新位置
+          const draggedNode = dragItems.get(currentNodeId);
+          if (draggedNode) {
+            callbacks.onDrag(event, currentNodeId, draggedNode.position);
+          }
+        }
       }
     });
 
@@ -99,6 +133,8 @@ export class AngularFlowDragService implements OnDestroy {
       instance.destroy();
       this.xyDragInstances.delete(nodeId);
     }
+    // 清理回調
+    this.dragCallbacks.delete(nodeId);
   }
 
   // 清理所有拖拽實例
@@ -107,6 +143,7 @@ export class AngularFlowDragService implements OnDestroy {
       instance.destroy();
     }
     this.xyDragInstances.clear();
+    this.dragCallbacks.clear();
     this._dragging.set(false);
   }
 
