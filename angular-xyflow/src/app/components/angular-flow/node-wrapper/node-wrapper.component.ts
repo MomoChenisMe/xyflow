@@ -70,24 +70,10 @@ import { AngularFlowService } from '../angular-flow.service';
         }
       }
 
-      <!-- Node content based on type -->
-      @switch (node().type) {
-        @case ('input') {
-          <div class="xy-flow__node-input angular-flow__node-input">
-            <div class="angular-flow__node-label">{{ node().data?.['label'] || node().id }}</div>
-          </div>
-        }
-        @case ('output') {
-          <div class="xy-flow__node-output angular-flow__node-output">
-            <div class="angular-flow__node-label">{{ node().data?.['label'] || node().id }}</div>
-          </div>
-        }
-        @default {
-          <div class="xy-flow__node-default angular-flow__node-default">
-            <div class="angular-flow__node-label">{{ node().data?.['label'] || node().id }}</div>
-          </div>
-        }
-      }
+      <!-- Node content -->
+      <div class="angular-flow__node-content">
+        <div class="angular-flow__node-label">{{ node().data?.['label'] || node().id }}</div>
+      </div>
 
       <!-- Target handles -->
       @if (shouldShowHandles()) {
@@ -117,6 +103,15 @@ import { AngularFlowService } from '../angular-flow.service';
     .xy-flow__node.dragging,
     .angular-flow__node.dragging {
       cursor: grabbing;
+    }
+
+    .angular-flow__node-content {
+      /* 繼承父容器的 padding，與系統樣式保持一致 */
+      height: 100%;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .angular-flow__node-label {
@@ -158,6 +153,15 @@ export class NodeWrapperComponent implements OnDestroy {
   readonly nodeClasses = computed(() => {
     const classes = ['xy-flow__node', 'angular-flow__node'];
     const nodeData = this.node();
+    const nodeType = nodeData.type || 'default';
+
+    // 添加正確的節點類型類，匹配系統樣式
+    classes.push(`xy-flow__node-${nodeType}`);
+
+    // 添加 selectable 類以啟用 hover 和 focus 樣式
+    if (this._flowService.elementsSelectable()) {
+      classes.push('selectable');
+    }
 
     if (nodeData.type) {
       classes.push(`type-${nodeData.type}`);

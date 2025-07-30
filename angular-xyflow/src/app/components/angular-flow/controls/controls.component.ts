@@ -251,13 +251,17 @@ export class ControlsComponent {
     this.onZoomOutClick.emit();
   }
 
-  onFitView(event: MouseEvent) {
+  async onFitView(event: MouseEvent) {
     // 阻止事件冒泡，防止觸發 angular-flow 的 double click
     event.stopPropagation();
     
     const options = this.fitViewOptions();
-    this.panZoomService.fitView(options);
-    this.onFitViewClick.emit();
+    try {
+      await this.panZoomService.fitView(options);
+      this.onFitViewClick.emit();
+    } catch (error) {
+      console.error('FitView failed:', error);
+    }
   }
 
   onToggleInteractivity(event: MouseEvent) {

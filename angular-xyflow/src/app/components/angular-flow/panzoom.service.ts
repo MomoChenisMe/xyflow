@@ -2,7 +2,7 @@
 import { Injectable, signal, computed, OnDestroy } from '@angular/core';
 
 // XyFlow 系統模組
-import { XYPanZoom, type PanZoomInstance, type Viewport, type Transform, PanOnScrollMode } from '@xyflow/system';
+import { XYPanZoom, type PanZoomInstance, type Viewport, type Transform, PanOnScrollMode, fitViewport } from '@xyflow/system';
 
 // 專案內部模組
 import { AngularFlowService } from './angular-flow.service';
@@ -214,75 +214,44 @@ export class AngularFlowPanZoomService implements OnDestroy {
     return this.panZoomInstance.getViewport();
   }
 
-  // 縮放到適合視口
-  fitView(options?: any): void {
+  // 縮放到適合視口 - 使用系統包的 fitViewport 函數
+  async fitView(options?: any): Promise<boolean> {
     if (!this.panZoomInstance) {
       console.warn('PanZoom not initialized');
-      return;
+      return false;
     }
 
-    
-    const nodes = this._flowService.nodes();
-    if (nodes.length === 0) {
+    // 獲取必要的參數
+    const internalNodeLookup = this._flowService.internalNodeLookup();
+    const dimensions = this._flowService.dimensions();
+    const minZoom = this._flowService.minZoom();
+    const maxZoom = this._flowService.maxZoom();
+
+    // 如果沒有節點，重置視口
+    if (internalNodeLookup.size === 0) {
       this.resetViewport();
-      return;
+      return true;
     }
 
-    // 獲取DOM元素的實際尺寸
-    const domElement = this.getDomElement();
-    if (!domElement) {
-      console.warn('Unable to get container element');
-      return;
+    try {
+      // 使用系統包的 fitViewport 函數，與 React 實現一致
+      await fitViewport(
+        {
+          nodes: internalNodeLookup,
+          width: dimensions.width,
+          height: dimensions.height,
+          panZoom: this.panZoomInstance,
+          minZoom,
+          maxZoom,
+        },
+        options
+      );
+
+      return true;
+    } catch (error) {
+      console.error('FitView error:', error);
+      return false;
     }
-
-    const rect = domElement.getBoundingClientRect();
-    const containerWidth = rect.width;
-    const containerHeight = rect.height;
-
-    // 計算所有節點的邊界
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-
-    nodes.forEach(node => {
-      const nodeWidth = (node as any).width || 150;
-      const nodeHeight = (node as any).height || 40;
-      
-      minX = Math.min(minX, node.position.x);
-      minY = Math.min(minY, node.position.y);
-      maxX = Math.max(maxX, node.position.x + nodeWidth);
-      maxY = Math.max(maxY, node.position.y + nodeHeight);
-    });
-
-    // 計算邊界尺寸
-    const boundingWidth = maxX - minX;
-    const boundingHeight = maxY - minY;
-    
-    // 計算適合的縮放級別
-    const padding = options?.padding || { top: 100, left: 50, right: 50, bottom: 50 };
-    const paddingTop = typeof padding.top === 'string' ? parseFloat(padding.top) : (padding.top || 0);
-    const paddingLeft = typeof padding.left === 'string' ? parseFloat(padding.left) : (padding.left || 0);
-    const paddingRight = typeof padding.right === 'string' ? parseFloat(padding.right) : (padding.right || 0);
-    const paddingBottom = typeof padding.bottom === 'string' ? parseFloat(padding.bottom) : (padding.bottom || 0);
-    
-    const availableWidth = containerWidth - paddingLeft - paddingRight;
-    const availableHeight = containerHeight - paddingTop - paddingBottom;
-    
-    const zoomX = availableWidth / boundingWidth;
-    const zoomY = availableHeight / boundingHeight;
-    const zoom = Math.min(zoomX, zoomY, 2); // maxZoom = 2
-    
-    // 計算中心位置
-    const centerX = (containerWidth - boundingWidth * zoom) / 2 - minX * zoom + paddingLeft - paddingRight;
-    const centerY = (containerHeight - boundingHeight * zoom) / 2 - minY * zoom + paddingTop - paddingBottom;
-    
-    // 應用新的 viewport
-    this.setViewport({
-      x: centerX,
-      y: centerY,
-      zoom: Math.max(zoom, 0.5) // minZoom = 0.5
-    });
   }
 
   // 獲取DOM元素

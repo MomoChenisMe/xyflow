@@ -176,21 +176,33 @@ export class AngularFlowService<
     return lookup;
   });
 
-  // 內部節點查找表 - 用於 getNodesInside 函數
+  // 內部節點查找表 - 用於 getNodesInside 函數和 fitView
   readonly internalNodeLookup = computed(() => {
+    const nodes = this._nodes();
+    const measuredDimensions = this._nodeMeasuredDimensions();
+    const nodeInternals = this._nodeInternals();
     const lookup = new Map();
-    this._nodes().forEach((node) => {
-      lookup.set(node.id, {
-        ...node,
-        measured: {
+    
+    nodes.forEach((node) => {
+      // 使用實際測量尺寸，優先順序：實際測量 > 節點自帶 measured > 節點 width/height > 默認值
+      const measured = measuredDimensions.get(node.id) || 
+        node.measured || 
+        {
           width: (node as any).width || 150,
           height: (node as any).height || 32,
-        },
+        };
+      
+      // 獲取節點內部狀態中的絕對位置
+      const internals = nodeInternals.get(node.id);
+      
+      lookup.set(node.id, {
+        ...node,
+        measured,
         selectable: true,
         hidden: false,
         internals: {
-          positionAbsolute: { x: node.position.x, y: node.position.y },
-          handleBounds: true, // 避免強制初始渲染
+          positionAbsolute: internals?.positionAbsolute || { x: node.position.x, y: node.position.y },
+          handleBounds: true,
         },
       });
     });
