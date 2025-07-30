@@ -71,25 +71,23 @@ import { AngularFlowService } from '../angular-flow.service';
       }
 
       <!-- Node content based on type -->
-      <div class="angular-flow__node-content">
-        @switch (node().type) {
-          @case ('input') {
-            <div class="angular-flow__node-input">
-<div class="angular-flow__node-label">{{ node().data?.['label'] || node().id }}</div>
-            </div>
-          }
-          @case ('output') {
-            <div class="angular-flow__node-output">
-<div class="angular-flow__node-label">{{ node().data?.['label'] || node().id }}</div>
-            </div>
-          }
-          @default {
-            <div class="angular-flow__node-default">
-<div class="angular-flow__node-label">{{ node().data?.['label'] || node().id }}</div>
-            </div>
-          }
+      @switch (node().type) {
+        @case ('input') {
+          <div class="xy-flow__node-input angular-flow__node-input">
+            <div class="angular-flow__node-label">{{ node().data?.['label'] || node().id }}</div>
+          </div>
         }
-      </div>
+        @case ('output') {
+          <div class="xy-flow__node-output angular-flow__node-output">
+            <div class="angular-flow__node-label">{{ node().data?.['label'] || node().id }}</div>
+          </div>
+        }
+        @default {
+          <div class="xy-flow__node-default angular-flow__node-default">
+            <div class="angular-flow__node-label">{{ node().data?.['label'] || node().id }}</div>
+          </div>
+        }
+      }
 
       <!-- Target handles -->
       @if (shouldShowHandles()) {
@@ -109,40 +107,16 @@ import { AngularFlowService } from '../angular-flow.service';
     </div>
   `,
   styles: [`
+    /* 基本定位和行為樣式 - 不包含顏色主題 */
     .xy-flow__node,
     .angular-flow__node {
       position: absolute;
       cursor: grab;
-      border-radius: 3px;
-      border: 1px solid #1a192b;
-      background: #fff;
-      color: inherit;
-      width: 150px;
-      font-size: 12px;
-      text-align: center;
-      padding: 10px;
-      box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-    }
-
-    .xy-flow__node:hover,
-    .angular-flow__node:hover {
-      box-shadow: 0 1px 4px 1px rgba(0, 0, 0, 0.08);
-    }
-
-    .xy-flow__node.selected,
-    .angular-flow__node.selected {
-      box-shadow: 0 0 0 0.5px #1a192b;
     }
 
     .xy-flow__node.dragging,
     .angular-flow__node.dragging {
       cursor: grabbing;
-    }
-
-    .angular-flow__node-content {
-      width: 100%;
-      box-sizing: border-box;
     }
 
     .angular-flow__node-label {
@@ -151,45 +125,9 @@ import { AngularFlowService } from '../angular-flow.service';
       text-overflow: ellipsis;
     }
 
-    .angular-flow__node-input {
-      /* Input nodes use the main node background */
-    }
-
-    .angular-flow__node-output {
-      /* Output nodes use the main node background */
-    }
-
-    .angular-flow__node-default {
-      /* Default nodes use the main node background */
-    }
-
-    /* Node type specific styles - minimal differences */
-    .angular-flow__node.type-input,
-    .angular-flow__node.type-default,
-    .angular-flow__node.type-output {
-      /* All node types inherit base styles */
-    }
-
-    /* Light/Dark theme classes - override base styles */
-    .angular-flow__node.light {
-      background: #fff;
-      border-color: #1a192b;
-      color: #222;
-    }
-
-    .angular-flow__node.light.selected {
-      box-shadow: 0 0 0 0.5px #1a192b;
-    }
-
-    .angular-flow__node.dark {
-      background: #1e1e1e;
-      border-color: #3c3c3c;
-      color: #f8f8f8;
-    }
-
-    .angular-flow__node.dark.selected {
-      box-shadow: 0 0 0 0.5px #999;
-    }
+    /* 讓系統 CSS 處理所有顏色和主題相關的樣式 */
+    /* 移除所有硬編碼的顏色、背景、邊框樣式 */
+    /* 這些現在由 packages/system/src/styles/style.css 中的 .xy-flow 和 .xy-flow.dark 處理 */
   `]
 })
 export class NodeWrapperComponent implements OnDestroy {

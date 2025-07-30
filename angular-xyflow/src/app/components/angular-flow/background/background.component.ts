@@ -27,7 +27,6 @@ import { BackgroundVariant } from '../types';
       [style.height]="'100%'"
       [style.z-index]="'0'"
       [style.pointer-events]="'none'"
-      [style.background-color]="bgColor() || 'transparent'"
       [style.--xy-background-color-props]="bgColor()"
       [style.--xy-background-pattern-color-props]="color()"
     >

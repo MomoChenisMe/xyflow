@@ -1,6 +1,6 @@
-/* 導入 XyFlow 系統樣式 - 從 monorepo packages 中導入 */
-@import '../../packages/system/src/styles/init.css';
-@import '../../packages/system/src/styles/style.css';
+/* 導入 XyFlow 系統樣式 - 從複製的檔案導入 */
+@import "./init.css";
+@import "./style.css";
 
 /* Angular XyFlow 全局樣式 - 基於 Angular Flow 樣式 */
 
@@ -8,10 +8,12 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    sans-serif;
   font-size: 12px;
 }
 
@@ -163,23 +165,23 @@ panel {
   border: 1px solid #ccc !important;
   border-radius: 4px !important;
   padding: 10px !important;
-  
+
   // 位置強制設定 for position="top-right"
   &[position="top-right"] {
     top: 0 !important;
     right: 0 !important;
   }
-  
+
   &[position="top-left"] {
     top: 0 !important;
     left: 0 !important;
   }
-  
+
   &[position="bottom-right"] {
     bottom: 0 !important;
     right: 0 !important;
   }
-  
+
   &[position="bottom-left"] {
     bottom: 0 !important;
     left: 0 !important;
@@ -190,11 +192,11 @@ panel {
 .xy-flow__pane {
   z-index: 1;
   cursor: grab;
-  
+
   &.dragging {
     cursor: grabbing;
   }
-  
+
   &.selection {
     cursor: pointer;
   }
@@ -206,7 +208,7 @@ panel {
     pointer-events: all;
     cursor: crosshair;
   }
-  
+
   &.connectingfrom {
     pointer-events: all;
   }
@@ -225,7 +227,7 @@ panel {
 .non-draggable {
   cursor: default !important;
   pointer-events: none !important;
-  
+
   &.xy-flow__node,
   &.angular-flow__node {
     cursor: default !important;

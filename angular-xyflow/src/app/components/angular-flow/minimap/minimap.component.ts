@@ -29,7 +29,7 @@ import type { XYPosition } from '@xyflow/system';
     <angular-flow-panel 
       [position]="position()"
       [style]="computedStyle()"
-      [className]="'angular-flow__minimap ' + (className() || '')"
+      [className]="'xy-flow__minimap ' + (className() || '')"
       [attr.data-testid]="'af__minimap'"
     >
       <svg 
@@ -37,7 +37,7 @@ import type { XYPosition } from '@xyflow/system';
         [attr.width]="elementWidth()"
         [attr.height]="elementHeight()"
         [attr.viewBox]="viewBox()"
-        class="angular-flow__minimap-svg"
+        class="xy-flow__minimap-svg"
         role="img"
         [attr.aria-labelledby]="labelledBy"
         (click)="onSvgClick($event)"
@@ -58,7 +58,7 @@ import type { XYPosition } from '@xyflow/system';
             [attr.stroke-width]="nodeStrokeWidth()"
             [attr.rx]="nodeBorderRadius()"
             [attr.ry]="nodeBorderRadius()"
-            [class]="'angular-flow__minimap-node ' + (node.selected ? 'selected' : '') + ' ' + (nodeClassName() || '')"
+            [class]="'xy-flow__minimap-node ' + (node.selected ? 'selected' : '') + ' ' + (nodeClassName() || '')"
             [attr.shape-rendering]="shapeRendering"
             (click)="onSvgNodeClick($event, node.id)"
           />
@@ -66,7 +66,7 @@ import type { XYPosition } from '@xyflow/system';
         
         <!-- 視口遮罩 -->
         <path
-          class="angular-flow__minimap-mask"
+          class="xy-flow__minimap-mask"
           [attr.d]="maskPath()"
           [attr.fill-rule]="'evenodd'"
           [style.pointer-events]="'none'"
@@ -75,35 +75,59 @@ import type { XYPosition } from '@xyflow/system';
     </angular-flow-panel>
   `,
   styles: [`
-    .angular-flow__minimap {
-      background-color: var(--xy-minimap-background-color-props, #fff);
-      background: var(--xy-minimap-background-color-props, #fff);
+    .xy-flow__minimap {
+      background: var(
+        --xy-minimap-background-color-props,
+        var(--xy-minimap-background-color, var(--xy-minimap-background-color-default))
+      );
       border: 1px solid #ddd;
       border-radius: 4px;
       overflow: hidden;
       position: relative;
     }
-
-    .angular-flow__minimap-svg {
-      display: block;
-    }
-
-    .angular-flow__minimap-mask {
-      fill: var(--xy-minimap-mask-background-color-props, rgba(240, 240, 240, 0.6));
-      stroke: var(--xy-minimap-mask-stroke-color-props, transparent);
-      stroke-width: var(--xy-minimap-mask-stroke-width-props, 1);
+    
+    .xy-flow.dark .xy-flow__minimap {
+      border-color: #555;
     }
     
-    .angular-flow__minimap-node {
-      fill: var(--xy-minimap-node-background-color-props, #e2e2e2);
-      stroke: var(--xy-minimap-node-stroke-color-props, transparent);
-      stroke-width: var(--xy-minimap-node-stroke-width-props, 2);
+    .xy-flow__minimap-svg {
+      display: block;
+    }
+    
+    .xy-flow__minimap-mask {
+      fill: var(
+        --xy-minimap-mask-background-color-props,
+        var(--xy-minimap-mask-background-color, var(--xy-minimap-mask-background-color-default))
+      );
+      stroke: var(
+        --xy-minimap-mask-stroke-color-props,
+        var(--xy-minimap-mask-stroke-color, var(--xy-minimap-mask-stroke-color-default))
+      );
+      stroke-width: var(
+        --xy-minimap-mask-stroke-width-props,
+        var(--xy-minimap-mask-stroke-width, var(--xy-minimap-mask-stroke-width-default))
+      );
+    }
+    
+    .xy-flow__minimap-node {
+      fill: var(
+        --xy-minimap-node-background-color-props,
+        var(--xy-minimap-node-background-color, var(--xy-minimap-node-background-color-default))
+      );
+      stroke: var(
+        --xy-minimap-node-stroke-color-props,
+        var(--xy-minimap-node-stroke-color, var(--xy-minimap-node-stroke-color-default))
+      );
+      stroke-width: var(
+        --xy-minimap-node-stroke-width-props,
+        var(--xy-minimap-node-stroke-width, var(--xy-minimap-node-stroke-width-default))
+      );
       cursor: pointer;
     }
     
-    .angular-flow__minimap-node.selected {
-      fill: var(--xy-minimap-mask-background-color-props, #ff0072);
-      stroke: var(--xy-minimap-mask-background-color-props, #ff0072);
+    .xy-flow__minimap-node.selected {
+      fill: #ff0072;
+      stroke: #ff0072;
     }
   `]
 })
@@ -150,18 +174,18 @@ export class MinimapComponent implements OnInit, OnDestroy {
   readonly customStyle = input<Record<string, any>>({});
   readonly className = input<string>('');
   
-  // 節點相關屬性
-  readonly nodeColor = input<string | ((node: any) => string)>('#e2e2e2');
-  readonly nodeStrokeColor = input<string | ((node: any) => string)>('transparent');
+  // 節點相關屬性 - 不設置預設值，讓系統包的 CSS 變數處理
+  readonly nodeColor = input<string | ((node: any) => string)>();
+  readonly nodeStrokeColor = input<string | ((node: any) => string)>();
   readonly nodeClassName = input<string | ((node: any) => string)>('');
   readonly nodeBorderRadius = input<number>(5);
-  readonly nodeStrokeWidth = input<number>(2);
+  readonly nodeStrokeWidth = input<number>();
   
-  // 背景和遮罩屬性
-  readonly bgColor = input<string>('#fff');
-  readonly maskColor = input<string>('rgba(240, 240, 240, 0.6)');
-  readonly maskStrokeColor = input<string>('transparent');
-  readonly maskStrokeWidth = input<number>(1);
+  // 背景和遮罩屬性 - 不設置預設值，讓系統包的 CSS 變數處理
+  readonly bgColor = input<string>();
+  readonly maskColor = input<string>();
+  readonly maskStrokeColor = input<string>();
+  readonly maskStrokeWidth = input<number>();
   
   // 位置和交互屬性
   readonly position = input<PanelPosition>('bottom-right');
@@ -303,21 +327,47 @@ export class MinimapComponent implements OnInit, OnDestroy {
   readonly shapeRendering = typeof window === 'undefined' || !!(window as any).chrome ? 'crispEdges' : 'geometricPrecision';
   
   readonly computedStyle = computed(() => {
-    const baseStyle = {
-      '--xy-minimap-background-color-props': typeof this.bgColor() === 'string' ? this.bgColor() : undefined,
-      '--xy-minimap-mask-background-color-props': typeof this.maskColor() === 'string' ? this.maskColor() : undefined,
-      '--xy-minimap-mask-stroke-color-props': typeof this.maskStrokeColor() === 'string' ? this.maskStrokeColor() : undefined,
-      '--xy-minimap-mask-stroke-width-props': typeof this.maskStrokeWidth() === 'number' ? (this.maskStrokeWidth() * this.viewScale()) : undefined,
-      '--xy-minimap-node-background-color-props': typeof this.nodeColor() === 'string' ? this.nodeColor() : undefined,
-      '--xy-minimap-node-stroke-color-props': typeof this.nodeStrokeColor() === 'string' ? this.nodeStrokeColor() : undefined,
-      '--xy-minimap-node-stroke-width-props': typeof this.nodeStrokeWidth() === 'number' ? this.nodeStrokeWidth() : undefined,
+    const baseStyle: Record<string, any> = {
       ...this.customStyle()
     };
     
-    // 移除 undefined 值
-    return Object.fromEntries(
-      Object.entries(baseStyle).filter(([_, value]) => value !== undefined)
-    );
+    // 只有在明確設置值的時候才添加 CSS 變數
+    const bgColor = this.bgColor();
+    if (bgColor && typeof bgColor === 'string') {
+      baseStyle['--xy-minimap-background-color-props'] = bgColor;
+    }
+    
+    const maskColor = this.maskColor();
+    if (maskColor && typeof maskColor === 'string') {
+      baseStyle['--xy-minimap-mask-background-color-props'] = maskColor;
+    }
+    
+    const maskStrokeColor = this.maskStrokeColor();
+    if (maskStrokeColor && typeof maskStrokeColor === 'string') {
+      baseStyle['--xy-minimap-mask-stroke-color-props'] = maskStrokeColor;
+    }
+    
+    const maskStrokeWidth = this.maskStrokeWidth();
+    if (typeof maskStrokeWidth === 'number') {
+      baseStyle['--xy-minimap-mask-stroke-width-props'] = maskStrokeWidth * this.viewScale();
+    }
+    
+    const nodeColor = this.nodeColor();
+    if (nodeColor && typeof nodeColor === 'string') {
+      baseStyle['--xy-minimap-node-background-color-props'] = nodeColor;
+    }
+    
+    const nodeStrokeColor = this.nodeStrokeColor();
+    if (nodeStrokeColor && typeof nodeStrokeColor === 'string') {
+      baseStyle['--xy-minimap-node-stroke-color-props'] = nodeStrokeColor;
+    }
+    
+    const nodeStrokeWidth = this.nodeStrokeWidth();
+    if (typeof nodeStrokeWidth === 'number') {
+      baseStyle['--xy-minimap-node-stroke-width-props'] = nodeStrokeWidth;
+    }
+    
+    return baseStyle;
   });
 
   // 生命周期方法
@@ -376,7 +426,8 @@ export class MinimapComponent implements OnInit, OnDestroy {
     if (typeof colorFunc === 'function') {
       return colorFunc(node);
     }
-    return colorFunc;
+    // 如果沒有設置顏色，返回透明讓 CSS 變數處理
+    return colorFunc || 'currentColor';
   }
   
   getNodeStrokeColor(node: any): string {
@@ -384,6 +435,7 @@ export class MinimapComponent implements OnInit, OnDestroy {
     if (typeof colorFunc === 'function') {
       return colorFunc(node);
     }
-    return colorFunc;
+    // 如果沒有設置顏色，返回透明讓 CSS 變數處理
+    return colorFunc || 'transparent';
   }
 }

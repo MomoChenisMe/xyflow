@@ -3,7 +3,6 @@ import {
   input, 
   output,
   inject,
-  signal,
   computed,
   ChangeDetectionStrategy,
   CUSTOM_ELEMENTS_SCHEMA,
@@ -25,7 +24,7 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
     <angular-flow-panel
       [position]="position()"
       [style]="style()"
-      [className]="'angular-flow__controls ' + orientation() + ' ' + (className() || '')"
+      [className]="'xy-flow__controls angular-flow__controls ' + orientation() + ' ' + (className() || '')"
       [attr.data-testid]="'af__controls'"
       [attr.aria-label]="ariaLabel()"
     >
@@ -37,46 +36,41 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
       <!-- Zoom In Button -->
       <button 
         type="button"
-        class="angular-flow__controls-button angular-flow__controls-zoomin nopan"
+        class="xy-flow__controls-button angular-flow__controls-button angular-flow__controls-zoomin nopan"
         [disabled]="!canZoomIn()"
         (click)="onZoomIn($event)"
         [attr.aria-label]="'Zoom in'"
         [title]="'Zoom in'"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.35-4.35"></path>
-          <line x1="8" y1="11" x2="14" y2="11"></line>
-          <line x1="11" y1="8" x2="11" y2="14"></line>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+          <path d="M32 18.133H18.133V32h-4.266V18.133H0v-4.266h13.867V0h4.266v13.867H32z" fill="currentColor" />
         </svg>
       </button>
       
       <!-- Zoom Out Button -->
       <button 
         type="button"
-        class="angular-flow__controls-button angular-flow__controls-zoomout nopan"
+        class="xy-flow__controls-button angular-flow__controls-button angular-flow__controls-zoomout nopan"
         [disabled]="!canZoomOut()"
         (click)="onZoomOut($event)"
         [attr.aria-label]="'Zoom out'"
         [title]="'Zoom out'"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.35-4.35"></path>
-          <line x1="8" y1="11" x2="14" y2="11"></line>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 5">
+          <path d="M0 0h32v4.2H0z" fill="currentColor" />
         </svg>
       </button>
       
       <!-- Fit View Button -->
       <button 
         type="button"
-        class="angular-flow__controls-button angular-flow__controls-fitview nopan"
+        class="xy-flow__controls-button angular-flow__controls-button angular-flow__controls-fitview nopan"
         (click)="onFitView($event)"
         [attr.aria-label]="'Fit view'"
         [title]="'Fit view'"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 30">
+          <path d="M3.692 4.63c0-.53.4-.938.939-.938h5.215V0H4.708C2.13 0 0 2.054 0 4.63v5.216h3.692V4.631zM27.354 0h-5.2v3.692h5.17c.53 0 .984.4.984.939v5.215H32V4.631A4.624 4.624 0 0027.354 0zm.954 24.83c0 .532-.4.94-.939.94h-5.215v3.768h5.215c2.577 0 4.631-2.13 4.631-4.707v-5.139h-3.692v5.139zm-23.677.94c-.531 0-.939-.4-.939-.94v-5.138H0v5.139c0 2.577 2.13 4.707 4.708 4.707h5.138V25.77H4.631z" fill="currentColor" />
         </svg>
       </button>
       
@@ -84,7 +78,7 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
       @if (showInteractive()) {
         <button 
           type="button"
-          class="angular-flow__controls-button angular-flow__controls-interactive nopan"
+          class="xy-flow__controls-button angular-flow__controls-button angular-flow__controls-interactive nopan"
           [class.active]="!isInteractive()"
           (click)="onToggleInteractivity($event)"
           [attr.aria-label]="isInteractive() ? 'Disable interaction' : 'Enable interaction'"
@@ -92,17 +86,13 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
         >
           @if (isInteractive()) {
             <!-- 交互啟用時顯示解鎖圖標 (開放的鎖) -->
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-              <circle cx="12" cy="16" r="1"></circle>
-              <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 32">
+              <path d="M21.333 10.667H19.81V7.619C19.81 3.429 16.38 0 12.19 0c-4.114 1.828-1.37 2.133.305 2.438 1.676.305 4.42 2.59 4.42 5.181v3.048H3.047A3.056 3.056 0 000 13.714v15.238A3.056 3.056 0 003.048 32h18.285a3.056 3.056 0 003.048-3.048V13.714a3.056 3.056 0 00-3.048-3.047zM12.19 24.533a3.056 3.056 0 01-3.047-3.047 3.056 3.056 0 013.047-3.048 3.056 3.056 0 013.048 3.048 3.056 3.056 0 01-3.048 3.047z" fill="currentColor" />
             </svg>
           } @else {
             <!-- 交互禁用時顯示鎖定圖標 (閉合的鎖) -->
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-              <circle cx="12" cy="16" r="1"></circle>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 32">
+              <path d="M21.333 10.667H19.81V7.619C19.81 3.429 16.38 0 12.19 0 8 0 4.571 3.429 4.571 7.619v3.048H3.048A3.056 3.056 0 000 13.714v15.238A3.056 3.056 0 003.048 32h18.285a3.056 3.056 0 003.048-3.048V13.714a3.056 3.056 0 00-3.048-3.047zM12.19 24.533a3.056 3.056 0 01-3.047-3.047 3.056 3.056 0 013.047-3.048 3.056 3.056 0 013.048 3.048 3.056 3.056 0 01-3.048 3.047zm4.724-13.866H7.467V7.619c0-2.59 2.133-4.724 4.723-4.724 2.591 0 4.724 2.133 4.724 4.724v3.048z" fill="currentColor" />
             </svg>
           }
         </button>
@@ -111,12 +101,13 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
     </angular-flow-panel>
   `,
   styles: [`
+    /* Angular 風格的 Controls，使用系統 CSS 變量支持顏色模式 */
     .angular-flow__controls {
       display: flex;
       gap: 4px;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      background: var(--xy-controls-button-background-color, var(--xy-controls-button-background-color-default));
+      border: 1px solid var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default));
+      border-radius: 6px;
       padding: 4px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
@@ -136,17 +127,18 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
       pointer-events: auto;
     }
 
+    /* Angular 風格的按鈕，使用系統變量 */
     .angular-flow__controls-button {
       display: flex;
       align-items: center;
       justify-content: center;
       width: 32px;
       height: 32px;
-      background: #fff;
-      border: 1px solid #ddd;
+      background: var(--xy-controls-button-background-color, var(--xy-controls-button-background-color-default));
+      border: 1px solid var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default));
       border-radius: 4px;
       cursor: pointer;
-      color: #222;
+      color: var(--xy-controls-button-color, var(--xy-controls-button-color-default));
       font-size: 14px;
       transition: all 0.2s;
       pointer-events: auto;
@@ -154,12 +146,12 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
     }
 
     .angular-flow__controls-button:hover:not(:disabled) {
-      background: #f5f5f5;
-      border-color: #ccc;
+      background: var(--xy-controls-button-background-color-hover, var(--xy-controls-button-background-color-hover-default));
+      color: var(--xy-controls-button-color-hover, var(--xy-controls-button-color-hover-default));
+      border-color: var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default));
     }
 
     .angular-flow__controls-button:active:not(:disabled) {
-      background: #eee;
       transform: scale(0.95);
     }
 
@@ -169,14 +161,14 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
     }
 
     .angular-flow__controls-button.active {
-      background: #ff0072;
-      border-color: #ff0072;
-      color: #fff;
+      background: #ff0072 !important;
+      border-color: #ff0072 !important;
+      color: #fff !important;
     }
 
     .angular-flow__controls-button.active:hover {
-      background: #e6006a;
-      border-color: #e6006a;
+      background: #e6006a !important;
+      border-color: #e6006a !important;
     }
 
     .angular-flow__controls-button svg {

@@ -22,7 +22,9 @@ import {
   Position, 
   getNodePositionWithOrigin,
   getEdgePosition,
-  ConnectionMode
+  ConnectionMode,
+  ColorMode,
+  ColorModeClass
 } from '@xyflow/system';
 
 // 專案內部模組
@@ -50,8 +52,7 @@ import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
     <div
       #flowContainer
       [id]="flowContainerId()"
-      class="xy-flow angular-flow angular-flow__pane"
-      [class]="className() + ' ' + viewportCursorClass()"
+      [class]="finalClasses()"
       [style.width]="'100%'"
       [style.height]="'100%'"
       [style.position]="'relative'"
@@ -121,7 +122,7 @@ import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
             [class.selected]="edge.selected"
             [class.animated]="edge.animated"
           >
-            <!-- 計算邊路徑 -->
+            <!-- 可見的邊路徑 -->
             <path
               [attr.d]="calculateEdgePath(sourceNode, targetNode, edge)"
               [attr.stroke]="edge.selected ? '#ff0072' : '#b1b1b7'"
@@ -130,6 +131,16 @@ import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
               [attr.marker-start]="getMarkerUrl(edge, 'start')"
               [attr.marker-end]="getMarkerUrl(edge, 'end')"
               [class]="'angular-flow__edge-path xy-flow__edge-path'"
+              style="pointer-events: none;"
+            />
+            
+            <!-- 不可見的交互路徑，用於擴大點擊和 hover 範圍 -->
+            <path
+              [attr.d]="calculateEdgePath(sourceNode, targetNode, edge)"
+              [attr.stroke]="'transparent'"
+              [attr.stroke-width]="20"
+              [attr.fill]="'none'"
+              [class]="'angular-flow__edge-interaction xy-flow__edge-interaction'"
               style="pointer-events: stroke; cursor: pointer;"
               (click)="handleEdgeClick($event, edge)"
             />
@@ -338,6 +349,7 @@ export class AngularFlowComponent<
   nodeDragThreshold = input<number>(0);
   autoPanOnNodeFocus = input<boolean>(true);
   panOnDrag = input<boolean>(true);
+  colorMode = input<ColorMode>('light');
 
   // 生成唯一的容器 ID
   flowContainerId = computed(() => {
@@ -347,6 +359,21 @@ export class AngularFlowComponent<
     }
     // 為沒有明確 ID 的 Flow 實例生成唯一 ID
     return `angular-flow-${this.generateUniqueId()}`;
+  });
+
+  // 計算實際的顏色模式類別
+  colorModeClass = computed(() => {
+    const mode = this.colorMode();
+    if (mode === 'system') {
+      // 檢測系統顏色模式偏好
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return mode as ColorModeClass;
+  });
+
+  // 計算最終的類別字符串
+  finalClasses = computed(() => {
+    return 'xy-flow angular-flow angular-flow__pane ' + this.className() + ' ' + this.viewportCursorClass() + ' ' + this.colorModeClass();
   });
 
   // 輸出事件
@@ -547,6 +574,12 @@ export class AngularFlowComponent<
     effect(() => {
       const isDragging = this._panZoomService.isDragging();
       this._isDragging.set(isDragging);
+    });
+
+    // 同步顏色模式到服務
+    effect(() => {
+      const colorMode = this.colorMode();
+      this._flowService.setColorMode(colorMode);
     });
 
     // 渲染後副作用

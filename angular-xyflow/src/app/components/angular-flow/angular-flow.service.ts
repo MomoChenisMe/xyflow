@@ -13,6 +13,8 @@ import {
   type Transform,
   type Rect,
   Position,
+  ColorMode,
+  ColorModeClass,
   addEdge as systemAddEdge,
   evaluateAbsolutePosition,
   getConnectedEdges,
@@ -90,6 +92,7 @@ export class AngularFlowService<
   private _nodesDraggable = signal<boolean>(true);
   private _nodesConnectable = signal<boolean>(true);
   private _elementsSelectable = signal<boolean>(true);
+  private _colorMode = signal<ColorMode>('light');
   private _selectNodesOnDrag = signal<boolean>(false);
   private _autoPanOnNodeFocus = signal<boolean>(false);
   private _dimensions = signal<{ width: number; height: number }>({
@@ -151,6 +154,14 @@ export class AngularFlowService<
       this._nodesConnectable() ||
       this._elementsSelectable()
   );
+  readonly colorMode: Signal<ColorMode> = computed(() => this._colorMode());
+  readonly colorModeClass: Signal<ColorModeClass> = computed(() => {
+    const mode = this._colorMode();
+    if (mode === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return mode as ColorModeClass;
+  });
 
   // 節點和邊的查找映射 - 效能優化的查找表
   readonly nodeLookup: Signal<Map<string, NodeType>> = computed(() => {
@@ -1081,6 +1092,10 @@ export class AngularFlowService<
     this._nodesDraggable.set(interactive);
     this._nodesConnectable.set(interactive);
     this._elementsSelectable.set(interactive);
+  }
+
+  setColorMode(colorMode: ColorMode) {
+    this._colorMode.set(colorMode);
   }
 
   // 自動平移到節點功能 - 與 React 版本一致的行為

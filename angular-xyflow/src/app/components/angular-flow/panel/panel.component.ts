@@ -77,7 +77,7 @@ export class PanelComponent {
   
   // 計算屬性
   readonly panelClasses = computed(() => {
-    const classes = ['angular-flow__panel', `position-${this.position()}`];
+    const classes = ['xy-flow__panel', 'angular-flow__panel', `position-${this.position()}`];
     
     const customClass = this.className();
     if (customClass) {
