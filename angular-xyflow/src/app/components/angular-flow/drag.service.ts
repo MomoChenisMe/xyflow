@@ -116,8 +116,7 @@ export class AngularFlowDragService implements OnDestroy {
     const edges = this._flowService.edges();
     const viewport = this._flowService.viewport();
 
-
-    // 創建 nodeLookup Map，確保選中狀態的絕對一致性
+    // 創建 nodeLookup Map，使用統一位置計算系統
     // 使用臨時覆寫狀態（如果存在）或服務中的狀態
     const selectedNodeIds = this.tempSelectedNodeIds !== null 
       ? this.tempSelectedNodeIds 
@@ -125,13 +124,17 @@ export class AngularFlowDragService implements OnDestroy {
     const nodeLookup = new Map();
     nodes.forEach(node => {
       const isSelected = selectedNodeIds.includes(node.id);
+      // 使用統一位置計算系統獲取位置和尺寸
+      const positionAbsolute = this._flowService.getNodePositionAbsolute(node.id);
+      const internals = this._flowService.getNodeInternals(node.id);
+      
       nodeLookup.set(node.id, {
         ...node,
         // 強制使用選中狀態，確保一致性
         selected: isSelected,
-        measured: { width: node.width || 150, height: node.height || 40 },
+        measured: internals?.measured || { width: node.width || 150, height: node.height || 40 },
         internals: {
-          positionAbsolute: { x: node.position.x, y: node.position.y }
+          positionAbsolute: positionAbsolute || { x: node.position.x, y: node.position.y }
         }
       });
     });
@@ -147,7 +150,7 @@ export class AngularFlowDragService implements OnDestroy {
       nodeExtent: [[-Infinity, -Infinity], [Infinity, Infinity]] as [[number, number], [number, number]],
       snapGrid: [15, 15] as [number, number],
       snapToGrid: false,
-      nodeOrigin: [0, 0] as [number, number],
+      nodeOrigin: this._flowService.getNodeOrigin(),
       multiSelectionActive: false,
       domNode: flowContainer,
       transform: [viewport.x, viewport.y, viewport.zoom] as [number, number, number],
@@ -190,11 +193,10 @@ export class AngularFlowDragService implements OnDestroy {
         // 節點拖拽結束處理
       },
       updateNodePositions: (dragItems: Map<string, any>, dragging?: boolean) => {
-        // 更新節點位置
+        // 更新節點位置 - 使用統一位置計算系統
         
         // 當 selectNodesOnDrag=false 時，只更新實際被拖拽的節點
         const selectNodesOnDrag = this._flowService.selectNodesOnDrag();
-        
         
         if (!selectNodesOnDrag && currentNodeId) {
           // 只更新當前被拖拽的節點

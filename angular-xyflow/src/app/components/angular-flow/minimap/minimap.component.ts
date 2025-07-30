@@ -49,8 +49,8 @@ import type { XYPosition } from '@xyflow/system';
         <!-- 節點渲染 -->
         @for (node of visibleNodes(); track node.id) {
           <rect
-            [attr.x]="node.position.x"
-            [attr.y]="node.position.y"
+            [attr.x]="getNodeVisualPosition(node).x"
+            [attr.y]="getNodeVisualPosition(node).y"
             [attr.width]="node.width || 150"
             [attr.height]="node.height || 40"
             [attr.fill]="getNodeColor(node)"
@@ -212,10 +212,13 @@ export class MinimapComponent implements OnInit, OnDestroy {
       const nodeWidth = node.width || 150;
       const nodeHeight = node.height || 40;
       
-      minX = Math.min(minX, node.position.x);
-      minY = Math.min(minY, node.position.y);
-      maxX = Math.max(maxX, node.position.x + nodeWidth);
-      maxY = Math.max(maxY, node.position.y + nodeHeight);
+      // 使用統一位置計算系統獲取視覺位置（考慮 origin）
+      const visualPosition = this._flowService.getNodeVisualPosition(node);
+      
+      minX = Math.min(minX, visualPosition.x);
+      minY = Math.min(minY, visualPosition.y);
+      maxX = Math.max(maxX, visualPosition.x + nodeWidth);
+      maxY = Math.max(maxY, visualPosition.y + nodeHeight);
     });
     
     const nodeBounds = {
@@ -342,6 +345,11 @@ export class MinimapComponent implements OnInit, OnDestroy {
     });
   }
   
+  // 統一位置計算方法
+  getNodeVisualPosition(node: any) {
+    return this._flowService.getNodeVisualPosition(node);
+  }
+
   // 事件處理方法
   onSvgClick(event: MouseEvent) {
     const clickHandler = this.onClick();

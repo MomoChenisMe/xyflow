@@ -17,7 +17,7 @@ import {
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
-import { type Connection, type Position } from '@xyflow/system';
+import { type Connection, type Position, getNodePositionWithOrigin } from '@xyflow/system';
 
 // 專案內部模組
 import { AngularNode } from '../types';
@@ -241,7 +241,9 @@ export class NodeWrapperComponent implements OnDestroy {
   });
 
   readonly nodeTransform = computed(() => {
-    const pos = this.node().position;
+    const node = this.node();
+    // 使用統一位置計算系統
+    const pos = this._flowService.getNodeVisualPosition(node);
     return `translate(${pos.x}px, ${pos.y}px)`;
   });
 
@@ -335,7 +337,8 @@ export class NodeWrapperComponent implements OnDestroy {
     this.resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        // 可以發送大小變化事件給服務
+        // 更新統一位置計算系統中的測量尺寸
+        this._flowService.updateNodeMeasuredDimensions(this.node().id, { width, height });
       }
     });
 
@@ -426,43 +429,43 @@ export class NodeWrapperComponent implements OnDestroy {
   getTabIndex(): number {
     const nodeData = this.node();
     const globalSelectable = this._flowService.elementsSelectable();
-    
+
     // 檢查是否有自定義的 tabIndex
     const domAttributes = nodeData.data?.['domAttributes'] as any;
     if (domAttributes && typeof domAttributes.tabIndex === 'number') {
       return domAttributes.tabIndex;
     }
-    
+
     // 如果節點可選擇，設為 0 讓它可以被鍵盤聚焦
     return globalSelectable ? 0 : -1;
   }
 
   getNodeRole(): string {
     const nodeData = this.node();
-    
+
     // 檢查是否有自定義的 aria role
     if (nodeData.data?.['ariaRole']) {
       return nodeData.data['ariaRole'] as string;
     }
-    
+
     // 預設使用 'button' role，因為節點是可交互的
     return 'button';
   }
 
   getAriaLabel(): string {
     const nodeData = this.node();
-    
+
     // 檢查是否有自定義的 aria-label
     if (nodeData.data?.['ariaLabel']) {
       return nodeData.data['ariaLabel'] as string;
     }
-    
+
     // 檢查是否有自定義的 aria-roledescription
     const domAttributes = nodeData.data?.['domAttributes'] as any;
     if (domAttributes && domAttributes['aria-roledescription']) {
       return domAttributes['aria-roledescription'] as string;
     }
-    
+
     // 預設使用節點的 label 或 id
     const label = nodeData.data?.['label'] || nodeData.id;
     return `Node ${label}`;
@@ -471,15 +474,15 @@ export class NodeWrapperComponent implements OnDestroy {
   onNodeFocus(event: FocusEvent): void {
     const nodeId = this.node().id;
     const currentNode = this.node();
-    
+
     // 檢查是否是鍵盤焦點 (類似 React 版本的 :focus-visible 檢查)
     const isKeyboardFocus = this.isKeyboardFocused(event);
-    
+
     // 只在鍵盤焦點時執行自動平移（與 React 版本一致）
     if (isKeyboardFocus) {
       this._flowService.panToNodeOnFocus(nodeId);
     }
-    
+
     // 延遲選擇操作，避免與平移動畫衝突
     const isSelectable = this._flowService.elementsSelectable();
     if (isSelectable && !currentNode.selected) {
@@ -493,20 +496,20 @@ export class NodeWrapperComponent implements OnDestroy {
 
   onNodeKeyDown(event: KeyboardEvent): void {
     const nodeId = this.node().id;
-    
+
     // 處理 Enter 或 Space 鍵，模擬點擊
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      
+
       // 觸發節點點擊事件
       const mouseEvent = new MouseEvent('click', {
         bubbles: true,
         cancelable: true,
       });
-      
+
       this.onNodeClick(mouseEvent);
     }
-    
+
     // 處理方向鍵移動（可選功能）
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
       event.preventDefault();
@@ -523,7 +526,7 @@ export class NodeWrapperComponent implements OnDestroy {
   // 檢查焦點是否來自鍵盤（類似 React 版本的 :focus-visible 檢查）
   private isKeyboardFocused(event: FocusEvent): boolean {
     const target = event.target as HTMLElement;
-    
+
     // 使用現代瀏覽器的 :focus-visible 偽類檢查
     if (target && target.matches && typeof target.matches === 'function') {
       try {
@@ -532,7 +535,7 @@ export class NodeWrapperComponent implements OnDestroy {
         // 某些較舊的瀏覽器可能不支持 :focus-visible
       }
     }
-    
+
     // 備用檢查：如果沒有 :focus-visible 支持，使用簡單的啟發式判斷
     // 這個方法不完美，但通常有效
     return this.wasRecentKeyboardInteraction();

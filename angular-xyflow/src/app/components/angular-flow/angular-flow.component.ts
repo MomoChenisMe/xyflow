@@ -17,7 +17,13 @@ import {
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
-import { type Connection, Position } from '@xyflow/system';
+import { 
+  type Connection, 
+  Position, 
+  getNodePositionWithOrigin,
+  getEdgePosition,
+  ConnectionMode
+} from '@xyflow/system';
 
 // 專案內部模組
 import { AngularFlowService } from './angular-flow.service';
@@ -700,34 +706,46 @@ export class AngularFlowComponent<
     return node;
   }
 
-  // 計算 Handle 位置
+  // 計算 Handle 位置（使用統一位置計算系統）
   private getHandlePosition(
     node: NodeType,
     position: Position,
     nodeWidth: number,
     nodeHeight: number
   ): { x: number; y: number } {
-    const x = node.position.x;
-    const y = node.position.y;
-
-    // Handle 偏移量（基於 CSS 中的 -4px 定位）
+    // 確定 Handle 類型
+    const handleType: 'source' | 'target' = position === Position.Top ? 'target' : 'source';
+    
+    // 使用統一系統獲取 Handle 位置
+    const unifiedPos = this._flowService.getHandlePositionAbsolute(
+      node.id, 
+      handleType, 
+      position
+    );
+    
+    if (unifiedPos) {
+      return unifiedPos;
+    }
+    
+    // 備用計算（如果統一系統尚未初始化）
+    const adjustedPosition = getNodePositionWithOrigin(node, [0, 0]);
     const handleOffset = 4;
 
     switch (position) {
       case Position.Top:
-        return { x: x + nodeWidth / 2, y: y - handleOffset };
+        return { x: adjustedPosition.x + nodeWidth / 2, y: adjustedPosition.y - handleOffset };
       case Position.Right:
-        return { x: x + nodeWidth + handleOffset, y: y + nodeHeight / 2 };
+        return { x: adjustedPosition.x + nodeWidth + handleOffset, y: adjustedPosition.y + nodeHeight / 2 };
       case Position.Bottom:
-        return { x: x + nodeWidth / 2, y: y + nodeHeight + handleOffset };
+        return { x: adjustedPosition.x + nodeWidth / 2, y: adjustedPosition.y + nodeHeight + handleOffset };
       case Position.Left:
-        return { x: x - handleOffset, y: y + nodeHeight / 2 };
+        return { x: adjustedPosition.x - handleOffset, y: adjustedPosition.y + nodeHeight / 2 };
       default:
-        return { x: x + nodeWidth / 2, y: y + nodeHeight / 2 };
+        return { x: adjustedPosition.x + nodeWidth / 2, y: adjustedPosition.y + nodeHeight / 2 };
     }
   }
 
-  // 獲取邊的連接點
+  // 獲取邊的連接點（使用實際測量的 handle 位置）
   getEdgeConnectionPoints(
     sourceNode: NodeType,
     targetNode: NodeType,
@@ -740,56 +758,79 @@ export class AngularFlowComponent<
     sourcePosition: Position;
     targetPosition: Position;
   } {
-    // 獲取節點的實際尺寸，優先使用 measured 尺寸，其次是設定的尺寸，最後使用預設值
-    const getNodeDimensions = (node: NodeType) => {
-      // 優先使用 measured 屬性（由 ResizeObserver 測量的實際尺寸）
-      if ((node as any).measured) {
-        return {
-          width: (node as any).measured.width || 150,
-          height: (node as any).measured.height || 32, // 預設高度：10px padding * 2 + 12px font-size
-        };
-      }
-
-      // 其次使用手動設定的尺寸
-      if ((node as any).width || (node as any).height) {
-        return {
-          width: (node as any).width || 150,
-          height: (node as any).height || 32,
-        };
-      }
-
-      // 最後使用預設值（匹配 CSS 的 width: 150px + padding）
+    // 創建與系統包兼容的內部節點結構，使用實際測量的 handle bounds
+    const createInternalNode = (node: NodeType) => {
+      const internals = this._flowService.getNodeInternals(node.id);
+      const handleBounds = this._flowService.measureNodeHandleBounds(node.id);
+      
       return {
-        width: 150,
-        height: 32, // 12px font-size + 10px padding top + 10px padding bottom
+        ...node,
+        internals: {
+          positionAbsolute: internals?.positionAbsolute || { x: node.position.x, y: node.position.y },
+          handleBounds,
+        },
+        measured: internals?.measured || {
+          width: node.width || 150,
+          height: node.height || 40
+        }
       };
     };
 
-    const sourceDimensions = getNodeDimensions(sourceNode);
-    const targetDimensions = getNodeDimensions(targetNode);
+    const internalSourceNode = createInternalNode(sourceNode);
+    const internalTargetNode = createInternalNode(targetNode);
 
-    const sourceWidth = sourceDimensions.width;
-    const sourceHeight = sourceDimensions.height;
-    const targetWidth = targetDimensions.width;
-    const targetHeight = targetDimensions.height;
+    // 使用系統包的 getEdgePosition 函數
+    const edgePosition = getEdgePosition({
+      id: edge.id,
+      sourceNode: internalSourceNode as any,
+      targetNode: internalTargetNode as any,
+      sourceHandle: edge.sourceHandle || null,
+      targetHandle: edge.targetHandle || null,
+      connectionMode: ConnectionMode.Strict,
+      onError: (id, message) => console.warn(`Edge position error ${id}:`, message)
+    });
 
-    // 獲取 handle 位置，如果沒有設定則使用預設值
+    // 如果 getEdgePosition 返回 null，則使用備用計算
+    if (!edgePosition) {
+      return this.getFallbackEdgePosition(sourceNode, targetNode);
+    }
+
+    return {
+      sourceX: edgePosition.sourceX,
+      sourceY: edgePosition.sourceY,
+      targetX: edgePosition.targetX,
+      targetY: edgePosition.targetY,
+      sourcePosition: edgePosition.sourcePosition,
+      targetPosition: edgePosition.targetPosition,
+    };
+  }
+
+  // 備用邊計算（當測量失敗時使用）
+  private getFallbackEdgePosition(sourceNode: NodeType, targetNode: NodeType) {
     const sourcePosition = sourceNode.sourcePosition || Position.Bottom;
     const targetPosition = targetNode.targetPosition || Position.Top;
+    
+    const getSimpleHandlePosition = (node: NodeType, position: Position) => {
+      const internals = this._flowService.getNodeInternals(node.id);
+      const nodePos = internals?.positionAbsolute || { x: node.position.x, y: node.position.y };
+      const measured = internals?.measured || { width: node.width || 150, height: node.height || 40 };
+      
+      switch (position) {
+        case Position.Top:
+          return { x: nodePos.x + measured.width / 2, y: nodePos.y };
+        case Position.Bottom:
+          return { x: nodePos.x + measured.width / 2, y: nodePos.y + measured.height };
+        case Position.Left:
+          return { x: nodePos.x, y: nodePos.y + measured.height / 2 };
+        case Position.Right:
+          return { x: nodePos.x + measured.width, y: nodePos.y + measured.height / 2 };
+        default:
+          return { x: nodePos.x, y: nodePos.y };
+      }
+    };
 
-    // 計算實際的連接點
-    const sourcePoint = this.getHandlePosition(
-      sourceNode,
-      sourcePosition,
-      sourceWidth,
-      sourceHeight
-    );
-    const targetPoint = this.getHandlePosition(
-      targetNode,
-      targetPosition,
-      targetWidth,
-      targetHeight
-    );
+    const sourcePoint = getSimpleHandlePosition(sourceNode, sourcePosition);
+    const targetPoint = getSimpleHandlePosition(targetNode, targetPosition);
 
     return {
       sourceX: sourcePoint.x,
@@ -800,6 +841,8 @@ export class AngularFlowComponent<
       targetPosition,
     };
   }
+
+  // 已移除不再需要的方法，現在直接計算實際 CSS handle 位置
 
   // 計算貝茲曲線路徑
   private _getBezierPath(

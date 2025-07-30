@@ -1,5 +1,5 @@
 // Angular 核心模組
-import { Injectable, inject, signal, computed, Signal } from '@angular/core';
+import { Injectable, inject, signal, computed, Signal, effect, Injector } from '@angular/core';
 
 // XyFlow 系統模組
 import {
@@ -19,6 +19,7 @@ import {
   getIncomers,
   getOutgoers,
   getNodesInside,
+  getNodePositionWithOrigin,
 } from '@xyflow/system';
 
 // 專案內部模組
@@ -38,6 +39,37 @@ export class AngularFlowService<
   NodeType extends AngularNode = AngularNode,
   EdgeType extends AngularEdge = AngularEdge
 > {
+  private injector = inject(Injector);
+  
+  constructor() {
+    // 使用 computed 來自動計算節點內部狀態，避免 effect 無窮迴圈
+    this._nodeInternals = computed(() => {
+      const nodes = this._nodes();
+      const measuredDimensions = this._nodeMeasuredDimensions();
+      const internals = new Map();
+      
+      nodes.forEach(node => {
+        // 計算絕對位置（考慮 origin）
+        const positionAbsolute = getNodePositionWithOrigin(node, this._nodeOrigin());
+        
+        // 優先使用測量的尺寸，然後是節點的尺寸，最後是默認值
+        const measured = measuredDimensions.get(node.id) || 
+          node.measured || 
+          {
+            width: node.width || 150,
+            height: node.height || 40
+          };
+        
+        internals.set(node.id, {
+          positionAbsolute,
+          measured
+        });
+      });
+      
+      return internals;
+    });
+  }
+  
   // 核心信號狀態
   private _nodes = signal<NodeType[]>([]);
   private _edges = signal<EdgeType[]>([]);
@@ -64,6 +96,14 @@ export class AngularFlowService<
     width: 0,
     height: 0,
   });
+  
+  // 統一位置計算系統 - 內部節點狀態管理 (使用 computed 避免無窮迴圈)
+  private _nodeMeasuredDimensions = signal<Map<string, { width: number; height: number }>>(new Map());
+  private _nodeOrigin = signal<[number, number]>([0, 0]);
+  private _nodeInternals!: Signal<Map<string, {
+    positionAbsolute: XYPosition;
+    measured: { width: number; height: number };
+  }>>;
 
   // 計算信號 - 唯讀訪問器
   readonly nodes: Signal<NodeType[]> = computed(() => this._nodes());
@@ -175,9 +215,18 @@ export class AngularFlowService<
       },
       addNodes: (nodes: NodeType | NodeType[]) => {
         const nodesToAdd = Array.isArray(nodes) ? nodes : [nodes];
+        // 為新節點設置默認的 measured 屬性，這對 getNodePositionWithOrigin 很重要
+        const nodesWithDefaults = nodesToAdd.map(node => ({
+          ...node,
+          measured: node.measured || {
+            width: node.width || 150,  // 默認寬度與 CSS 一致
+            height: node.height || 40  // 默認高度（估算）
+          }
+        }));
+        
         this._nodes.update((existingNodes) => [
           ...existingNodes,
-          ...nodesToAdd,
+          ...nodesWithDefaults,
         ]);
       },
       addEdges: (edges: EdgeType | EdgeType[]) => {
@@ -270,6 +319,133 @@ export class AngularFlowService<
       }),
     };
   }
+
+  // ============= 統一位置計算系統 API =============
+  
+  /**
+   * 獲取節點的絕對位置（考慮 origin）
+   */
+  getNodePositionAbsolute(nodeId: string): XYPosition | null {
+    const internals = this._nodeInternals().get(nodeId);
+    return internals ? internals.positionAbsolute : null;
+  }
+  
+  /**
+   * 獲取節點的視覺位置（用於 transform）
+   */
+  getNodeVisualPosition(node: NodeType): XYPosition {
+    const internals = this._nodeInternals().get(node.id);
+    if (internals) {
+      return internals.positionAbsolute;
+    }
+    // 備用計算
+    return getNodePositionWithOrigin(node, this._nodeOrigin());
+  }
+  
+  /**
+   * 獲取節點的內部狀態
+   */
+  getNodeInternals(nodeId: string): { positionAbsolute: XYPosition; measured: { width: number; height: number }; } | null {
+    return this._nodeInternals().get(nodeId) || null;
+  }
+  
+  /**
+   * 獲取節點原點設定
+   */
+  getNodeOrigin(): [number, number] {
+    return this._nodeOrigin();
+  }
+  
+  /**
+   * 測量節點的實際 Handle bounds（類似 React 版本的 getHandleBounds）
+   */
+  measureNodeHandleBounds(nodeId: string): { source: any[]; target: any[]; } | null {
+    const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement;
+    if (!nodeElement) return null;
+
+    const nodeBounds = nodeElement.getBoundingClientRect();
+    const viewport = this._viewport();
+    const zoom = viewport.zoom;
+
+    const sourceHandles = nodeElement.querySelectorAll('.source');
+    const targetHandles = nodeElement.querySelectorAll('.target');
+
+    const source = Array.from(sourceHandles).map((handle): any => {
+      const handleBounds = handle.getBoundingClientRect();
+      return {
+        id: handle.getAttribute('data-handleid') || null,
+        type: 'source',
+        nodeId,
+        position: handle.getAttribute('data-handlepos') || 'bottom',
+        x: (handleBounds.left - nodeBounds.left) / zoom,
+        y: (handleBounds.top - nodeBounds.top) / zoom,
+        width: handleBounds.width / zoom,
+        height: handleBounds.height / zoom,
+      };
+    });
+
+    const target = Array.from(targetHandles).map((handle): any => {
+      const handleBounds = handle.getBoundingClientRect();
+      return {
+        id: handle.getAttribute('data-handleid') || null,
+        type: 'target',
+        nodeId,
+        position: handle.getAttribute('data-handlepos') || 'top',
+        x: (handleBounds.left - nodeBounds.left) / zoom,
+        y: (handleBounds.top - nodeBounds.top) / zoom,
+        width: handleBounds.width / zoom,
+        height: handleBounds.height / zoom,
+      };
+    });
+
+    return { source, target };
+  }
+  
+  /**
+   * 獲取 Handle 的絕對位置
+   */
+  getHandlePositionAbsolute(
+    nodeId: string, 
+    handleType: 'source' | 'target',
+    handlePosition?: Position
+  ): XYPosition | null {
+    const node = this._nodes().find(n => n.id === nodeId);
+    const internals = this._nodeInternals().get(nodeId);
+    
+    if (!node || !internals) return null;
+    
+    const position = handlePosition || 
+      (handleType === 'source' ? Position.Bottom : Position.Top);
+    const { width, height } = internals.measured;
+    const { x, y } = internals.positionAbsolute;
+    
+    // Handle 現在使用 CSS transform 來定位，所以位置計算已經考慮了中心點
+    switch (position) {
+      case Position.Top:
+        return { x: x + width / 2, y: y };
+      case Position.Right:
+        return { x: x + width, y: y + height / 2 };
+      case Position.Bottom:
+        return { x: x + width / 2, y: y + height };
+      case Position.Left:
+        return { x: x, y: y + height / 2 };
+      default:
+        return { x: x + width / 2, y: y + height / 2 };
+    }
+  }
+  
+  // 移除了 updateNodeInternals 方法，因為現在使用 computed 自動計算
+  
+  /**
+   * 更新節點的測量尺寸（由 ResizeObserver 調用）
+   */
+  updateNodeMeasuredDimensions(nodeId: string, dimensions: { width: number; height: number }) {
+    const currentDimensions = new Map(this._nodeMeasuredDimensions());
+    currentDimensions.set(nodeId, dimensions);
+    this._nodeMeasuredDimensions.set(currentDimensions);
+  }
+  
+  // ============= 統一位置計算系統 API 結束 =============
 
   // 初始化方法 - 配置流程现境
   initialize(
@@ -662,7 +838,7 @@ export class AngularFlowService<
     this._connectionState.set({ inProgress: false });
   }
 
-  // 計算 handle 的世界座標位置（考慮CSS偏移）
+  // 計算 handle 的世界座標位置（使用統一位置計算系統）
   calculateHandlePosition(
     node: NodeType,
     handleType: 'source' | 'target',
@@ -670,26 +846,32 @@ export class AngularFlowService<
     nodeWidth: number = 150,
     nodeHeight: number = 40
   ): { x: number; y: number } {
-    const position =
-      handlePosition ||
-      (handleType === 'source' ? Position.Bottom : Position.Top);
-    const nodeX = node.position.x;
-    const nodeY = node.position.y;
-
-    // Handle 偏移量（對應CSS中的 -4px 定位）
-    const handleOffset = 4;
-
-    switch (position) {
+    // 使用統一系統獲取 Handle 位置
+    const position = this.getHandlePositionAbsolute(
+      node.id, 
+      handleType, 
+      handlePosition
+    );
+    
+    if (position) {
+      return position;
+    }
+    
+    // 備用計算（如果統一系統尚未初始化）
+    const adjustedPosition = getNodePositionWithOrigin(node, [0, 0]);
+    const pos = handlePosition || (handleType === 'source' ? Position.Bottom : Position.Top);
+    
+    switch (pos) {
       case Position.Top:
-        return { x: nodeX + nodeWidth / 2, y: nodeY - handleOffset };
+        return { x: adjustedPosition.x + nodeWidth / 2, y: adjustedPosition.y };
       case Position.Right:
-        return { x: nodeX + nodeWidth + handleOffset, y: nodeY + nodeHeight / 2 };
+        return { x: adjustedPosition.x + nodeWidth, y: adjustedPosition.y + nodeHeight / 2 };
       case Position.Bottom:
-        return { x: nodeX + nodeWidth / 2, y: nodeY + nodeHeight + handleOffset };
+        return { x: adjustedPosition.x + nodeWidth / 2, y: adjustedPosition.y + nodeHeight };
       case Position.Left:
-        return { x: nodeX - handleOffset, y: nodeY + nodeHeight / 2 };
+        return { x: adjustedPosition.x, y: adjustedPosition.y + nodeHeight / 2 };
       default:
-        return { x: nodeX + nodeWidth / 2, y: nodeY + nodeHeight / 2 };
+        return { x: adjustedPosition.x + nodeWidth / 2, y: adjustedPosition.y + nodeHeight / 2 };
     }
   }
 
@@ -794,9 +976,39 @@ export class AngularFlowService<
 
   // 獲取節點的所有 handle
   private getNodeHandles(node: NodeType): Handle[] {
+    // 優先使用DOM測量的handle bounds
+    const handleBounds = this.measureNodeHandleBounds(node.id);
+    if (handleBounds) {
+      const handles: Handle[] = [];
+      const internals = this._nodeInternals().get(node.id);
+      
+      if (internals) {
+        // 將相對位置轉換為絕對位置
+        handleBounds.source.forEach(h => {
+          handles.push({
+            ...h,
+            x: internals.positionAbsolute.x + h.x + h.width / 2,
+            y: internals.positionAbsolute.y + h.y + h.height / 2
+          });
+        });
+        
+        handleBounds.target.forEach(h => {
+          handles.push({
+            ...h,
+            x: internals.positionAbsolute.x + h.x + h.width / 2,
+            y: internals.positionAbsolute.y + h.y + h.height / 2
+          });
+        });
+      }
+      
+      return handles;
+    }
+    
+    // 備用方法：使用計算位置
     const handles: Handle[] = [];
-    const nodeWidth = 150;
-    const nodeHeight = 40;
+    const internals = this._nodeInternals().get(node.id);
+    const nodeWidth = internals?.measured.width || node.width || 150;
+    const nodeHeight = internals?.measured.height || node.height || 40;
 
     // 根據節點類型決定有哪些 handles
     const hasSourceHandle =

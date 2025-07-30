@@ -111,7 +111,7 @@ export class AddNodeOnEdgeDropComponent {
       id,
       position,
       data: { label: `Node ${id}` },
-      // origin: [0.5, 0.0], // Angular版本可能不支持origin，先註釋
+      origin: [0.5, 0.0], // 使用頂部中心作為定位基準，與React版本一致
     };
 
     // 創建新邊

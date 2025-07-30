@@ -33,6 +33,9 @@ import { Handle } from '../types';
       #handleElement
       class="angular-flow__handle"
       [class]="handleClasses()"
+      [attr.data-handleid]="handleId() || null"
+      [attr.data-handlepos]="position()"
+      [attr.data-nodeid]="nodeId()"
       [style.position]="'absolute'"
       [style.transform]="handleTransform()"
       [style.width]="'8px'"
@@ -77,27 +80,28 @@ import { Handle } from '../types';
     }
 
     .angular-flow__handle.position-top {
-      top: -4px;
+      top: 0;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translate(-50%, -50%);
     }
 
     .angular-flow__handle.position-right {
       top: 50%;
-      right: -4px;
-      transform: translateY(-50%);
+      right: 0;
+      transform: translate(50%, -50%);
     }
 
     .angular-flow__handle.position-bottom {
-      bottom: -4px;
+      top: auto;
       left: 50%;
-      transform: translateX(-50%);
+      bottom: 0;
+      transform: translate(-50%, 50%);
     }
 
     .angular-flow__handle.position-left {
       top: 50%;
-      left: -4px;
-      transform: translateY(-50%);
+      left: 0;
+      transform: translate(-50%, -50%);
     }
 
     .angular-flow__handle.connecting {
@@ -158,6 +162,7 @@ export class HandleComponent implements OnDestroy {
   });
 
   readonly handleClasses = computed(() => {
+    // 核心類：angular-flow__handle, source/target（用於DOM查詢器），position類
     const classes = ['angular-flow__handle', this.type(), `position-${this.position()}`];
     
     if (this.isConnecting()) {
@@ -215,16 +220,21 @@ export class HandleComponent implements OnDestroy {
     const node = this._flowService.nodeLookup().get(this.nodeId());
     if (!node) return;
 
-    // 計算 handle 的正確位置（使用修復後的流座標系統）
-    const nodeWidth = node.width || 150;
-    const nodeHeight = node.height || 40;
-    const handlePosition = this._flowService.calculateHandlePosition(
-      node,
-      this.type(),
-      this.position(),
-      nodeWidth,
-      nodeHeight
-    );
+    // 使用 DOM 測量來獲取 handle 的實際位置
+    const handleElement = this.handleElement().nativeElement;
+    const handleRect = handleElement.getBoundingClientRect();
+    const container = document.querySelector('.angular-flow') as HTMLElement;
+    const containerRect = container.getBoundingClientRect();
+    
+    // 將螢幕座標轉換為流座標
+    const viewport = this._flowService.viewport();
+    const handleCenterX = handleRect.left + handleRect.width / 2 - containerRect.left;
+    const handleCenterY = handleRect.top + handleRect.height / 2 - containerRect.top;
+    
+    const handlePosition = {
+      x: (handleCenterX - viewport.x) / viewport.zoom,
+      y: (handleCenterY - viewport.y) / viewport.zoom
+    };
 
     // 創建 Handle 對象
     const handle: Handle = {
