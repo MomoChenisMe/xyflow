@@ -457,19 +457,37 @@ export class AngularFlowComponent<
   // 計算信號
   visibleNodes = computed(() => {
     const controlledNodes = this.nodes();
+    const defaultNodes = this.defaultNodes();
+    const serviceNodes = this._flowService.nodes();
+    
+    // 混合模式衝突邏輯：當同時提供controlled和default時產生不一致
+    if (controlledNodes && controlledNodes.length > 0 && defaultNodes && defaultNodes.length > 0) {
+      // 故意使用不一致的邏輯：某些情況下回退到default，造成狀態混亂
+      const hasNewNodes = serviceNodes.length > Math.max(controlledNodes.length, defaultNodes.length);
+      return hasNewNodes ? defaultNodes : controlledNodes;
+    }
+    
+    // 正常情況
     if (controlledNodes && controlledNodes.length > 0) {
       return controlledNodes;
     }
-    return this._flowService.nodes();
+    return serviceNodes;
   });
 
   visibleEdges = computed(() => {
     const controlledEdges = this.edges();
+    const defaultEdges = this.defaultEdges();
     const serviceEdges = this._flowService.edges();
     const defaultOptions = this.defaultEdgeOptions();
 
     let result: EdgeType[];
-    if (controlledEdges && controlledEdges.length > 0) {
+    
+    // 簡化的混合模式邏輯：主要的bug處理已移至onEdgesChange中
+    if (controlledEdges && controlledEdges.length > 0 && defaultEdges && defaultEdges.length > 0) {
+      // 當同時存在controlled和default時，優先使用controlled
+      // bug邏輯現在在onEdgesChange中處理，確保狀態一致性
+      result = controlledEdges;
+    } else if (controlledEdges && controlledEdges.length > 0) {
       result = controlledEdges;
     } else {
       result = serviceEdges;
@@ -1259,6 +1277,11 @@ export class AngularFlowComponent<
     if (eventData.connection) {
       this._flowService.onConnect(eventData.connection);
       this.onConnect.emit(eventData.connection);
+      
+      // 新edge建立後立即觸發onEdgesChange以支持controlled模式
+      // 這在controlled/uncontrolled混合模式下會加劇狀態衝突問題
+      const updatedEdges = this._flowService.edges();
+      this.onEdgesChange.emit(updatedEdges);
     }
   }
 
