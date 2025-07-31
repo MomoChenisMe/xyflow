@@ -58,7 +58,7 @@ import type { XYPosition } from '@xyflow/system';
             [attr.stroke-width]="nodeStrokeWidth()"
             [attr.rx]="nodeBorderRadius()"
             [attr.ry]="nodeBorderRadius()"
-            [class]="'xy-flow__minimap-node ' + (node.selected ? 'selected' : '') + ' ' + (nodeClassName() || '')"
+            [class]="'xy-flow__minimap-node ' + (shouldShowSelected(node) ? 'selected' : '') + ' ' + (nodeClassName() || '')"
             [attr.shape-rendering]="shapeRendering"
             (click)="onSvgNodeClick($event, node.id)"
           />
@@ -411,6 +411,14 @@ export class MinimapComponent implements OnInit, OnDestroy {
   
   onSvgNodeClick(event: MouseEvent, nodeId: string) {
     event.stopPropagation();
+    
+    // 根據 React Flow 邏輯：如果交互被禁用，阻止節點點擊事件
+    const isSelectable = this._flowService.elementsSelectable();
+    if (!isSelectable) {
+      event.preventDefault();
+      return;
+    }
+    
     const clickHandler = this.onNodeClick();
     if (clickHandler) {
       const node = this.visibleNodes().find(n => n.id === nodeId);
@@ -418,6 +426,13 @@ export class MinimapComponent implements OnInit, OnDestroy {
         clickHandler(event, node);
       }
     }
+  }
+  
+  // 檢查是否應該顯示選中樣式 - 根據 React Flow 邏輯
+  shouldShowSelected(node: any): boolean {
+    const isSelectable = this._flowService.elementsSelectable();
+    // 只有在交互啟用且節點確實被選中時才顯示選中樣式
+    return isSelectable && node.selected;
   }
   
   // 節點樣式方法

@@ -33,7 +33,7 @@ import {
     >
       <!-- 自定義連接線模板 - 相當於React的ConnectionLine組件 -->
       <ng-template
-        angularFlowConnectionLine
+        angularXyFlowConnectionLine
         let-fromX="fromX"
         let-fromY="fromY"
         let-toX="toX"

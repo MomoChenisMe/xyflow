@@ -90,8 +90,8 @@ export class AngularXYFlowPanZoomService implements OnDestroy {
 
     // 更新 PanZoom 設置 - 阻止 Node、Edge、Controls、MiniMap、Panel、Background 上的 PanZoom 事件
     this.panZoomInstance.update({
-      noWheelClassName: 'angular-flow__node angular-flow__edge angular-flow__controls angular-flow__minimap angular-flow__panel angular-flow__background xy-flow__node xy-flow__edge',
-      noPanClassName: 'angular-flow__node angular-flow__edge angular-flow__controls angular-flow__minimap angular-flow__panel angular-flow__background xy-flow__node xy-flow__edge',
+      noWheelClassName: 'angular-xyflow__node angular-xyflow__edge angular-xyflow__controls angular-xyflow__minimap angular-xyflow__panel angular-xyflow__background xy-flow__node xy-flow__edge',
+      noPanClassName: 'angular-xyflow__node angular-xyflow__edge angular-xyflow__controls angular-xyflow__minimap angular-xyflow__panel angular-xyflow__background xy-flow__node xy-flow__edge',
       preventScrolling,
       panOnScroll,
       panOnDrag,
@@ -140,12 +140,12 @@ export class AngularXYFlowPanZoomService implements OnDestroy {
       }
       
       // 使用輔助函數在容器範圍內檢查 closest
-      const isOnNode = this.isTargetInContainerElement(target, container, '.angular-flow__node, .xy-flow__node');
-      const isOnEdge = this.isTargetInContainerElement(target, container, '.angular-flow__edge, .xy-flow__edge');
-      const isOnControls = this.isTargetInContainerElement(target, container, '.angular-flow__controls');
-      const isOnMiniMap = this.isTargetInContainerElement(target, container, '.angular-flow__minimap');
-      const isOnPanel = this.isTargetInContainerElement(target, container, '.angular-flow__panel');
-      const isOnBackground = this.isTargetInContainerElement(target, container, '.angular-flow__background');
+      const isOnNode = this.isTargetInContainerElement(target, container, '.angular-xyflow__node, .xy-flow__node');
+      const isOnEdge = this.isTargetInContainerElement(target, container, '.angular-xyflow__edge, .xy-flow__edge');
+      const isOnControls = this.isTargetInContainerElement(target, container, '.angular-xyflow__controls');
+      const isOnMiniMap = this.isTargetInContainerElement(target, container, '.angular-xyflow__minimap');
+      const isOnPanel = this.isTargetInContainerElement(target, container, '.angular-xyflow__panel');
+      const isOnBackground = this.isTargetInContainerElement(target, container, '.angular-xyflow__background');
       
       if (isOnNode || isOnEdge || isOnControls || isOnMiniMap || isOnPanel || isOnBackground) {
         event.stopPropagation();

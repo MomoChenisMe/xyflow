@@ -27,6 +27,10 @@ export type PanelPosition =
       [ngStyle]="panelStyles()"
       (mousedown)="stopPropagation($event)"
       (touchstart)="stopPropagation($event)"
+      (wheel)="stopPropagation($event)"
+      (click)="stopPropagation($event)"
+      (dblclick)="stopPropagation($event)"
+      (contextmenu)="stopPropagation($event)"
     >
       <ng-content />
     </div>
@@ -134,7 +138,8 @@ export class PanelComponent {
     return { ...styles, ...customStyle };
   });
 
-  // 阻止事件冒泡，防止觸發 viewport 拖曳
+  // 阻止事件冒泡，防止觸發 viewport 的拖曳、縮放等操作
+  // 這確保用戶在 panel 中的操作（點擊按鈕、滾動等）不會意外影響 flow 的視口
   stopPropagation(event: Event): void {
     event.stopPropagation();
   }

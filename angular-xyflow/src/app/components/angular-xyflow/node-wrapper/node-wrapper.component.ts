@@ -299,6 +299,14 @@ export class NodeWrapperComponent implements OnDestroy {
     // 避免在拖動後觸發點擊
     if (!this.isDragging()) {
       const isSelectable = this._flowService.elementsSelectable();
+      
+      // 根據 React Flow 邏輯：當交互被禁用時，完全阻止點擊事件
+      if (!isSelectable) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      
       const globalDraggable = this._flowService.nodesDraggable();
       const nodeDraggable = this.node().draggable !== false;
       const isDraggable = globalDraggable && nodeDraggable;
@@ -422,6 +430,13 @@ export class NodeWrapperComponent implements OnDestroy {
 
   onNodeFocus(event: FocusEvent): void {
     const nodeId = this.node().id;
+    const isSelectable = this._flowService.elementsSelectable();
+    
+    // 根據 React Flow 邏輯：當交互被禁用時，阻止焦點相關操作
+    if (!isSelectable) {
+      event.preventDefault();
+      return;
+    }
 
     // 檢查是否是鍵盤焦點 (類似 React 版本的 :focus-visible 檢查)
     const isKeyboardFocus = this.isKeyboardFocused(event);
