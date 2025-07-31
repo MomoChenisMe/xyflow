@@ -8,6 +8,7 @@ import { ColorModeExampleComponent } from './components/examples/color-mode-exam
 import { CancelConnectionExampleComponent } from './components/examples/cancel-connection-example/cancel-connection-example.component';
 import { ClickDistanceExampleComponent } from './components/examples/click-distance-example/click-distance-example.component';
 import { ControlledUncontrolledExampleComponent } from './components/examples/controlled-uncontrolled-example/controlled-uncontrolled-example.component';
+import { ControlledViewportExampleComponent } from './components/examples/controlled-viewport-example/controlled-viewport-example.component';
 
 export interface IRoute {
   name: string;
@@ -61,6 +62,11 @@ export const routeList: IRoute[] = [
     path: 'controlled-uncontrolled',
     component: ControlledUncontrolledExampleComponent,
   },
+  {
+    name: 'Controlled Viewport',
+    path: 'controlled-viewport',
+    component: ControlledViewportExampleComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -74,4 +80,5 @@ export const routes: Routes = [
   { path: 'click-distance', component: ClickDistanceExampleComponent },
   { path: 'color-mode', component: ColorModeExampleComponent },
   { path: 'controlled-uncontrolled', component: ControlledUncontrolledExampleComponent },
+  { path: 'controlled-viewport', component: ControlledViewportExampleComponent },
 ];
