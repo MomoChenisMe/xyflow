@@ -468,6 +468,25 @@ export class AngularXYFlowComponent<
   });
 
   constructor() {
+    // 設置 controlled/uncontrolled 模式標誌
+    effect(() => {
+      const defaultNodes = this.defaultNodes();
+      const defaultEdges = this.defaultEdges();
+      
+      // 設置模式標誌（與 React Flow 一致）
+      this._flowService.setHasDefaultNodes(defaultNodes.length > 0);
+      this._flowService.setHasDefaultEdges(defaultEdges.length > 0);
+    });
+    
+    // 設置事件回調
+    this._flowService.setOnNodesChange((nodes) => {
+      this.onNodesChange.emit(nodes);
+    });
+    
+    this._flowService.setOnEdgesChange((edges) => {
+      this.onEdgesChange.emit(edges);
+    });
+
     // 監聽輸入變化的副作用
     effect(() => {
       const nodes = this.defaultNodes();
@@ -482,6 +501,24 @@ export class AngularXYFlowComponent<
           selectNodesOnDrag: this.selectNodesOnDrag(),
           autoPanOnNodeFocus: this.autoPanOnNodeFocus(),
         });
+      }
+    });
+    
+    // 同步 controlled nodes（如果有提供）
+    effect(() => {
+      const controlledNodes = this.nodes();
+      if (controlledNodes && !this._flowService.hasDefaultNodes()) {
+        // Controlled 模式：同步外部狀態到內部（不觸發 onChange 事件）
+        this._flowService.syncNodesFromControlled(controlledNodes);
+      }
+    });
+    
+    // 同步 controlled edges（如果有提供）
+    effect(() => {
+      const controlledEdges = this.edges();
+      if (controlledEdges && !this._flowService.hasDefaultEdges()) {
+        // Controlled 模式：同步外部狀態到內部（不觸發 onChange 事件）
+        this._flowService.syncEdgesFromControlled(controlledEdges);
       }
     });
 

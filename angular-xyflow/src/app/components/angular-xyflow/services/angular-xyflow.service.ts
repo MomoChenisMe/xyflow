@@ -100,6 +100,14 @@ export class AngularXYFlowService<
     height: 0,
   });
   
+  // Controlled/Uncontrolled 模式標誌
+  private _hasDefaultNodes = signal<boolean>(false);
+  private _hasDefaultEdges = signal<boolean>(false);
+  
+  // 事件回調
+  private _onNodesChange: ((nodes: NodeType[]) => void) | null = null;
+  private _onEdgesChange: ((edges: EdgeType[]) => void) | null = null;
+  
   // 統一位置計算系統 - 內部節點狀態管理 (使用 computed 避免無窮迴圈)
   private _nodeMeasuredDimensions = signal<Map<string, { width: number; height: number }>>(new Map());
   private _nodeOrigin = signal<[number, number]>([0, 0]);
@@ -107,6 +115,42 @@ export class AngularXYFlowService<
     positionAbsolute: XYPosition;
     measured: { width: number; height: number };
   }>>;
+  
+  // 設置事件回調
+  setOnNodesChange(callback: ((nodes: NodeType[]) => void) | null) {
+    this._onNodesChange = callback;
+  }
+  
+  setOnEdgesChange(callback: ((edges: EdgeType[]) => void) | null) {
+    this._onEdgesChange = callback;
+  }
+  
+  // 設置 controlled/uncontrolled 模式
+  setHasDefaultNodes(value: boolean) {
+    this._hasDefaultNodes.set(value);
+  }
+  
+  setHasDefaultEdges(value: boolean) {
+    this._hasDefaultEdges.set(value);
+  }
+  
+  // 獲取模式狀態
+  hasDefaultNodes(): boolean {
+    return this._hasDefaultNodes();
+  }
+  
+  hasDefaultEdges(): boolean {
+    return this._hasDefaultEdges();
+  }
+  
+  // 內部方法：更新狀態而不觸發事件（用於 controlled 模式同步）
+  syncNodesFromControlled(nodes: NodeType[]) {
+    this._nodes.set([...nodes]);
+  }
+  
+  syncEdgesFromControlled(edges: EdgeType[]) {
+    this._edges.set([...edges]);
+  }
 
   // 計算信號 - 唯讀訪問器
   readonly nodes: Signal<NodeType[]> = computed(() => this._nodes());
@@ -235,10 +279,15 @@ export class AngularXYFlowService<
         }
       },
       setEdges: (edges: EdgeType[] | ((edges: EdgeType[]) => EdgeType[])) => {
-        if (typeof edges === 'function') {
-          this._edges.update(edges);
-        } else {
-          this._edges.set([...edges]);
+        const newEdges = typeof edges === 'function' 
+          ? edges(this._edges())
+          : [...edges];
+        
+        this._edges.set(newEdges);
+        
+        // 觸發 onEdgesChange 回調（類似 React Flow）
+        if (this._onEdgesChange) {
+          this._onEdgesChange(newEdges);
         }
       },
       addNodes: (nodes: NodeType | NodeType[]) => {

@@ -240,20 +240,10 @@ export class ControlledUncontrolledExampleComponent {
     // 警告：這個操作直接修改 controlled 狀態，會加劇與 defaultEdges 的衝突
     // 在混合模式下，修改樣式後的 edge 點擊可能會消失或重置
     
-    // 同時更新兩個層級的狀態以確保立即生效
-    // 1. 更新 service 層狀態
+    // 使用統一的狀態管理：只需要調用 setEdges
+    // 它會自動觸發 onEdgesChange 並更新視圖
     this._flow.setEdges((edges: AngularEdge[]) =>
       edges.map((edge: AngularEdge) => ({
-        ...edge,
-        style: {
-          stroke: '#ff5050',
-        },
-      }))
-    );
-    
-    // 2. 同步更新組件層狀態（立即生效）
-    this.edges.update(edges =>
-      edges.map(edge => ({
         ...edge,
         style: {
           stroke: '#ff5050',
