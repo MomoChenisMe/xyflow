@@ -122,16 +122,19 @@ import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
             class="angular-flow__edge xy-flow__edge"
             [class.selected]="edge.selected"
             [class.animated]="edge.animated"
+            [class.selectable]="edge.selectable !== false"
+            [attr.tabindex]="edge.selectable !== false ? 0 : null"
+            (focus)="handleEdgeFocus($event, edge)"
+            (keydown)="handleEdgeKeyDown($event, edge)"
           >
             <!-- 可見的邊路徑 -->
             <path
               [attr.d]="calculateEdgePath(sourceNode, targetNode, edge)"
-              [attr.stroke]="edge.selected ? '#ff0072' : '#b1b1b7'"
-              [attr.stroke-width]="edge.selected ? 2 : 1"
               [attr.fill]="'none'"
               [attr.marker-start]="getMarkerUrl(edge, 'start')"
               [attr.marker-end]="getMarkerUrl(edge, 'end')"
               [class]="'angular-flow__edge-path xy-flow__edge-path'"
+              [ngStyle]="getEdgeStyles(edge)"
               style="pointer-events: none;"
             />
             
@@ -205,6 +208,7 @@ import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
             [selected]="node.selected || false"
             [dragging]="node.dragging || false"
             (nodeClick)="handleNodeClick($event, node)"
+            (nodeFocus)="handleNodeFocus($event, node)"
             (nodeDragStart)="handleNodeDragStart($event, node)"
             (nodeDrag)="handleNodeDrag($event, node)"
             (nodeDragStop)="handleNodeDragStop($event, node)"
@@ -285,14 +289,38 @@ import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
         stroke-width: 1;
         fill: none;
       }
-
-      .angular-flow__edge-path:hover {
-        stroke: #999;
-        stroke-width: 2;
+      
+      /* Dark mode default edge color */
+      .dark .angular-flow__edge-path {
+        stroke: #3e3e3e;
       }
 
-      .angular-flow__edge-path.selected {
-        stroke: #ff0072;
+      .angular-flow__edge.selectable:hover .angular-flow__edge-path {
+        stroke: #999;
+      }
+      
+      .dark .angular-flow__edge.selectable:hover .angular-flow__edge-path {
+        stroke: #888;
+      }
+      
+      /* Ensure focus outline is removed */
+      .angular-flow__edge:focus,
+      .angular-flow__edge:focus-visible {
+        outline: none;
+      }
+
+      .angular-flow__edge-path.selected,
+      .angular-flow__edge.selectable:focus .angular-flow__edge-path,
+      .angular-flow__edge.selectable:focus-visible .angular-flow__edge-path {
+        stroke: #555;
+        stroke-width: 2;
+      }
+      
+      /* Dark mode edge selected/focus color */
+      .dark .angular-flow__edge-path.selected,
+      .dark .angular-flow__edge.selectable:focus .angular-flow__edge-path,
+      .dark .angular-flow__edge.selectable:focus-visible .angular-flow__edge-path {
+        stroke: #727272;
         stroke-width: 2;
       }
 
@@ -385,6 +413,7 @@ export class AngularFlowComponent<
   onConnectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }>();
   onConnectEnd = output<{ connection?: Connection; event: MouseEvent }>();
   onNodeClick = output<{ event: MouseEvent; node: NodeType }>();
+  onEdgeClick = output<{ event: MouseEvent; edge: EdgeType }>();
   onNodeDragStart = output<{
     event: MouseEvent;
     node: NodeType;
@@ -437,6 +466,7 @@ export class AngularFlowComponent<
   visibleEdges = computed(() => {
     const controlledEdges = this.edges();
     const serviceEdges = this._flowService.edges();
+    const defaultOptions = this.defaultEdgeOptions();
 
     let result: EdgeType[];
     if (controlledEdges && controlledEdges.length > 0) {
@@ -445,6 +475,13 @@ export class AngularFlowComponent<
       result = serviceEdges;
     }
 
+    // 應用 defaultEdgeOptions 到所有邊
+    if (defaultOptions) {
+      result = result.map(edge => ({
+        ...defaultOptions,
+        ...edge
+      }));
+    }
 
     return result;
   });
@@ -1029,7 +1066,34 @@ export class AngularFlowComponent<
     // 選擇節點
     this._flowService.selectNode(node.id, multiSelect);
 
+    // 觸發狀態變化事件（controlled 模式需要）
+    const updatedNodes = this._flowService.nodes();
+    const updatedEdges = this._flowService.edges();
+    this.onNodesChange.emit(updatedNodes);
+    this.onEdgesChange.emit(updatedEdges);
+
     this.onNodeClick.emit({ event, node });
+  }
+
+  handleNodeFocus(_event: FocusEvent, node: NodeType) {
+    // 檢查是否允許選取元素
+    if (!this._flowService.elementsSelectable()) {
+      return;
+    }
+
+    // 檢查節點是否已經被選中，避免不必要的更新
+    if (node.selected) {
+      return;
+    }
+    
+    // 選擇節點（focus時不進行多選）
+    this._flowService.selectNode(node.id, false);
+
+    // 觸發狀態變化事件（controlled 模式需要）
+    const updatedNodes = this._flowService.nodes();
+    const updatedEdges = this._flowService.edges();
+    this.onNodesChange.emit(updatedNodes);
+    this.onEdgesChange.emit(updatedEdges);
   }
 
   handleEdgeClick(event: MouseEvent, edge: EdgeType) {
@@ -1047,6 +1111,48 @@ export class AngularFlowComponent<
     // 選擇邊線
     this._flowService.selectEdge(edge.id, multiSelect);
 
+    // 觸發 onEdgesChange 事件以通知父組件邊狀態變化（controlled 模式需要）
+    const updatedEdges = this._flowService.edges();
+    this.onEdgesChange.emit(updatedEdges);
+
+    // 觸發 edge 點擊事件
+    this.onEdgeClick.emit({ event, edge });
+  }
+
+  handleEdgeFocus(_event: FocusEvent, edge: EdgeType) {
+    // 檢查是否允許選取元素
+    if (!this._flowService.elementsSelectable()) {
+      return;
+    }
+
+    // Focus時自動選擇edge（類似React版本的行為）
+    this._flowService.selectEdge(edge.id, false);
+
+    // 觸發狀態變化事件
+    const updatedEdges = this._flowService.edges();
+    this.onEdgesChange.emit(updatedEdges);
+  }
+
+  handleEdgeKeyDown(event: KeyboardEvent, edge: EdgeType) {
+    // 檢查是否允許選取元素
+    if (!this._flowService.elementsSelectable()) {
+      return;
+    }
+
+    // 空格鍵或Enter鍵觸發選擇（無障礙功能）
+    if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      const multiSelect = event.ctrlKey || event.metaKey;
+      
+      this._flowService.selectEdge(edge.id, multiSelect);
+      
+      // 觸發狀態變化事件
+      const updatedEdges = this._flowService.edges();
+      this.onEdgesChange.emit(updatedEdges);
+      
+      // 觸發點擊事件（為了一致性）
+      this.onEdgeClick.emit({ event: event as any, edge });
+    }
   }
 
   handlePaneClick(event: MouseEvent) {
@@ -1061,6 +1167,13 @@ export class AngularFlowComponent<
       target.classList.contains('xy-flow__viewport')
     ) {
       this._flowService.clearSelection();
+      
+      // 觸發狀態變化事件（controlled 模式需要）
+      const updatedNodes = this._flowService.nodes();
+      const updatedEdges = this._flowService.edges();
+      this.onNodesChange.emit(updatedNodes);
+      this.onEdgesChange.emit(updatedEdges);
+      
       // 發出 pane 點擊事件
       this.onPaneClick.emit({ event });
     }
@@ -1195,6 +1308,43 @@ export class AngularFlowComponent<
     return `angular-flow__marker-${position}-${type}-${color}`;
   }
 
+  // 獲取邊線樣式對象 - 類似React版本的完整樣式支持
+  getEdgeStyles(edge: EdgeType): any {
+    // 根據顏色模式選擇正確的顏色
+    const isDarkMode = this.colorModeClass() === 'dark';
+    const selectedStroke = isDarkMode ? '#727272' : '#555';
+    const defaultStroke = isDarkMode ? '#3e3e3e' : '#b1b1b7';
+    
+    const defaultStyles = {
+      stroke: edge.selected ? selectedStroke : defaultStroke,
+      strokeWidth: edge.selected ? 2 : 1,
+      fill: 'none',
+    };
+
+    // 合併自定義樣式，優先級高於默認樣式
+    return edge.style ? { ...defaultStyles, ...edge.style } : defaultStyles;
+  }
+
+  // 保留原方法以兼容性（雖然現在不再使用）
+  getEdgeStroke(edge: EdgeType): string {
+    // 優先使用 edge.style['stroke']
+    if (edge.style?.['stroke']) {
+      return edge.style['stroke'];
+    }
+    // 其次使用選擇狀態樣式
+    return edge.selected ? '#ff0072' : '#b1b1b7';
+  }
+
+  // 獲取邊線寬度 - 優先使用自定義樣式，然後是選擇狀態樣式
+  getEdgeStrokeWidth(edge: EdgeType): number {
+    // 優先使用 edge.style['strokeWidth']
+    if (edge.style?.['strokeWidth'] !== undefined) {
+      return edge.style['strokeWidth'];
+    }
+    // 其次使用選擇狀態樣式
+    return edge.selected ? 2 : 1;
+  }
+
   // 獲取標記 URL
   getMarkerUrl(edge: EdgeType, position: 'start' | 'end'): string | null {
     const marker = position === 'start' ? edge.markerStart : edge.markerEnd;
@@ -1223,13 +1373,34 @@ export class AngularFlowComponent<
         return;
       }
 
-      // 處理選擇狀態 - 檢查是否有任何元素被選中
+      // 處理選擇狀態 - 在controlled模式下檢查視圖狀態而不僅是服務狀態
       const selectedNodeIds = this._flowService.selectedNodes();
       const selectedEdgeIds = this._flowService.selectedEdges();
       
-      if (selectedNodeIds.length > 0 || selectedEdgeIds.length > 0) {
+      // 檢查視圖中的選中狀態（controlled模式下更可靠）
+      const visibleSelectedNodes = this.visibleNodes().filter(n => n.selected);
+      const visibleSelectedEdges = this.visibleEdges().filter(e => e.selected);
+      
+      // 檢查是否有元素被選中（服務狀態 OR 視圖狀態）
+      const hasSelectedElements = selectedNodeIds.length > 0 || selectedEdgeIds.length > 0 || 
+                                  visibleSelectedNodes.length > 0 || visibleSelectedEdges.length > 0;
+      
+      if (hasSelectedElements) {
         event.preventDefault();
+        
+        // 清除DOM focus狀態（解決controlled模式下的focus殘留問題）
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && activeElement.blur) {
+          activeElement.blur();
+        }
+        
         this._flowService.clearSelection();
+        
+        // 觸發狀態變化事件（controlled 模式需要）
+        const updatedNodes = this._flowService.nodes();
+        const updatedEdges = this._flowService.edges();
+        this.onNodesChange.emit(updatedNodes);
+        this.onEdgesChange.emit(updatedEdges);
       }
     }
   }

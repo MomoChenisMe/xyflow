@@ -6,7 +6,11 @@ import { BackgroundComponent } from '../../angular-flow/background/background.co
 import { ControlsComponent } from '../../angular-flow/controls/controls.component';
 import { MinimapComponent } from '../../angular-flow/minimap/minimap.component';
 import { PanelComponent } from '../../angular-flow/panel/panel.component';
-import { AngularNode, AngularEdge, BackgroundVariant } from '../../angular-flow/types';
+import {
+  AngularNode,
+  AngularEdge,
+  BackgroundVariant,
+} from '../../angular-flow/types';
 import { Position } from '@xyflow/system';
 
 @Component({
@@ -19,7 +23,7 @@ import { Position } from '@xyflow/system';
     BackgroundComponent,
     ControlsComponent,
     MinimapComponent,
-    PanelComponent
+    PanelComponent,
   ],
   template: `
     <angular-flow
@@ -37,7 +41,7 @@ import { Position } from '@xyflow/system';
       <angular-flow-controls />
 
       <angular-flow-panel position="top-right">
-        <div class="controls-panel">
+        <div class="angular-flow-panel">
           <label for="focusPannable" class="checkbox-label">
             <input
               id="focusPannable"
@@ -52,58 +56,31 @@ import { Position } from '@xyflow/system';
       </angular-flow-panel>
     </angular-flow>
   `,
-  styles: [`
-    :host {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
+  styles: [
+    `
+      :host {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
 
-    angular-flow {
-      width: 100%;
-      height: 100%;
-    }
+      angular-flow {
+        width: 100%;
+        height: 100%;
+      }
 
-    .controls-panel {
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 12px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
+      .a11y-flow {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+          sans-serif;
+      }
 
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      color: #333;
-      cursor: pointer;
-      user-select: none;
-    }
+      /* A11y 特定樣式覆蓋 - 增強視覺回饋 */
 
-    .xy-theme__checkbox {
-      width: 16px;
-      height: 16px;
-      margin: 0;
-      cursor: pointer;
-    }
-
-    .a11y-flow {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-    }
-
-    /* A11y 特定樣式覆蓋 - 增強視覺回饋 */
-    :host ::ng-deep .angular-flow__node:focus-visible {
-      outline: 2px solid #0ea5e9;
-      outline-offset: 2px;
-      --xy-node-boxshadow-selected: 0 0 0 2px rgba(14, 165, 233, 0.2);
-    }
-
-    :host ::ng-deep .angular-flow__node.selected {
-      --xy-node-boxshadow-selected: 0 0 0 2px rgba(255, 0, 114, 0.2);
-    }
-  `]
+      :host ::ng-deep .angular-flow__node.selected {
+        --xy-node-boxshadow-selected: 0 0 0 2px rgba(255, 0, 114, 0.2);
+      }
+    `,
+  ],
 })
 export class A11yExampleComponent {
   // 背景變體枚舉
@@ -122,7 +99,7 @@ export class A11yExampleComponent {
         domAttributes: {
           tabIndex: 10,
           'aria-roledescription': 'A11y Node',
-        }
+        },
       } as Record<string, unknown>,
       position: { x: 250, y: 5 },
     },
@@ -135,7 +112,7 @@ export class A11yExampleComponent {
       id: '3',
       data: {
         label: 'Node 3',
-        ariaRole: 'button'
+        ariaRole: 'button',
       } as Record<string, unknown>,
       position: { x: 100, y: 100 },
     },

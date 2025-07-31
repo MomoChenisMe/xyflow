@@ -7,6 +7,7 @@ import { BrokenNodesExampleComponent } from './components/examples/broken-nodes-
 import { ColorModeExampleComponent } from './components/examples/color-mode-example/color-mode-example.component';
 import { CancelConnectionExampleComponent } from './components/examples/cancel-connection-example/cancel-connection-example.component';
 import { ClickDistanceExampleComponent } from './components/examples/click-distance-example/click-distance-example.component';
+import { ControlledUncontrolledExampleComponent } from './components/examples/controlled-uncontrolled-example/controlled-uncontrolled-example.component';
 
 export interface IRoute {
   name: string;
@@ -55,6 +56,11 @@ export const routeList: IRoute[] = [
     path: 'color-mode',
     component: ColorModeExampleComponent,
   },
+  {
+    name: 'Controlled Uncontrolled',
+    path: 'controlled-uncontrolled',
+    component: ControlledUncontrolledExampleComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -67,4 +73,5 @@ export const routes: Routes = [
   { path: 'cancel-connection', component: CancelConnectionExampleComponent },
   { path: 'click-distance', component: ClickDistanceExampleComponent },
   { path: 'color-mode', component: ColorModeExampleComponent },
+  { path: 'controlled-uncontrolled', component: ControlledUncontrolledExampleComponent },
 ];

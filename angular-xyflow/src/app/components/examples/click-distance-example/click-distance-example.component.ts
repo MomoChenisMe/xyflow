@@ -19,7 +19,7 @@ import type { Connection } from '@xyflow/system';
       (onPaneClick)="onPaneClick($event)"
     >
       <angular-flow-panel position="top-right">
-        <div class="controls-panel">
+        <div class="angular-flow-panel">
           <label for="clickDistance" class="slider-label">
             <input
               id="clickDistance"
@@ -47,28 +47,6 @@ import type { Connection } from '@xyflow/system';
       angular-flow {
         width: 100%;
         height: 100%;
-      }
-
-      .controls-panel {
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 12px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .slider-label {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        font-size: 14px;
-        color: #333;
-        user-select: none;
-      }
-
-      .slider {
-        width: 200px;
-        cursor: pointer;
       }
     `,
   ],

@@ -64,6 +64,7 @@ export interface AngularEdge<T extends Record<string, unknown> = Record<string, 
   selected?: boolean;
   data?: T;
   className?: string;
+  style?: Record<string, any>;
   zIndex?: number;
   markerStart?: EdgeMarker | string;
   markerEnd?: EdgeMarker | string;

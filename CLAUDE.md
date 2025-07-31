@@ -1261,3 +1261,6 @@ Uses [changesets](https://github.com/changesets/changesets):
 - **CSS coordination**: Styles are built separately for each package but share base styles
 - **Examples matter**: Always test changes against relevant examples before submitting
 - **Backward compatibility**: v12 React Flow is a breaking change from v11, but current development maintains API stability
+
+## Response Language
+Always response in #zh-tw

@@ -133,6 +133,7 @@ export class NodeWrapperComponent implements OnDestroy {
 
   // 輸出事件
   readonly nodeClick = output<MouseEvent>();
+  readonly nodeFocus = output<FocusEvent>();
   readonly nodeDragStart = output<MouseEvent>();
   readonly nodeDrag = output<{ event: MouseEvent; position: { x: number; y: number } }>();
   readonly nodeDragStop = output<MouseEvent>();
@@ -421,7 +422,6 @@ export class NodeWrapperComponent implements OnDestroy {
 
   onNodeFocus(event: FocusEvent): void {
     const nodeId = this.node().id;
-    const currentNode = this.node();
 
     // 檢查是否是鍵盤焦點 (類似 React 版本的 :focus-visible 檢查)
     const isKeyboardFocus = this.isKeyboardFocused(event);
@@ -431,15 +431,8 @@ export class NodeWrapperComponent implements OnDestroy {
       this._flowService.panToNodeOnFocus(nodeId);
     }
 
-    // 延遲選擇操作，避免與平移動畫衝突
-    const isSelectable = this._flowService.elementsSelectable();
-    if (isSelectable && !currentNode.selected) {
-      // 只有當節點未被選中時才進行選擇，避免不必要的更新
-      const delay = isKeyboardFocus ? 50 : 0; // 鍵盤焦點時延遲，滑鼠焦點時立即執行
-      setTimeout(() => {
-        this._flowService.selectNode(nodeId, false);
-      }, delay);
-    }
+    // 發出focus事件，讓父組件處理狀態同步（controlled模式需要）
+    this.nodeFocus.emit(event);
   }
 
   onNodeKeyDown(event: KeyboardEvent): void {

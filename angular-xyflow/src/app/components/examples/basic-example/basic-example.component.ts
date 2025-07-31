@@ -68,17 +68,19 @@ import {
       <angular-flow-controls />
 
       <angular-flow-panel position="top-right">
-        <button (click)="resetTransform()">reset transform</button>
-        <button (click)="updatePos()">change pos</button>
-        <button (click)="toggleClassnames()">toggle classnames</button>
-        <button (click)="logToObject()">toObject</button>
-        <button (click)="deleteSelectedElements()">
-          deleteSelectedElements
-        </button>
-        <button (click)="deleteSomeElements()">deleteSomeElements</button>
-        <button (click)="onSetNodes()">setNodes</button>
-        <button (click)="onUpdateNode()">updateNode</button>
-        <button (click)="addNode()">addNode</button>
+        <div class="angular-flow-panel">
+          <button (click)="resetTransform()" class="flow-button">reset transform</button>
+          <button (click)="updatePos()" class="flow-button">change pos</button>
+          <button (click)="toggleClassnames()" class="flow-button">toggle classnames</button>
+          <button (click)="logToObject()" class="flow-button">toObject</button>
+          <button (click)="deleteSelectedElements()" class="flow-button">
+            deleteSelectedElements
+          </button>
+          <button (click)="deleteSomeElements()" class="flow-button">deleteSomeElements</button>
+          <button (click)="onSetNodes()" class="flow-button">setNodes</button>
+          <button (click)="onUpdateNode()" class="flow-button">updateNode</button>
+          <button (click)="addNode()" class="flow-button">addNode</button>
+        </div>
       </angular-flow-panel>
     </angular-flow>
   `,
@@ -94,28 +96,6 @@ import {
         width: 100%;
         height: 100%;
       }
-
-      angular-flow-panel button {
-        display: block;
-        margin: 4px 0;
-        padding: 8px 12px;
-        background: #fff;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
-        white-space: nowrap;
-      }
-
-      angular-flow-panel button:hover {
-        background: #f5f5f5;
-        border-color: #ccc;
-      }
-
-      angular-flow-panel button:active {
-        background: #eee;
-      }
-
     `,
   ],
 })
