@@ -1,9 +1,9 @@
 import { Component, inject, viewChild, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularFlowComponent } from '../../angular-flow/angular-flow.component';
-import { BackgroundComponent } from '../../angular-flow/background/background.component';
-import { MinimapComponent } from '../../angular-flow/minimap/minimap.component';
-import { AngularNode, AngularEdge, AngularFlowInstance } from '../../angular-flow/types';
+import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
+import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
+import { MinimapComponent } from '../../angular-xyflow/minimap/minimap.component';
+import { AngularNode, AngularEdge, AngularXYFlowInstance } from '../../angular-xyflow/types';
 import { Connection, addEdge } from '@xyflow/system';
 import { CountdownService } from './countdown.service';
 import { TimerComponent } from './timer.component';
@@ -15,7 +15,7 @@ const CANCEL_AFTER = 5; // 秒數
   standalone: true,
   imports: [
     CommonModule,
-    AngularFlowComponent,
+    AngularXYFlowComponent,
     BackgroundComponent,
     MinimapComponent,
     TimerComponent
@@ -58,7 +58,7 @@ const CANCEL_AFTER = 5; // 秒數
 })
 export class CancelConnectionExampleComponent {
   // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularFlowComponent);
+  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
   
   // 依賴注入
   protected countdownService = inject(CountdownService);
@@ -67,7 +67,7 @@ export class CancelConnectionExampleComponent {
   protected readonly CANCEL_AFTER = CANCEL_AFTER;
   
   // 獲取流程實例
-  private get _flow(): AngularFlowInstance<AngularNode, AngularEdge> {
+  private get _flow(): AngularXYFlowInstance<AngularNode, AngularEdge> {
     return this.angularFlow().getFlow();
   }
 
@@ -137,7 +137,7 @@ export class CancelConnectionExampleComponent {
     this.countdownService.stop();
     
     // 使用系統的 addEdge 函數添加邊 - 對應 React 的 setEdges((eds) => addEdge(params, eds))
-    this._flow.setEdges((edges) => addEdge(connection, edges));
+    this._flow.setEdges((edges: AngularEdge[]) => addEdge(connection, edges));
   }
 
   // ESC 鍵取消連接功能 - 對應 React Flow 的內建功能

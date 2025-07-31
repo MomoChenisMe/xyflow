@@ -70,8 +70,8 @@ export interface AngularEdge<T extends Record<string, unknown> = Record<string, 
   markerEnd?: EdgeMarker | string;
 }
 
-// Angular Flow Props interface
-export interface AngularFlowProps<NodeType extends AngularNode = AngularNode, EdgeType extends AngularEdge = AngularEdge> {
+// Angular XY Flow Props interface
+export interface AngularXYFlowProps<NodeType extends AngularNode = AngularNode, EdgeType extends AngularEdge = AngularEdge> {
   nodes?: NodeType[];
   edges?: EdgeType[];
   defaultNodes?: NodeType[];
@@ -122,8 +122,8 @@ export interface Viewport {
   zoom: number;
 }
 
-// Angular Flow Instance interface similar to React Flow's useReactFlow
-export interface AngularFlowInstance<NodeType extends AngularNode = AngularNode, EdgeType extends AngularEdge = AngularEdge> {
+// Angular XY Flow Instance interface similar to React Flow's useReactFlow
+export interface AngularXYFlowInstance<NodeType extends AngularNode = AngularNode, EdgeType extends AngularEdge = AngularEdge> {
   getNodes: () => NodeType[];
   getNode: (id: string) => NodeType | undefined;
   getEdges: () => EdgeType[];

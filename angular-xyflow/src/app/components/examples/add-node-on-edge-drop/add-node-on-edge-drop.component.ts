@@ -1,14 +1,14 @@
 import { Component, signal, effect, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularFlowComponent } from '../../angular-flow/angular-flow.component';
-import { AngularFlowService } from '../../angular-flow/angular-flow.service';
-import { AngularNode, AngularEdge } from '../../angular-flow/types';
+import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
+import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyflow.service';
+import { AngularNode, AngularEdge } from '../../angular-xyflow/types';
 import { Connection } from '@xyflow/system';
 
 @Component({
   selector: 'app-add-node-on-edge-drop',
   standalone: true,
-  imports: [CommonModule, AngularFlowComponent],
+  imports: [CommonModule, AngularXYFlowComponent],
   template: `
     <div class="wrapper" #wrapper style="height: 100vh; width: 100%;">
       <angular-xyflow
@@ -32,7 +32,7 @@ import { Connection } from '@xyflow/system';
   `]
 })
 export class AddNodeOnEdgeDropComponent {
-  @ViewChild('flow') flowComponent!: AngularFlowComponent;
+  @ViewChild('flow') flowComponent!: AngularXYFlowComponent;
   @ViewChild('wrapper') wrapper!: ElementRef;
 
   // 節點和邊的數據

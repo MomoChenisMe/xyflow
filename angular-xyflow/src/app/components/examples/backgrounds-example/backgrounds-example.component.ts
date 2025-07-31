@@ -1,15 +1,15 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularFlowComponent } from '../../angular-flow/angular-flow.component';
-import { BackgroundComponent } from '../../angular-flow/background/background.component';
-import { AngularNode, BackgroundVariant } from '../../angular-flow/types';
+import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
+import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
+import { AngularNode, BackgroundVariant } from '../../angular-xyflow/types';
 
 @Component({
   selector: 'app-backgrounds-example',
   standalone: true,
   imports: [
     CommonModule,
-    AngularFlowComponent,
+    AngularXYFlowComponent,
     BackgroundComponent
   ],
   template: `

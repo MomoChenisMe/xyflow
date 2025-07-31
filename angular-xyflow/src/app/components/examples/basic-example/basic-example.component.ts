@@ -12,7 +12,7 @@ import { Connection, addEdge } from '@xyflow/system';
 
 // 專案內部模組
 import {
-  AngularFlowComponent,
+  AngularXYFlowComponent,
   BackgroundComponent,
   ControlsComponent,
   PanelComponent,
@@ -20,15 +20,15 @@ import {
   AngularNode,
   AngularEdge,
   BackgroundVariant,
-  AngularFlowInstance,
-} from '../../angular-flow';
+  AngularXYFlowInstance,
+} from '../../angular-xyflow';
 
 @Component({
   selector: 'app-basic-example',
   standalone: true,
   imports: [
     CommonModule,
-    AngularFlowComponent,
+    AngularXYFlowComponent,
     BackgroundComponent,
     ControlsComponent,
     PanelComponent,
@@ -101,7 +101,7 @@ import {
 })
 export class BasicExampleComponent {
   // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularFlowComponent);
+  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
 
   // 背景變體枚舉
   readonly backgroundVariant = BackgroundVariant;
@@ -146,7 +146,7 @@ export class BasicExampleComponent {
   readonly defaultEdgeOptions = signal({});
 
   // 獲取流程實例
-  private get _flow(): AngularFlowInstance<AngularNode, AngularEdge> {
+  private get _flow(): AngularXYFlowInstance<AngularNode, AngularEdge> {
     return this.angularFlow().getFlow();
   }
 
@@ -157,7 +157,7 @@ export class BasicExampleComponent {
 
   onConnect(connection: Connection): void {
     console.log('onConnect', connection);
-    this._flow.setEdges((edges) => addEdge(connection, edges));
+    this._flow.setEdges((edges: AngularEdge[]) => addEdge(connection, edges));
   }
 
   onNodeClick(data: { event: MouseEvent; node: AngularNode }): void {
@@ -209,8 +209,8 @@ export class BasicExampleComponent {
   }
 
   updatePos(): void {
-    this._flow.setNodes((nodes) =>
-      nodes.map((node) => ({
+    this._flow.setNodes((nodes: AngularNode[]) =>
+      nodes.map((node: AngularNode) => ({
         ...node,
         position: {
           x: Math.random() * 400,
@@ -221,8 +221,8 @@ export class BasicExampleComponent {
   }
 
   toggleClassnames(): void {
-    this._flow.setNodes((nodes) =>
-      nodes.map((node) => ({
+    this._flow.setNodes((nodes: AngularNode[]) =>
+      nodes.map((node: AngularNode) => ({
         ...node,
         className: node.className === 'light' ? 'dark' : 'light',
       }))
@@ -234,8 +234,8 @@ export class BasicExampleComponent {
   }
 
   deleteSelectedElements(): void {
-    const selectedNodes = this._flow.getNodes().filter((node) => node.selected);
-    const selectedEdges = this._flow.getEdges().filter((edge) => edge.selected);
+    const selectedNodes = this._flow.getNodes().filter((node: AngularNode) => node.selected);
+    const selectedEdges = this._flow.getEdges().filter((edge: AngularEdge) => edge.selected);
     this._flow.deleteElements({ nodes: selectedNodes, edges: selectedEdges });
   }
 

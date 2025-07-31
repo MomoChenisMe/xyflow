@@ -9,21 +9,21 @@ import { CommonModule } from '@angular/common';
 
 // 專案內部模組
 import {
-  AngularFlowComponent,
+  AngularXYFlowComponent,
   BackgroundComponent,
   PanelComponent,
   AngularNode,
   AngularEdge,
   BackgroundVariant,
-  AngularFlowInstance,
-} from '../../angular-flow';
+  AngularXYFlowInstance,
+} from '../../angular-xyflow';
 
 @Component({
   selector: 'app-controlled-uncontrolled-example',
   standalone: true,
   imports: [
     CommonModule,
-    AngularFlowComponent,
+    AngularXYFlowComponent,
     BackgroundComponent,
     PanelComponent,
   ],
@@ -90,7 +90,7 @@ import {
 })
 export class ControlledUncontrolledExampleComponent {
   // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularFlowComponent);
+  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
 
   // 背景變體枚舉
   readonly backgroundVariant = BackgroundVariant;
@@ -147,7 +147,7 @@ export class ControlledUncontrolledExampleComponent {
   private _isProcessingBug = false;
 
   // 獲取流程實例
-  private get _flow(): AngularFlowInstance<AngularNode, AngularEdge> {
+  private get _flow(): AngularXYFlowInstance<AngularNode, AngularEdge> {
     return this.angularFlow().getFlow();
   }
 
@@ -185,14 +185,14 @@ export class ControlledUncontrolledExampleComponent {
       // 這確保了所有層級的狀態都被重置，避免後續操作重新觸發
       const flow = this._flow;
       const serviceEdges = flow.getEdges();
-      const edgesToRemove = serviceEdges.filter(edge => 
+      const edgesToRemove = serviceEdges.filter((edge: AngularEdge) => 
         !this.defaultEdges.some(defaultEdge => defaultEdge.id === edge.id)
       );
       
       if (edgesToRemove.length > 0) {
         // 一次性移除所有不屬於defaultEdges的邊
         flow.deleteElements({ 
-          edges: edgesToRemove.map(edge => ({ id: edge.id }))
+          edges: edgesToRemove.map((edge: AngularEdge) => ({ id: edge.id }))
         });
       }
       
@@ -214,8 +214,8 @@ export class ControlledUncontrolledExampleComponent {
   updateNodePositions(): void {
     // 警告：這個操作直接修改 controlled 狀態，會加劇與 defaultNodes 的衝突
     // 在混合模式下，這種直接修改可能導致意外的重置行為
-    this._flow.setNodes((nodes) =>
-      nodes.map((node) => ({
+    this._flow.setNodes((nodes: AngularNode[]) =>
+      nodes.map((node: AngularNode) => ({
         ...node,
         position: {
           x: Math.random() * 400,
@@ -228,8 +228,8 @@ export class ControlledUncontrolledExampleComponent {
   updateEdgeColors(): void {
     // 警告：這個操作直接修改 controlled 狀態，會加劇與 defaultEdges 的衝突
     // 在混合模式下，修改樣式後的 edge 點擊可能會消失或重置
-    this._flow.setEdges((edges) =>
-      edges.map((edge) => ({
+    this._flow.setEdges((edges: AngularEdge[]) =>
+      edges.map((edge: AngularEdge) => ({
         ...edge,
         style: {
           stroke: '#ff5050',

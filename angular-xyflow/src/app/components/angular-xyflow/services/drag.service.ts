@@ -5,7 +5,7 @@ import { Injectable, signal, computed, OnDestroy } from '@angular/core';
 import { XYDrag, type XYDragInstance } from '@xyflow/system';
 
 // 專案內部模組
-import { AngularFlowService } from './angular-flow.service';
+import { AngularXYFlowService } from './angular-xyflow.service';
 
 interface DragConfig {
   nodeId?: string;
@@ -20,7 +20,7 @@ interface DragConfig {
 }
 
 @Injectable()
-export class AngularFlowDragService implements OnDestroy {
+export class AngularXYFlowDragService implements OnDestroy {
   private xyDragInstances = new Map<string, XYDragInstance>();
   private _dragging = signal(false);
   
@@ -37,7 +37,7 @@ export class AngularFlowDragService implements OnDestroy {
   // 公開拖拽狀態
   readonly dragging = computed(() => this._dragging());
 
-  constructor(private _flowService: AngularFlowService) {}
+  constructor(private _flowService: AngularXYFlowService) {}
 
   // 初始化拖拽功能
   initializeDrag(config: DragConfig): void {

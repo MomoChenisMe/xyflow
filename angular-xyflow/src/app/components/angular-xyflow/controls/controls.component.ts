@@ -9,8 +9,8 @@ import {
   ViewEncapsulation
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularFlowService } from '../angular-flow.service';
-import { AngularFlowPanZoomService } from '../panzoom.service';
+import { AngularXYFlowService } from '../services/angular-xyflow.service';
+import { AngularXYFlowPanZoomService } from '../services/panzoom.service';
 import { PanelComponent, type PanelPosition } from '../panel/panel.component';
 
 @Component({
@@ -179,8 +179,8 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
 })
 export class ControlsComponent {
   // 注入服務
-  private _flowService = inject(AngularFlowService);
-  private panZoomService = inject(AngularFlowPanZoomService);
+  private _flowService = inject(AngularXYFlowService);
+  private panZoomService = inject(AngularXYFlowPanZoomService);
   
   // 輸入屬性
   readonly showZoom = input<boolean>(true);

@@ -19,7 +19,7 @@ import { Position } from '@xyflow/system';
 import { type Connection } from '@xyflow/system';
 
 // 專案內部模組
-import { AngularFlowService } from '../angular-flow.service';
+import { AngularXYFlowService } from '../services/angular-xyflow.service';
 import { Handle } from '../types';
 
 @Component({
@@ -152,7 +152,7 @@ export class HandleComponent implements OnDestroy {
   private readonly isHovered = signal(false);
   
   // 注入服務
-  private _flowService = inject(AngularFlowService);
+  private _flowService = inject(AngularXYFlowService);
   
   // 計算屬性
   readonly canConnect = computed(() => {

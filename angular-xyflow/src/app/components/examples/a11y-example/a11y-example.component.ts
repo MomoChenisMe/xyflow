@@ -1,16 +1,16 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AngularFlowComponent } from '../../angular-flow/angular-flow.component';
-import { BackgroundComponent } from '../../angular-flow/background/background.component';
-import { ControlsComponent } from '../../angular-flow/controls/controls.component';
-import { MinimapComponent } from '../../angular-flow/minimap/minimap.component';
-import { PanelComponent } from '../../angular-flow/panel/panel.component';
+import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
+import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
+import { ControlsComponent } from '../../angular-xyflow/controls/controls.component';
+import { MinimapComponent } from '../../angular-xyflow/minimap/minimap.component';
+import { PanelComponent } from '../../angular-xyflow/panel/panel.component';
 import {
   AngularNode,
   AngularEdge,
   BackgroundVariant,
-} from '../../angular-flow/types';
+} from '../../angular-xyflow/types';
 import { Position } from '@xyflow/system';
 
 @Component({
@@ -19,7 +19,7 @@ import { Position } from '@xyflow/system';
   imports: [
     CommonModule,
     FormsModule,
-    AngularFlowComponent,
+    AngularXYFlowComponent,
     BackgroundComponent,
     ControlsComponent,
     MinimapComponent,

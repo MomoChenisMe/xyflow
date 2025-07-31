@@ -1,15 +1,15 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AngularFlowComponent } from '../../angular-flow/angular-flow.component';
-import { PanelComponent } from '../../angular-flow/panel/panel.component';
-import { AngularNode, AngularEdge } from '../../angular-flow/types';
+import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
+import { PanelComponent } from '../../angular-xyflow/panel/panel.component';
+import { AngularNode, AngularEdge } from '../../angular-xyflow/types';
 import type { Connection } from '@xyflow/system';
 
 @Component({
   selector: 'app-click-distance-example',
   standalone: true,
-  imports: [CommonModule, FormsModule, AngularFlowComponent, PanelComponent],
+  imports: [CommonModule, FormsModule, AngularXYFlowComponent, PanelComponent],
   template: `
     <angular-xyflow
       [defaultNodes]="initialNodes"

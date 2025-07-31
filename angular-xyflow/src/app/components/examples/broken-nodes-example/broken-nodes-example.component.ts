@@ -6,18 +6,18 @@ import { Connection, addEdge } from '@xyflow/system';
 
 // 專案內部模組
 import {
-  AngularFlowComponent,
+  AngularXYFlowComponent,
   AngularNode,
   AngularEdge,
-  AngularFlowInstance,
-} from '../../angular-flow';
+  AngularXYFlowInstance,
+} from '../../angular-xyflow';
 
 @Component({
   selector: 'app-broken-nodes-example',
   standalone: true,
   imports: [
     CommonModule,
-    AngularFlowComponent,
+    AngularXYFlowComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -56,7 +56,7 @@ import {
 })
 export class BrokenNodesExampleComponent {
   // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularFlowComponent);
+  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
 
   // 初始節點數據 - 直接設置 NaN 值，與 React 版本一致
   readonly initialNodes = signal<AngularNode[]>([
@@ -90,7 +90,7 @@ export class BrokenNodesExampleComponent {
   ]);
 
   // 獲取流程實例
-  private get _flow(): AngularFlowInstance<AngularNode, AngularEdge> {
+  private get _flow(): AngularXYFlowInstance<AngularNode, AngularEdge> {
     return this.angularFlow().getFlow();
   }
 
@@ -105,7 +105,7 @@ export class BrokenNodesExampleComponent {
 
   // onConnect 處理函數 - 添加新邊
   onConnect(connection: Connection): void {
-    this._flow.setEdges((edges) => addEdge(connection, edges));
+    this._flow.setEdges((edges: AngularEdge[]) => addEdge(connection, edges));
   }
 
   // onNodeDrag 處理函數 - 檢查 NaN 值並更新節點位置
@@ -122,8 +122,8 @@ export class BrokenNodesExampleComponent {
     }
 
     // 更新節點位置
-    this._flow.setNodes((nodes) => {
-      return nodes.map((item) => {
+    this._flow.setNodes((nodes: AngularNode[]) => {
+      return nodes.map((item: AngularNode) => {
         if (item.id === node.id) {
           return {
             ...item,

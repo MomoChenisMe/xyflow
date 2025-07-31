@@ -22,8 +22,8 @@ import { type Connection, type Position, getNodePositionWithOrigin, elementSelec
 // 專案內部模組
 import { AngularNode } from '../types';
 import { HandleComponent } from '../handle/handle.component';
-import { AngularFlowDragService } from '../drag.service';
-import { AngularFlowService } from '../angular-flow.service';
+import { AngularXYFlowDragService } from '../services/drag.service';
+import { AngularXYFlowService } from '../services/angular-xyflow.service';
 
 @Component({
   selector: 'angular-xyflow-node',
@@ -147,8 +147,8 @@ export class NodeWrapperComponent implements OnDestroy {
   // 內部狀態
   private readonly isDragging = signal(false);
   private resizeObserver?: ResizeObserver;
-  private _dragService = inject(AngularFlowDragService);
-  private _flowService = inject(AngularFlowService);
+  private _dragService = inject(AngularXYFlowDragService);
+  private _flowService = inject(AngularXYFlowService);
 
   // 計算屬性
   readonly nodeClasses = computed(() => {

@@ -1,23 +1,23 @@
 import { Component, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularFlowComponent } from '../../angular-flow/angular-flow.component';
-import { BackgroundComponent } from '../../angular-flow/background/background.component';
-import { ControlsComponent } from '../../angular-flow/controls/controls.component';
-import { MinimapComponent } from '../../angular-flow/minimap/minimap.component';
-import { PanelComponent } from '../../angular-flow/panel/panel.component';
+import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
+import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
+import { ControlsComponent } from '../../angular-xyflow/controls/controls.component';
+import { MinimapComponent } from '../../angular-xyflow/minimap/minimap.component';
+import { PanelComponent } from '../../angular-xyflow/panel/panel.component';
 import {
   AngularNode,
   AngularEdge,
   BackgroundVariant,
   Viewport,
-} from '../../angular-flow/types';
+} from '../../angular-xyflow/types';
 
 @Component({
   selector: 'app-controlled-viewport-example',
   standalone: true,
   imports: [
     CommonModule,
-    AngularFlowComponent,
+    AngularXYFlowComponent,
     BackgroundComponent,
     ControlsComponent,
     MinimapComponent,
@@ -74,7 +74,7 @@ export class ControlledViewportExampleComponent {
   backgroundVariant = BackgroundVariant;
 
   // Angular Flow 組件引用
-  angularFlow = viewChild.required<AngularFlowComponent>('angularFlow');
+  angularFlow = viewChild.required<AngularXYFlowComponent>('angularFlow');
 
   // 視口狀態管理
   private viewport1 = signal<Viewport>({ x: 0, y: 0, zoom: 1 });

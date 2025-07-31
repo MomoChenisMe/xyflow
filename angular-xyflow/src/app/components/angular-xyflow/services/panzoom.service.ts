@@ -5,7 +5,7 @@ import { Injectable, signal, computed, OnDestroy } from '@angular/core';
 import { XYPanZoom, type PanZoomInstance, type Viewport, type Transform, PanOnScrollMode, fitViewport } from '@xyflow/system';
 
 // 專案內部模組
-import { AngularFlowService } from './angular-flow.service';
+import { AngularXYFlowService } from './angular-xyflow.service';
 
 interface PanZoomConfig {
   domNode: HTMLElement;
@@ -25,7 +25,7 @@ interface PanZoomConfig {
 }
 
 @Injectable()
-export class AngularFlowPanZoomService implements OnDestroy {
+export class AngularXYFlowPanZoomService implements OnDestroy {
   private panZoomInstance?: PanZoomInstance;
   private readonly _isDragging = signal(false);
   private doubleClickHandler?: (event: MouseEvent) => void;
@@ -38,7 +38,7 @@ export class AngularFlowPanZoomService implements OnDestroy {
     return this.panZoomInstance;
   }
 
-  constructor(private _flowService: AngularFlowService) {}
+  constructor(private _flowService: AngularXYFlowService) {}
 
 
   // 初始化 PanZoom 功能

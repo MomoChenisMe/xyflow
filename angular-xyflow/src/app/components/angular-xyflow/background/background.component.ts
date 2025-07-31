@@ -7,7 +7,7 @@ import {
   CUSTOM_ELEMENTS_SCHEMA
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularFlowService } from '../angular-flow.service';
+import { AngularXYFlowService } from '../services/angular-xyflow.service';
 import { BackgroundVariant } from '../types';
 
 @Component({
@@ -83,7 +83,7 @@ import { BackgroundVariant } from '../types';
 })
 export class BackgroundComponent {
   // 注入服務
-  private _flowService = inject(AngularFlowService);
+  private _flowService = inject(AngularXYFlowService);
   
   // 輸入屬性
   readonly id = input<string>();

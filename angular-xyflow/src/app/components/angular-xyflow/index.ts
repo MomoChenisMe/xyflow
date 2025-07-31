@@ -1,6 +1,8 @@
 // Main Angular Flow component and service
-export { AngularFlowComponent } from './angular-flow.component';
-export { AngularFlowService } from './angular-flow.service';
+export { AngularXYFlowComponent } from './angular-xyflow.component';
+export { AngularXYFlowService } from './services/angular-xyflow.service';
+export { AngularXYFlowDragService } from './services/drag.service';
+export { AngularXYFlowPanZoomService } from './services/panzoom.service';
 
 // Core components
 export { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';

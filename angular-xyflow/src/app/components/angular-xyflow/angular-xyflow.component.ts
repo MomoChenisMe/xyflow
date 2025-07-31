@@ -29,14 +29,14 @@ import {
 } from '@xyflow/system';
 
 // 專案內部模組
-import { AngularFlowService } from './angular-flow.service';
-import { AngularFlowDragService } from './drag.service';
-import { AngularFlowPanZoomService } from './panzoom.service';
+import { AngularXYFlowService } from './services/angular-xyflow.service';
+import { AngularXYFlowDragService } from './services/drag.service';
+import { AngularXYFlowPanZoomService } from './services/panzoom.service';
 import {
   AngularNode,
   AngularEdge,
   Viewport,
-  AngularFlowInstance,
+  AngularXYFlowInstance,
   EdgeMarker,
   MarkerType,
 } from './types';
@@ -47,7 +47,7 @@ import { ViewportComponent } from './viewport/viewport.component';
   selector: 'angular-xyflow',
   standalone: true,
   imports: [CommonModule, ViewportComponent],
-  providers: [AngularFlowService, AngularFlowDragService, AngularFlowPanZoomService],
+  providers: [AngularXYFlowService, AngularXYFlowDragService, AngularXYFlowPanZoomService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -213,15 +213,15 @@ import { ViewportComponent } from './viewport/viewport.component';
     `,
   ],
 })
-export class AngularFlowComponent<
+export class AngularXYFlowComponent<
   NodeType extends AngularNode = AngularNode,
   EdgeType extends AngularEdge = AngularEdge
 > implements OnDestroy
 {
   // 注入依賴
-  private _flowService = inject(AngularFlowService<NodeType, EdgeType>);
-  private _dragService = inject(AngularFlowDragService);
-  private _panZoomService = inject(AngularFlowPanZoomService);
+  private _flowService = inject(AngularXYFlowService<NodeType, EdgeType>);
+  private _dragService = inject(AngularXYFlowDragService);
+  private _panZoomService = inject(AngularXYFlowPanZoomService);
 
   // 自定義連接線模板
   customConnectionLineTemplate = contentChild(ConnectionLineTemplateDirective);
@@ -926,7 +926,7 @@ export class AngularFlowComponent<
   }
 
   // 公開方法來獲取流程實例
-  getFlow(): AngularFlowInstance<NodeType, EdgeType> {
+  getFlow(): AngularXYFlowInstance<NodeType, EdgeType> {
     return this.flowInstance;
   }
 

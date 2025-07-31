@@ -6,20 +6,20 @@ import { Connection, addEdge } from '@xyflow/system';
 
 // 專案內部模組
 import {
-  AngularFlowComponent,
+  AngularXYFlowComponent,
   BackgroundComponent,
   AngularNode,
   AngularEdge,
   BackgroundVariant,
   ConnectionLineTemplateDirective,
-} from '../../angular-flow';
+} from '../../angular-xyflow';
 
 @Component({
   selector: 'app-custom-connection-line-example',
   standalone: true,
   imports: [
     CommonModule,
-    AngularFlowComponent,
+    AngularXYFlowComponent,
     BackgroundComponent,
     ConnectionLineTemplateDirective,
   ],

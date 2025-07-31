@@ -1,11 +1,11 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularFlowComponent } from '../../angular-flow/angular-flow.component';
-import { BackgroundComponent } from '../../angular-flow/background/background.component';
-import { ControlsComponent } from '../../angular-flow/controls/controls.component';
-import { MinimapComponent } from '../../angular-flow/minimap/minimap.component';
-import { PanelComponent } from '../../angular-flow/panel/panel.component';
-import { AngularNode, AngularEdge } from '../../angular-flow/types';
+import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
+import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
+import { ControlsComponent } from '../../angular-xyflow/controls/controls.component';
+import { MinimapComponent } from '../../angular-xyflow/minimap/minimap.component';
+import { PanelComponent } from '../../angular-xyflow/panel/panel.component';
+import { AngularNode, AngularEdge } from '../../angular-xyflow/types';
 import { Position, ColorMode } from '@xyflow/system';
 
 const nodeDefaults = {
@@ -18,7 +18,7 @@ const nodeDefaults = {
   standalone: true,
   imports: [
     CommonModule,
-    AngularFlowComponent,
+    AngularXYFlowComponent,
     BackgroundComponent,
     ControlsComponent,
     MinimapComponent,

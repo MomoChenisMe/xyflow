@@ -29,15 +29,15 @@ import {
   AngularNode,
   AngularEdge,
   Viewport,
-  AngularFlowInstance,
+  AngularXYFlowInstance,
   ConnectionState,
   NoConnection,
   ConnectionInProgress,
   Handle,
-} from './types';
+} from '../types';
 
 @Injectable()
-export class AngularFlowService<
+export class AngularXYFlowService<
   NodeType extends AngularNode = AngularNode,
   EdgeType extends AngularEdge = AngularEdge
 > {
@@ -221,7 +221,7 @@ export class AngularFlowService<
   }
 
   // 流程實例API
-  getFlowInstance(): AngularFlowInstance<NodeType, EdgeType> {
+  getFlowInstance(): AngularXYFlowInstance<NodeType, EdgeType> {
     return {
       getNodes: () => [...this._nodes()],
       getNode: (id: string) => this.nodeLookup().get(id),

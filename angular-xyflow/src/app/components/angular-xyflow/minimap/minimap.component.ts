@@ -13,7 +13,7 @@ import {
   ViewEncapsulation
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularFlowService } from '../angular-flow.service';
+import { AngularXYFlowService } from '../services/angular-xyflow.service';
 import { PanelComponent, type PanelPosition } from '../panel/panel.component';
 import { XYMinimap, type XYMinimapInstance, type Rect } from '@xyflow/system';
 import type { XYPosition } from '@xyflow/system';
@@ -133,7 +133,7 @@ import type { XYPosition } from '@xyflow/system';
 })
 export class MinimapComponent implements OnInit, OnDestroy {
   // 注入服務
-  private _flowService = inject(AngularFlowService);
+  private _flowService = inject(AngularXYFlowService);
   
   constructor() {
     // 設置XYMinimap實例
