@@ -22,7 +22,6 @@ import { CommonModule } from '@angular/common';
 import { 
   type Connection, 
   Position, 
-  getNodePositionWithOrigin,
   getEdgePosition,
   ConnectionMode,
   ColorMode,
@@ -40,15 +39,14 @@ import {
   AngularFlowInstance,
   EdgeMarker,
   MarkerType,
-  ConnectionLineTemplateContext,
 } from './types';
-import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
 import { ConnectionLineTemplateDirective } from './connection-line-template.directive';
+import { ViewportComponent } from './viewport/viewport.component';
 
 @Component({
   selector: 'angular-flow',
   standalone: true,
-  imports: [CommonModule, NodeWrapperComponent],
+  imports: [CommonModule, ViewportComponent],
   providers: [AngularFlowService, AngularFlowDragService, AngularFlowPanZoomService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -66,204 +64,32 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
       (dblclick)="handlePaneDoubleClick($event)"
     >
       <!-- Viewport container -->
-      <div
+      <angular-flow-viewport
         #viewport
-        class="xy-flow__viewport angular-flow__viewport"
-        [style.transform]="viewportTransform()"
-        [style.transform-origin]="'0 0'"
-        [style.position]="'absolute'"
-        [style.top]="'0'"
-        [style.left]="'0'"
-        [style.width]="'100%'"
-        [style.height]="'100%'"
-      >
-        <!-- Edges layer -->
-        <svg:svg
-          class="xy-flow__edges angular-flow__edges"
-          [style.position]="'absolute'"
-          [style.top]="'0'"
-          [style.left]="'0'"
-          [style.width]="'100%'"
-          [style.height]="'100%'"
-          [style.pointer-events]="'none'"
-          [style.z-index]="'1'"
-          [style.overflow]="'visible'"
-        >
-          <!-- Marker definitions -->
-          @if (hasEdgeMarkers()) {
-          <svg:defs>
-            @for (marker of edgeMarkers(); track marker.id) {
-            <svg:marker
-              [id]="marker.id"
-              [attr.markerWidth]="marker.width || 10"
-              [attr.markerHeight]="marker.height || 7"
-              [attr.refX]="marker.type === markerType.Arrow ? 8 : 9"
-              [attr.refY]="marker.height ? marker.height / 2 : 3.5"
-              [attr.orient]="marker.orient || 'auto'"
-              [attr.markerUnits]="marker.markerUnits || 'strokeWidth'"
-            >
-              @if (marker.type === markerType.Arrow) {
-              <svg:polyline
-                points="0,0 8,3.5 0,7"
-                [attr.stroke]="marker.color || '#b1b1b7'"
-                [attr.stroke-width]="marker.strokeWidth || 1"
-                fill="none"
-              />
-              } @else {
-              <svg:polygon
-                points="0 0, 10 3.5, 0 7"
-                [attr.fill]="marker.color || '#b1b1b7'"
-              />
-              }
-            </svg:marker>
-            }
-          </svg:defs>
-          } @for (edge of visibleEdges(); track edge.id) { @let sourceNode =
-          getNodeById(edge.source); @let targetNode = getNodeById(edge.target);
-          @if (sourceNode && targetNode) {
-          <svg:g
-            class="angular-flow__edge xy-flow__edge"
-            [class.selected]="edge.selected"
-            [class.animated]="edge.animated"
-            [class.selectable]="edge.selectable !== false"
-            [attr.tabindex]="edge.selectable !== false ? 0 : null"
-            (focus)="handleEdgeFocus($event, edge)"
-            (keydown)="handleEdgeKeyDown($event, edge)"
-          >
-            <!-- 可見的邊路徑 -->
-            <svg:path
-              [attr.d]="calculateEdgePath(sourceNode, targetNode, edge)"
-              [attr.fill]="'none'"
-              [attr.marker-start]="getMarkerUrl(edge, 'start')"
-              [attr.marker-end]="getMarkerUrl(edge, 'end')"
-              [class]="'angular-flow__edge-path xy-flow__edge-path'"
-              [ngStyle]="getEdgeStyles(edge)"
-              style="pointer-events: none;"
-            />
-            
-            <!-- 不可見的交互路徑，用於擴大點擊和 hover 範圍 -->
-            <svg:path
-              [attr.d]="calculateEdgePath(sourceNode, targetNode, edge)"
-              [attr.stroke]="'transparent'"
-              [attr.stroke-width]="20"
-              [attr.fill]="'none'"
-              [class]="'angular-flow__edge-interaction xy-flow__edge-interaction'"
-              style="pointer-events: stroke; cursor: pointer;"
-              (click)="handleEdgeClick($event, edge)"
-            />
-
-            <!-- Edge label -->
-            @if (edge.data?.['label']) { @let connectionPoints =
-            getEdgeConnectionPoints(sourceNode, targetNode, edge);
-            <svg:text
-              [attr.x]="
-                (connectionPoints.sourceX + connectionPoints.targetX) / 2
-              "
-              [attr.y]="
-                (connectionPoints.sourceY + connectionPoints.targetY) / 2
-              "
-              text-anchor="middle"
-              dominant-baseline="middle"
-              class="angular-flow__edge-label xy-flow__edge-label"
-              style="font-size: 12px; fill: #222; pointer-events: none;"
-            >
-              {{ edge.data?.['label'] }}
-            </svg:text>
-            }
-          </svg:g>
-          } }
-        </svg:svg>
-
-        <!-- Connection Line - 顯示連接進行中的線條（獨立層，高於節點） -->
-        @if (connectionInProgress() && (customConnectionLineTemplate() || connectionLinePath())) {
-          <svg:svg
-            class="xy-flow__connectionline angular-flow__connectionline xy-flow__container"
-            [style.position]="'absolute'"
-            [style.top]="'0'"
-            [style.left]="'0'"
-            [style.width]="'100%'"
-            [style.height]="'100%'"
-            [style.pointer-events]="'none'"
-            [style.z-index]="'1001'"
-            [style.overflow]="'visible'"
-          >
-            @let connState = connectionInProgress();
-            @let context = connectionLineContext();
-            @if (customConnectionLineTemplate() && context) {
-              <!-- 使用自定義連接線模板 -->
-              <ng-container 
-                [ngTemplateOutlet]="customConnectionLineTemplate()!.templateRef"
-                [ngTemplateOutletContext]="context"
-              />
-            } @else if (connectionLinePath()) {
-              <!-- 使用預設連接線 -->
-              <svg:g class="angular-flow__connection xy-flow__connection">
-                <svg:path
-                  [attr.d]="connectionLinePath()"
-                  [attr.stroke]="
-                    customConnectionLineType() === 'react' 
-                      ? '#222'
-                      : connState.isValid === true
-                      ? '#10b981'
-                      : connState.isValid === false
-                      ? '#f87171'
-                      : '#b1b1b7'
-                  "
-                  [attr.stroke-width]="customConnectionLineType() === 'react' ? '1.5' : '1'"
-                  [attr.fill]="'none'"
-                  [class]="customConnectionLineType() === 'react' ? 'angular-flow__connection-path xy-flow__connection-path animated' : 'angular-flow__connection-path xy-flow__connection-path'"
-                  style="pointer-events: none;"
-                />
-                @if (customConnectionLineType() === 'react' && connState) {
-                <svg:circle 
-                  [attr.cx]="connState.to.x" 
-                  [attr.cy]="connState.to.y" 
-                  [attr.fill]="'#fff'" 
-                  [attr.r]="'3'" 
-                  [attr.stroke]="'#222'" 
-                  [attr.stroke-width]="'1.5'"
-                  style="pointer-events: none;"
-                />
-                }
-              </svg:g>
-            }
-          </svg:svg>
-        }
-
-        <!-- Nodes layer -->
-        <div
-          class="xy-flow__nodes angular-flow__nodes"
-          [style.position]="'absolute'"
-          [style.top]="'0'"
-          [style.left]="'0'"
-          [style.width]="'100%'"
-          [style.height]="'100%'"
-          [style.z-index]="'2'"
-        >
-          @for (node of visibleNodes(); track node.id) {
-          <angular-flow-node
-            [node]="node"
-            [selected]="node.selected || false"
-            [dragging]="node.dragging || false"
-            (nodeClick)="handleNodeClick($event, node)"
-            (nodeFocus)="handleNodeFocus($event, node)"
-            (nodeDragStart)="handleNodeDragStart($event, node)"
-            (nodeDrag)="handleNodeDrag($event, node)"
-            (nodeDragStop)="handleNodeDragStop($event, node)"
-            (connectStart)="handleConnectStart($event.event, node)"
-            (connectEnd)="handleConnectEnd($event)"
-            (handleClick)="
-              handleHandleClick(
-                $event.event,
-                $event.nodeId,
-                $event.handleId,
-                $event.handleType
-              )
-            "
-          />
-          }
-        </div>
-      </div>
+        [viewportTransform]="viewportTransform()"
+        [visibleNodes]="visibleNodes()"
+        [visibleEdges]="visibleEdges()"
+        [hasEdgeMarkers]="hasEdgeMarkers()"
+        [edgeMarkers]="edgeMarkers()"
+        [connectionInProgress]="connectionInProgress()"
+        [customConnectionLineTemplate]="customConnectionLineTemplate()?.templateRef"
+        [customConnectionLineType]="customConnectionLineType()"
+        [isDarkMode]="colorModeClass() === 'dark'"
+        [getNodeById]="getNodeById.bind(this)"
+        [getEdgeConnectionPoints]="getEdgeConnectionPoints.bind(this)"
+        [getMarkerId]="getMarkerId.bind(this)"
+        (nodeClick)="handleNodeClick($event.event, $event.node)"
+        (nodeFocus)="handleNodeFocus($event.event, $event.node)"
+        (nodeDragStart)="handleNodeDragStart($event.event, $event.node)"
+        (nodeDrag)="handleNodeDrag($event, $event.node)"
+        (nodeDragStop)="handleNodeDragStop($event.event, $event.node)"
+        (connectStart)="handleConnectStart($event.event, $event.node)"
+        (connectEnd)="handleConnectEnd($event)"
+        (handleClick)="handleViewportHandleClick($event)"
+        (edgeClick)="handleEdgeClick($event.event, $event.edge)"
+        (edgeFocus)="handleEdgeFocus($event.event, $event.edge)"
+        (edgeKeyDown)="handleEdgeKeyDown($event.event, $event.edge)"
+      />
       <!-- Content projection for background, controls, etc. -->
       <ng-content />
     </div>
@@ -485,8 +311,13 @@ export class AngularFlowComponent<
   // 視圖子元素
   flowContainer =
     viewChild.required<ElementRef<HTMLDivElement>>('flowContainer');
-  viewportElement =
-    viewChild.required<ElementRef<HTMLDivElement>>('viewport');
+  viewportComponent =
+    viewChild.required<ViewportComponent>('viewport');
+    
+  // 獲取 viewport 元素的方法
+  get viewportElement() {
+    return this.viewportComponent().viewportElement;
+  }
 
   // 內部狀態信號
   private _containerSize = signal({ width: 0, height: 0 });
@@ -588,55 +419,7 @@ export class AngularFlowComponent<
     return state as any; // 安全的類型轉換，因為我們已經檢查了 inProgress
   });
 
-  // 連接線路徑計算
-  connectionLinePath = computed(() => {
-    const connState = this.connectionInProgress();
-    if (!connState) return null;
 
-    const { from, to, fromPosition, toPosition } = connState;
-
-    // 根據自定義連接線類型選擇不同的路徑算法
-    const lineType = this.customConnectionLineType();
-    if (lineType === 'react') {
-      // 使用React樣式的路徑算法：M${fromX},${fromY} C ${fromX} ${toY} ${fromX} ${toY} ${toX},${toY}
-      return `M${from.x},${from.y} C ${from.x} ${to.y} ${from.x} ${to.y} ${to.x},${to.y}`;
-    }
-
-    // 預設使用貝茲曲線路徑
-    return this._getBezierPath(
-      from.x,
-      from.y,
-      fromPosition,
-      to.x,
-      to.y,
-      toPosition
-    );
-  });
-
-  // 自定義連接線模板上下文
-  connectionLineContext = computed<ConnectionLineTemplateContext | null>(() => {
-    const connState = this.connectionInProgress();
-    if (!connState) return null;
-
-    const { from, to, fromPosition, toPosition } = connState;
-
-    const props = {
-      fromX: from.x,
-      fromY: from.y,
-      toX: to.x,
-      toY: to.y,
-      fromPosition,
-      toPosition,
-      isValid: connState.isValid,
-      connectionLineStyle: undefined,
-    };
-
-    // 使用 $implicit 作為預設值，並提供所有變數作為具名屬性
-    return {
-      $implicit: props,
-      ...props,
-    };
-  });
 
   // 邊線標記相關計算
   hasEdgeMarkers = computed(() => {
@@ -663,7 +446,7 @@ export class AngularFlowComponent<
           typeof edge.markerStart === 'string'
             ? { type: MarkerType.ArrowClosed }
             : edge.markerStart;
-        const markerId = this._getMarkerId(edge, 'start', markerData);
+        const markerId = this.getMarkerId(edge, 'start', markerData);
         if (!markers.find((m) => m.id === markerId)) {
           markers.push({ id: markerId, ...markerData });
         }
@@ -674,7 +457,7 @@ export class AngularFlowComponent<
           typeof edge.markerEnd === 'string'
             ? { type: MarkerType.ArrowClosed }
             : edge.markerEnd;
-        const markerId = this._getMarkerId(edge, 'end', markerData);
+        const markerId = this.getMarkerId(edge, 'end', markerData);
         if (!markers.find((m) => m.id === markerId)) {
           markers.push({ id: markerId, ...markerData });
         }
@@ -752,15 +535,6 @@ export class AngularFlowComponent<
     }
   }
 
-  // 傳統的更新容器大小方法（供外部調用）
-  private updateContainerSize() {
-    const container = this.flowContainer()?.nativeElement;
-    if (container) {
-      const rect = container.getBoundingClientRect();
-      this._containerSize.set({ width: rect.width, height: rect.height });
-      this._flowService.setDimensions({ width: rect.width, height: rect.height });
-    }
-  }
 
   // 安全設置 PanZoom 功能 - 只初始化一次
   private safeSetupPanZoom() {
@@ -799,35 +573,6 @@ export class AngularFlowComponent<
     this._panZoomInitialized.set(true);
   }
 
-  // 傳統的設置 PanZoom 方法（供外部調用或強制重新初始化）
-  private setupPanZoom() {
-    const container = this.flowContainer()?.nativeElement;
-    if (!container) {
-      return;
-    }
-
-
-    this._panZoomService.initializePanZoom({
-      domNode: container,
-      minZoom: this.minZoom(),
-      maxZoom: this.maxZoom(),
-      zoomOnScroll: true, // 滑鼠滾輪縮放：以滑鼠位置為基準
-      zoomOnPinch: true, // 觸控板縮放：以觸控位置為基準
-      panOnScroll: false,
-      panOnScrollSpeed: 0.5,
-      zoomOnDoubleClick: true, // 雙擊縮放：以雙擊位置為基準
-      panOnDrag: this.panOnDrag(),
-      preventScrolling: true,
-      paneClickDistance: this.paneClickDistance(),
-      defaultViewport: { x: 0, y: 0, zoom: 1 },
-    });
-
-    // 設置 flowService 的 panZoom 實例
-    const panZoomInstance = this._panZoomService.getPanZoomInstance();
-    if (panZoomInstance) {
-      this._flowService.setPanZoom(panZoomInstance);
-    }
-  }
 
   // 安全處理初始 fit view - 只執行一次
   private safeHandleInitialFitView() {
@@ -859,28 +604,6 @@ export class AngularFlowComponent<
     this._initialFitViewExecuted.set(true);
   }
 
-  // 傳統的處理初始 fit view 方法（供外部調用）
-  private handleInitialFitView() {
-    // 檢查是否需要執行初始 fit view
-    if (!this.fitView()) {
-      return;
-    }
-
-    // 檢查是否有節點存在
-    const nodes = this.visibleNodes();
-    if (nodes.length === 0) {
-      return;
-    }
-
-    // 確保 PanZoom 已初始化
-    if (!this._panZoomService) {
-      return;
-    }
-
-
-    // 執行 fit view，傳遞選項
-    this.performFitView(this.fitViewOptions());
-  }
 
   // 根據ID獲取節點
   getNodeById(id: string): NodeType | undefined {
@@ -888,44 +611,6 @@ export class AngularFlowComponent<
     return node;
   }
 
-  // 計算 Handle 位置（使用統一位置計算系統）
-  private getHandlePosition(
-    node: NodeType,
-    position: Position,
-    nodeWidth: number,
-    nodeHeight: number
-  ): { x: number; y: number } {
-    // 確定 Handle 類型
-    const handleType: 'source' | 'target' = position === Position.Top ? 'target' : 'source';
-    
-    // 使用統一系統獲取 Handle 位置
-    const unifiedPos = this._flowService.getHandlePositionAbsolute(
-      node.id, 
-      handleType, 
-      position
-    );
-    
-    if (unifiedPos) {
-      return unifiedPos;
-    }
-    
-    // 備用計算（如果統一系統尚未初始化）
-    const adjustedPosition = getNodePositionWithOrigin(node, [0, 0]);
-    const handleOffset = 4;
-
-    switch (position) {
-      case Position.Top:
-        return { x: adjustedPosition.x + nodeWidth / 2, y: adjustedPosition.y - handleOffset };
-      case Position.Right:
-        return { x: adjustedPosition.x + nodeWidth + handleOffset, y: adjustedPosition.y + nodeHeight / 2 };
-      case Position.Bottom:
-        return { x: adjustedPosition.x + nodeWidth / 2, y: adjustedPosition.y + nodeHeight + handleOffset };
-      case Position.Left:
-        return { x: adjustedPosition.x - handleOffset, y: adjustedPosition.y + nodeHeight / 2 };
-      default:
-        return { x: adjustedPosition.x + nodeWidth / 2, y: adjustedPosition.y + nodeHeight / 2 };
-    }
-  }
 
   // 獲取邊的連接點（使用實際測量的 handle 位置）
   getEdgeConnectionPoints(
@@ -1026,126 +711,7 @@ export class AngularFlowComponent<
 
   // 已移除不再需要的方法，現在直接計算實際 CSS handle 位置
 
-  // 計算貝茲曲線路徑
-  private _getBezierPath(
-    sourceX: number,
-    sourceY: number,
-    sourcePosition: Position,
-    targetX: number,
-    targetY: number,
-    targetPosition: Position,
-    curvature: number = 0.25
-  ): string {
-    const getControlPoint = (
-      pos: Position,
-      x: number,
-      y: number,
-      targetX: number,
-      targetY: number
-    ): [number, number] => {
-      const distance = Math.sqrt((targetX - x) ** 2 + (targetY - y) ** 2);
-      const offset = Math.max(distance * curvature, 20);
 
-      switch (pos) {
-        case Position.Left:
-          return [x - offset, y];
-        case Position.Right:
-          return [x + offset, y];
-        case Position.Top:
-          return [x, y - offset];
-        case Position.Bottom:
-          return [x, y + offset];
-        default:
-          return [x, y];
-      }
-    };
-
-    const [sourceControlX, sourceControlY] = getControlPoint(
-      sourcePosition,
-      sourceX,
-      sourceY,
-      targetX,
-      targetY
-    );
-    const [targetControlX, targetControlY] = getControlPoint(
-      targetPosition,
-      targetX,
-      targetY,
-      sourceX,
-      sourceY
-    );
-
-    return `M ${sourceX},${sourceY} C ${sourceControlX},${sourceControlY} ${targetControlX},${targetControlY} ${targetX},${targetY}`;
-  }
-
-  // 計算邊路徑
-  calculateEdgePath(
-    sourceNode: NodeType,
-    targetNode: NodeType,
-    edge: EdgeType
-  ): string {
-    const {
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
-      sourcePosition,
-      targetPosition,
-    } = this.getEdgeConnectionPoints(sourceNode, targetNode, edge);
-
-    // 根據邊類型返回不同的路徑
-    const edgeType = (edge as any).type || 'default';
-
-    switch (edgeType) {
-      case 'straight':
-        return `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
-
-      case 'step':
-        const midX = (sourceX + targetX) / 2;
-        return `M ${sourceX},${sourceY} L ${midX},${sourceY} L ${midX},${targetY} L ${targetX},${targetY}`;
-
-      case 'smoothstep':
-        // 簡化的 smooth step 實現
-        const offsetX = Math.abs(targetX - sourceX) * 0.5;
-        // const offsetY = Math.abs(targetY - sourceY) * 0.5; // 保留供未來擴展使用
-
-        if (
-          sourcePosition === Position.Right &&
-          targetPosition === Position.Left
-        ) {
-          const midX = sourceX + offsetX;
-          return `M ${sourceX},${sourceY} L ${midX},${sourceY} Q ${
-            midX + 10
-          },${sourceY} ${midX + 10},${sourceY + 10} L ${midX + 10},${
-            targetY - 10
-          } Q ${midX + 10},${targetY} ${
-            midX + 20
-          },${targetY} L ${targetX},${targetY}`;
-        }
-
-        return this._getBezierPath(
-          sourceX,
-          sourceY,
-          sourcePosition,
-          targetX,
-          targetY,
-          targetPosition,
-          0.1
-        );
-
-      case 'default':
-      case 'bezier':
-      default:
-        return this._getBezierPath(
-          sourceX,
-          sourceY,
-          sourcePosition,
-          targetX,
-          targetY,
-          targetPosition
-        );
-    }
-  }
 
   // 事件處理方法
   handleNodeClick(event: MouseEvent, node: NodeType) {
@@ -1394,64 +960,29 @@ export class AngularFlowComponent<
     return this._flowService.screenToFlow(clientPosition);
   }
 
-  // 獲取標記 ID
-  private _getMarkerId(
-    _edge: EdgeType,
+  // 獲取標記 ID - 供子元件使用
+  getMarkerId = (
+    _edge: any,
     position: 'start' | 'end',
     marker: EdgeMarker
-  ): string {
+  ): string => {
     const type = marker.type || MarkerType.ArrowClosed;
     const color = (marker.color || '#b1b1b7').replace('#', '');
     return `angular-flow__marker-${position}-${type}-${color}`;
+  };
+
+  // handleClick 包裝方法
+  handleViewportHandleClick(event: { event: MouseEvent; nodeId: string; handleId?: string; handleType: string }) {
+    this.handleHandleClick(
+      event.event,
+      event.nodeId,
+      event.handleId,
+      event.handleType as 'source' | 'target'
+    );
   }
 
-  // 獲取邊線樣式對象 - 類似React版本的完整樣式支持
-  getEdgeStyles(edge: EdgeType): any {
-    // 根據顏色模式選擇正確的顏色
-    const isDarkMode = this.colorModeClass() === 'dark';
-    const selectedStroke = isDarkMode ? '#727272' : '#555';
-    const defaultStroke = isDarkMode ? '#3e3e3e' : '#b1b1b7';
-    
-    const defaultStyles = {
-      stroke: edge.selected ? selectedStroke : defaultStroke,
-      strokeWidth: edge.selected ? 2 : 1,
-      fill: 'none',
-    };
 
-    // 合併自定義樣式，優先級高於默認樣式
-    return edge.style ? { ...defaultStyles, ...edge.style } : defaultStyles;
-  }
 
-  // 保留原方法以兼容性（雖然現在不再使用）
-  getEdgeStroke(edge: EdgeType): string {
-    // 優先使用 edge.style['stroke']
-    if (edge.style?.['stroke']) {
-      return edge.style['stroke'];
-    }
-    // 其次使用選擇狀態樣式
-    return edge.selected ? '#ff0072' : '#b1b1b7';
-  }
-
-  // 獲取邊線寬度 - 優先使用自定義樣式，然後是選擇狀態樣式
-  getEdgeStrokeWidth(edge: EdgeType): number {
-    // 優先使用 edge.style['strokeWidth']
-    if (edge.style?.['strokeWidth'] !== undefined) {
-      return edge.style['strokeWidth'];
-    }
-    // 其次使用選擇狀態樣式
-    return edge.selected ? 2 : 1;
-  }
-
-  // 獲取標記 URL
-  getMarkerUrl(edge: EdgeType, position: 'start' | 'end'): string | null {
-    const marker = position === 'start' ? edge.markerStart : edge.markerEnd;
-    if (!marker) return null;
-
-    const markerData =
-      typeof marker === 'string' ? { type: MarkerType.ArrowClosed } : marker;
-    const markerId = this._getMarkerId(edge, position, markerData);
-    return `url(#${markerId})`;
-  }
 
   // 連接控制方法
   cancelConnection(): void {

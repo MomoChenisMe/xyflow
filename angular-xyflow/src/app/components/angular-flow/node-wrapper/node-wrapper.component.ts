@@ -72,7 +72,7 @@ import { AngularFlowService } from '../angular-flow.service';
 
       <!-- Node content -->
       <div class="angular-flow__node-content">
-        <div class="angular-flow__node-label">{{ node().data?.['label'] || node().id }}</div>
+        <div class="angular-flow__node-label">{{ node().data['label'] || node().id }}</div>
       </div>
 
       <!-- Target handles -->
