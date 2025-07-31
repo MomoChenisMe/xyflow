@@ -15,58 +15,58 @@ import { AngularNode, BackgroundVariant } from '../../angular-flow/types';
   template: `
     <div class="wrapper">
       <!-- Flow A: Dots -->
-      <angular-flow
+      <angular-xyflow
         [defaultNodes]="flowANodes"
         id="flow-a"
       >
-        <angular-flow-background 
+        <angular-xyflow-background 
           [variant]="backgroundVariant.Dots" 
           id="bg-a-dots" 
         />
-      </angular-flow>
+      </angular-xyflow>
 
       <!-- Flow B: Lines with gap 50x50 -->
-      <angular-flow
+      <angular-xyflow
         [defaultNodes]="flowBNodes"
         id="flow-b"
       >
-        <angular-flow-background 
+        <angular-xyflow-background 
           [variant]="backgroundVariant.Lines" 
           [gap]="[50, 50]" 
           id="bg-b-lines"
         />
-      </angular-flow>
+      </angular-xyflow>
 
       <!-- Flow C: Cross with gap 100x50 -->
-      <angular-flow
+      <angular-xyflow
         [defaultNodes]="flowCNodes"
         id="flow-c"
       >
-        <angular-flow-background 
+        <angular-xyflow-background 
           [variant]="backgroundVariant.Cross" 
           [gap]="[100, 50]" 
           id="bg-c-cross"
         />
-      </angular-flow>
+      </angular-xyflow>
 
       <!-- Flow D: Multiple background layers -->
-      <angular-flow
+      <angular-xyflow
         [defaultNodes]="flowDNodes"
         id="flow-d"
       >
-        <angular-flow-background 
+        <angular-xyflow-background 
           [variant]="backgroundVariant.Lines" 
           [gap]="10" 
           id="bg-d-lines-1"
         />
-        <angular-flow-background 
+        <angular-xyflow-background 
           [variant]="backgroundVariant.Lines" 
           [gap]="100" 
           [offset]="2" 
           [color]="'#ccc'" 
           id="bg-d-lines-2"
         />
-      </angular-flow>
+      </angular-xyflow>
     </div>
   `,
   styles: [`
@@ -81,16 +81,16 @@ import { AngularNode, BackgroundVariant } from '../../angular-flow/types';
       height: 100%;
     }
 
-    .wrapper angular-flow {
+    .wrapper angular-xyflow {
       width: 100%;
       height: 100%;
     }
 
-    .wrapper angular-flow {
+    .wrapper angular-xyflow {
       border-right: 1px solid #ddd;
     }
 
-    .wrapper angular-flow:last-child {
+    .wrapper angular-xyflow:last-child {
       border-right: none;
     }
   `]

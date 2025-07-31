@@ -25,18 +25,18 @@ const nodeDefaults = {
     PanelComponent
   ],
   template: `
-    <angular-flow
+    <angular-xyflow
       [defaultNodes]="initialNodes"
       [defaultEdges]="initialEdges"
       [colorMode]="colorMode()"
       [fitView]="true"
       (onConnect)="onConnect($event)"
     >
-      <angular-flow-minimap />
-      <angular-flow-background />
-      <angular-flow-controls />
+      <angular-xyflow-minimap />
+      <angular-xyflow-background />
+      <angular-xyflow-controls />
 
-      <angular-flow-panel position="top-right">
+      <angular-xyflow-panel position="top-right">
         <div class="color-mode-panel">
           <select
             [value]="colorMode()"
@@ -49,8 +49,8 @@ const nodeDefaults = {
             <option value="system">system</option>
           </select>
         </div>
-      </angular-flow-panel>
-    </angular-flow>
+      </angular-xyflow-panel>
+    </angular-xyflow>
   `,
   styles: [`
     :host {
@@ -59,7 +59,7 @@ const nodeDefaults = {
       height: 100%;
     }
 
-    angular-flow {
+    angular-xyflow {
       width: 100%;
       height: 100%;
     }

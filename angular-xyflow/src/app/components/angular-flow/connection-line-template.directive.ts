@@ -2,7 +2,7 @@ import { Directive, TemplateRef } from '@angular/core';
 import { ConnectionLineTemplateContext } from './types';
 
 @Directive({
-  selector: '[angularFlowConnectionLine]',
+  selector: '[angularXyFlowConnectionLine]',
   standalone: true,
 })
 export class ConnectionLineTemplateDirective {

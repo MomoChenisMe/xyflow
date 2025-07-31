@@ -16,7 +16,7 @@ export type PanelPosition =
   | 'bottom-right';
 
 @Component({
-  selector: 'angular-flow-panel',
+  selector: 'angular-xyflow-panel',
   standalone: true,
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,41 +32,41 @@ export type PanelPosition =
     </div>
   `,
   styles: [`
-    .angular-flow__panel {
+    .angular-xyflow__panel {
       position: absolute;
       z-index: 5;
       margin: 10px;
       pointer-events: auto;
     }
 
-    .angular-flow__panel.position-top-left {
+    .angular-xyflow__panel.position-top-left {
       top: 0;
       left: 0;
     }
 
-    .angular-flow__panel.position-top-center {
+    .angular-xyflow__panel.position-top-center {
       top: 0;
       left: 50%;
       transform: translateX(-50%);
     }
 
-    .angular-flow__panel.position-top-right {
+    .angular-xyflow__panel.position-top-right {
       top: 0;
       right: 0;
     }
 
-    .angular-flow__panel.position-bottom-left {
+    .angular-xyflow__panel.position-bottom-left {
       bottom: 0;
       left: 0;
     }
 
-    .angular-flow__panel.position-bottom-center {
+    .angular-xyflow__panel.position-bottom-center {
       bottom: 0;
       left: 50%;
       transform: translateX(-50%);
     }
 
-    .angular-flow__panel.position-bottom-right {
+    .angular-xyflow__panel.position-bottom-right {
       bottom: 0;
       right: 0;
     }
@@ -80,7 +80,7 @@ export class PanelComponent {
   
   // 計算屬性
   readonly panelClasses = computed(() => {
-    const classes = ['xy-flow__panel', 'angular-flow__panel', `position-${this.position()}`];
+    const classes = ['xy-flow__panel', 'angular-xyflow__panel', `position-${this.position()}`];
     
     const customClass = this.className();
     if (customClass) {

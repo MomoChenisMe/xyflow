@@ -11,14 +11,14 @@ import { AngularFlowService } from '../angular-flow.service';
 import { BackgroundVariant } from '../types';
 
 @Component({
-  selector: 'angular-flow-background',
+  selector: 'angular-xyflow-background',
   standalone: true,
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <svg:svg 
-      class="xy-flow__background angular-flow__background"
+      class="xy-flow__background angular-xyflow__background"
       [class]="className()"
       [style.position]="'absolute'"
       [style.top]="'0'"
@@ -70,7 +70,7 @@ import { BackgroundVariant } from '../types';
     </svg:svg>
   `,
   styles: [`
-    .angular-flow__background {
+    .angular-xyflow__background {
       position: absolute;
       top: 0;
       left: 0;
@@ -111,7 +111,7 @@ export class BackgroundComponent {
   
   readonly patternId = computed(() => {
     const baseId = this.id() || '';
-    return `angular-flow-pattern-${this.variant()}-${baseId}`;
+    return `angular-xyflow-pattern-${this.variant()}-${baseId}`;
   });
   
   readonly gapXY = computed((): [number, number] => {

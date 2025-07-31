@@ -41,7 +41,7 @@ export interface EdgeConnectionPoints {
 }
 
 @Component({
-  selector: 'angular-flow-viewport',
+  selector: 'angular-xyflow-viewport',
   standalone: true,
   imports: [
     CommonModule,
@@ -53,7 +53,7 @@ export interface EdgeConnectionPoints {
   template: `
     <div
       #viewport
-      class="xy-flow__viewport angular-flow__viewport"
+      class="xy-flow__viewport angular-xyflow__viewport"
       [style.transform]="viewportTransform()"
       [style.transform-origin]="'0 0'"
       [style.position]="'absolute'"
@@ -64,7 +64,7 @@ export interface EdgeConnectionPoints {
     >
       <!-- Edges layer -->
       <svg:svg
-        class="xy-flow__edges angular-flow__edges"
+        class="xy-flow__edges angular-xyflow__edges"
         [style.position]="'absolute'"
         [style.top]="'0'"
         [style.left]="'0'"
@@ -111,14 +111,14 @@ export interface EdgeConnectionPoints {
           @if (sourceNode && targetNode) {
             @let connectionPoints = getEdgeConnectionPoints()(sourceNode, targetNode, edge);
             <svg:g
-              class="angular-flow__edge xy-flow__edge"
+              class="angular-xyflow__edge xy-flow__edge"
               [class.selected]="edge.selected"
               [class.animated]="edge.animated"
               [class.selectable]="edge.selectable !== false"
               [attr.tabindex]="edge.selectable !== false ? 0 : null"
               (focus)="edgeFocus.emit({ event: $event, edge })"
               (keydown)="edgeKeyDown.emit({ event: $event, edge })"
-              angular-flow-edge
+              angular-xyflow-edge
               [edge]="edge"
               [sourceX]="connectionPoints.sourceX"
               [sourceY]="connectionPoints.sourceY"
@@ -137,7 +137,7 @@ export interface EdgeConnectionPoints {
       <!-- Connection Line - 顯示連接進行中的線條（獨立層，高於節點） -->
       @if (connectionInProgress()) {
         <svg:svg
-          class="xy-flow__connectionline angular-flow__connectionline xy-flow__container"
+          class="xy-flow__connectionline angular-xyflow__connectionline xy-flow__container"
           [style.position]="'absolute'"
           [style.top]="'0'"
           [style.left]="'0'"
@@ -146,7 +146,7 @@ export interface EdgeConnectionPoints {
           [style.pointer-events]="'none'"
           [style.z-index]="'1001'"
           [style.overflow]="'visible'"
-          angular-flow-connection-line
+          angular-xyflow-connection-line
           [connectionState]="connectionInProgress()"
           [customTemplate]="customConnectionLineTemplate()"
           [connectionType]="customConnectionLineType()"
@@ -155,7 +155,7 @@ export interface EdgeConnectionPoints {
 
       <!-- Nodes layer -->
       <div
-        class="xy-flow__nodes angular-flow__nodes"
+        class="xy-flow__nodes angular-xyflow__nodes"
         [style.position]="'absolute'"
         [style.top]="'0'"
         [style.left]="'0'"
@@ -164,7 +164,7 @@ export interface EdgeConnectionPoints {
         [style.z-index]="'2'"
       >
         @for (node of visibleNodes(); track node.id) {
-        <angular-flow-node
+        <angular-xyflow-node
           [node]="node"
           [selected]="node.selected || false"
           [dragging]="node.dragging || false"
@@ -183,7 +183,7 @@ export interface EdgeConnectionPoints {
   `,
   styles: [
     `
-      .angular-flow__viewport {
+      .angular-xyflow__viewport {
         position: absolute;
         top: 0;
         left: 0;
@@ -191,7 +191,7 @@ export interface EdgeConnectionPoints {
         height: 100%;
       }
 
-      .angular-flow__edges {
+      .angular-xyflow__edges {
         position: absolute;
         top: 0;
         left: 0;
@@ -201,7 +201,7 @@ export interface EdgeConnectionPoints {
         z-index: 1;
       }
 
-      .angular-flow__nodes {
+      .angular-xyflow__nodes {
         position: absolute;
         top: 0;
         left: 0;

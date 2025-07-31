@@ -24,18 +24,18 @@ import {
     PanelComponent,
   ],
   template: `
-    <angular-flow
+    <angular-xyflow
       #angularFlow
       [defaultNodes]="initialNodes"
       [defaultEdges]="initialEdges"
       [className]="'controlled-viewport-flow'"
     >
-      <angular-flow-background [variant]="backgroundVariant.Dots" />
-      <angular-flow-minimap />
-      <angular-flow-controls />
+      <angular-xyflow-background [variant]="backgroundVariant.Dots" />
+      <angular-xyflow-minimap />
+      <angular-xyflow-controls />
 
-      <angular-flow-panel position="top-left">
-        <div class="angular-flow-panel">
+      <angular-xyflow-panel position="top-left">
+        <div class="angular-xyflow-panel">
           <button (click)="updateViewport()" class="flow-button">
             update viewport
           </button>
@@ -44,8 +44,8 @@ import {
             toggle viewport
           </button>
         </div>
-      </angular-flow-panel>
-    </angular-flow>
+      </angular-xyflow-panel>
+    </angular-xyflow>
   `,
   styles: [
     `
@@ -55,7 +55,7 @@ import {
         height: 100%;
       }
 
-      angular-flow {
+      angular-xyflow {
         width: 100%;
         height: 100%;
       }

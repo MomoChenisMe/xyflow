@@ -11,7 +11,7 @@ import { Connection } from '@xyflow/system';
   imports: [CommonModule, AngularFlowComponent],
   template: `
     <div class="wrapper" #wrapper style="height: 100vh; width: 100%;">
-      <angular-flow
+      <angular-xyflow
         #flow
         [defaultNodes]="nodes()"
         [defaultEdges]="edges()"
@@ -21,7 +21,7 @@ import { Connection } from '@xyflow/system';
         (onConnectEnd)="onConnectEnd($event)"
       >
         <!-- 可以添加背景、控制項等 -->
-      </angular-flow>
+      </angular-xyflow>
     </div>
   `,
   styles: [`
@@ -83,9 +83,9 @@ export class AddNodeOnEdgeDropComponent {
 
     // 檢查結束的目標是否為空白區域（pane）
     const target = eventData.event.target as HTMLElement;
-    const targetIsPane = target?.classList?.contains('angular-flow') || 
+    const targetIsPane = target?.classList?.contains('angular-xyflow') || 
                         target?.classList?.contains('xy-flow') ||
-                        target?.classList?.contains('angular-flow__pane') ||
+                        target?.classList?.contains('angular-xyflow__pane') ||
                         target?.classList?.contains('xy-flow__pane');
 
     if (targetIsPane && 'clientX' in eventData.event && 'clientY' in eventData.event) {

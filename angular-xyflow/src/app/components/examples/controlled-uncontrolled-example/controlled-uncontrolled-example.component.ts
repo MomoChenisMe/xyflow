@@ -41,7 +41,7 @@ import {
       - Controlled：只使用 [nodes] 和 [edges]
       - Uncontrolled：只使用 [defaultNodes] 和 [defaultEdges]
     -->
-    <angular-flow
+    <angular-xyflow
       #angularFlow
       [nodes]="nodes()"
       [edges]="edges()"
@@ -53,10 +53,10 @@ import {
       (onEdgesChange)="onEdgesChange($event)"
       className="controlled-uncontrolled-flow"
     >
-      <angular-flow-background [variant]="backgroundVariant.Lines" />
+      <angular-xyflow-background [variant]="backgroundVariant.Lines" />
 
-      <angular-flow-panel position="top-right">
-        <div class="angular-flow-panel">
+      <angular-xyflow-panel position="top-right">
+        <div class="angular-xyflow-panel">
           <button (click)="resetTransform()" class="flow-button">
             reset transform
           </button>
@@ -70,8 +70,8 @@ import {
             toObject
           </button>
         </div>
-      </angular-flow-panel>
-    </angular-flow>
+      </angular-xyflow-panel>
+    </angular-xyflow>
   `,
   styles: [
     `
@@ -81,7 +81,7 @@ import {
         height: 100%;
       }
 
-      angular-flow {
+      angular-xyflow {
         width: 100%;
         height: 100%;
       }

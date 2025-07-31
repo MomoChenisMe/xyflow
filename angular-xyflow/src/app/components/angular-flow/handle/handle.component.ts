@@ -23,7 +23,7 @@ import { AngularFlowService } from '../angular-flow.service';
 import { Handle } from '../types';
 
 @Component({
-  selector: 'angular-flow-handle',
+  selector: 'angular-xyflow-handle',
   standalone: true,
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,7 +31,7 @@ import { Handle } from '../types';
   template: `
     <div 
       #handleElement
-      class="angular-flow__handle"
+      class="angular-xyflow__handle"
       [class]="handleClasses()"
       [attr.data-handleid]="handleId() || null"
       [attr.data-handlepos]="position()"
@@ -55,7 +55,7 @@ import { Handle } from '../types';
     ></div>
   `,
   styles: [`
-    .angular-flow__handle {
+    .angular-xyflow__handle {
       position: absolute;
       width: 8px;
       height: 8px;
@@ -66,61 +66,61 @@ import { Handle } from '../types';
       z-index: 4;
     }
 
-    .angular-flow__handle:hover {
+    .angular-xyflow__handle:hover {
       background: #ff0072;
       border-color: #ff0072;
     }
 
-    .angular-flow__handle.source {
+    .angular-xyflow__handle.source {
       /* Source specific styles */
     }
 
-    .angular-flow__handle.target {
+    .angular-xyflow__handle.target {
       /* Target specific styles */
     }
 
-    .angular-flow__handle.position-top {
+    .angular-xyflow__handle.position-top {
       top: 0;
       left: 50%;
       transform: translate(-50%, -50%);
     }
 
-    .angular-flow__handle.position-right {
+    .angular-xyflow__handle.position-right {
       top: 50%;
       right: 0;
       transform: translate(50%, -50%);
     }
 
-    .angular-flow__handle.position-bottom {
+    .angular-xyflow__handle.position-bottom {
       top: auto;
       left: 50%;
       bottom: 0;
       transform: translate(-50%, 50%);
     }
 
-    .angular-flow__handle.position-left {
+    .angular-xyflow__handle.position-left {
       top: 50%;
       left: 0;
       transform: translate(-50%, -50%);
     }
 
-    .angular-flow__handle.connecting {
+    .angular-xyflow__handle.connecting {
       background: #ff0072;
       border-color: #ff0072;
       box-shadow: 0 0 6px 2px rgba(255, 0, 114, 0.25);
     }
 
-    .angular-flow__handle.valid-connection {
+    .angular-xyflow__handle.valid-connection {
       background: #00ff88;
       border-color: #00ff88;
     }
 
-    .angular-flow__handle.invalid-connection {
+    .angular-xyflow__handle.invalid-connection {
       background: #ff4444;
       border-color: #ff4444;
     }
 
-    .angular-flow__handle.selected {
+    .angular-xyflow__handle.selected {
       /* Handle 點擊不應該改變位置和樣式，參考 React Flow 行為 */
       /* background: #ff0072;
       border-color: #ff0072;
@@ -163,7 +163,7 @@ export class HandleComponent implements OnDestroy {
 
   readonly handleClasses = computed(() => {
     // 核心類：angular-flow__handle, source/target（用於DOM查詢器），position類
-    const classes = ['angular-flow__handle', this.type(), `position-${this.position()}`];
+    const classes = ['angular-xyflow__handle', this.type(), `position-${this.position()}`];
     
     if (this.isConnecting()) {
       classes.push('connecting');

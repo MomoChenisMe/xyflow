@@ -36,7 +36,7 @@ import {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <angular-flow
+    <angular-xyflow
       #angularFlow
       [defaultNodes]="initialNodes()"
       [defaultEdges]="initialEdges()"
@@ -50,7 +50,7 @@ import {
       [elevateNodesOnSelect]="false"
       [nodeDragThreshold]="0"
       [panOnDrag]="true"
-      className="angular-flow-basic-example"
+      className="angular-xyflow-basic-example"
       (onNodesChange)="onNodesChange($event)"
       (onConnect)="onConnect($event)"
       (onNodeClick)="onNodeClick($event)"
@@ -61,14 +61,14 @@ import {
       (onSelectionDrag)="onSelectionDrag($event)"
       (onSelectionDragStop)="onSelectionDragStop($event)"
     >
-      <angular-flow-background [variant]="backgroundVariant.Dots" />
+      <angular-xyflow-background [variant]="backgroundVariant.Dots" />
 
-      <angular-flow-minimap [pannable]="true" [zoomable]="true" />
+      <angular-xyflow-minimap [pannable]="true" [zoomable]="true" />
 
-      <angular-flow-controls />
+      <angular-xyflow-controls />
 
-      <angular-flow-panel position="top-right">
-        <div class="angular-flow-panel">
+      <angular-xyflow-panel position="top-right">
+        <div class="angular-xyflow-panel">
           <button (click)="resetTransform()" class="flow-button">reset transform</button>
           <button (click)="updatePos()" class="flow-button">change pos</button>
           <button (click)="toggleClassnames()" class="flow-button">toggle classnames</button>
@@ -81,8 +81,8 @@ import {
           <button (click)="onUpdateNode()" class="flow-button">updateNode</button>
           <button (click)="addNode()" class="flow-button">addNode</button>
         </div>
-      </angular-flow-panel>
-    </angular-flow>
+      </angular-xyflow-panel>
+    </angular-xyflow>
   `,
   styles: [
     `
@@ -92,7 +92,7 @@ import {
         height: 100%;
       }
 
-      angular-flow {
+      angular-xyflow {
         width: 100%;
         height: 100%;
       }

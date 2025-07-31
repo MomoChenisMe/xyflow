@@ -25,7 +25,7 @@ import {
   ],
   schemas: [NO_ERRORS_SCHEMA],
   template: `
-    <angular-flow
+    <angular-xyflow
       [defaultNodes]="initialNodes()"
       [defaultEdges]="initialEdges()"
       [className]="'custom-connection-line-flow'"
@@ -42,7 +42,7 @@ import {
         let-toPosition="toPosition"
         let-isValid="isValid"
       >
-        <svg:g class="angular-flow__connection-line xy-flow__connection-line">
+        <svg:g class="angular-xyflow__connection-line xy-flow__connection-line">
           <!-- React風格的連接線路徑：與React版本完全相同的樣式 -->
           <svg:path
             [attr.d]="'M' + fromX + ',' + fromY + ' C ' + fromX + ' ' + toY + ' ' + fromX + ' ' + toY + ' ' + toX + ',' + toY"
@@ -64,8 +64,8 @@ import {
         </svg:g>
       </ng-template>
 
-      <angular-flow-background [variant]="backgroundVariant.Lines" />
-    </angular-flow>
+      <angular-xyflow-background [variant]="backgroundVariant.Lines" />
+    </angular-xyflow>
   `,
   styles: [
     `
@@ -75,7 +75,7 @@ import {
         height: 100%;
       }
 
-      angular-flow {
+      angular-xyflow {
         width: 100%;
         height: 100%;
       }

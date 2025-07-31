@@ -26,7 +26,7 @@ import { Position } from '@xyflow/system';
     PanelComponent,
   ],
   template: `
-    <angular-flow
+    <angular-xyflow
       [defaultNodes]="initialNodes"
       [defaultEdges]="initialEdges"
       [selectNodesOnDrag]="false"
@@ -36,12 +36,12 @@ import { Position } from '@xyflow/system';
       [autoPanOnNodeFocus]="autoPanOnNodeFocus()"
       [className]="'a11y-flow'"
     >
-      <angular-flow-background [variant]="backgroundVariant.Dots" />
-      <angular-flow-minimap />
-      <angular-flow-controls />
+      <angular-xyflow-background [variant]="backgroundVariant.Dots" />
+      <angular-xyflow-minimap />
+      <angular-xyflow-controls />
 
-      <angular-flow-panel position="top-right">
-        <div class="angular-flow-panel">
+      <angular-xyflow-panel position="top-right">
+        <div class="angular-xyflow-panel">
           <label for="focusPannable" class="checkbox-label">
             <input
               id="focusPannable"
@@ -53,8 +53,8 @@ import { Position } from '@xyflow/system';
             autoPanOnNodeFocus
           </label>
         </div>
-      </angular-flow-panel>
-    </angular-flow>
+      </angular-xyflow-panel>
+    </angular-xyflow>
   `,
   styles: [
     `
@@ -64,7 +64,7 @@ import { Position } from '@xyflow/system';
         height: 100%;
       }
 
-      angular-flow {
+      angular-xyflow {
         width: 100%;
         height: 100%;
       }
@@ -76,7 +76,7 @@ import { Position } from '@xyflow/system';
 
       /* A11y 特定樣式覆蓋 - 增強視覺回饋 */
 
-      :host ::ng-deep .angular-flow__node.selected {
+      :host ::ng-deep .angular-xyflow__node.selected {
         --xy-node-boxshadow-selected: 0 0 0 2px rgba(255, 0, 114, 0.2);
       }
     `,

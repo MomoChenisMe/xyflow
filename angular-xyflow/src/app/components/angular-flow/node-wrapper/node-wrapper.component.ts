@@ -26,7 +26,7 @@ import { AngularFlowDragService } from '../drag.service';
 import { AngularFlowService } from '../angular-flow.service';
 
 @Component({
-  selector: 'angular-flow-node',
+  selector: 'angular-xyflow-node',
   standalone: true,
   imports: [CommonModule, HandleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,7 +34,7 @@ import { AngularFlowService } from '../angular-flow.service';
   template: `
     <div
       #nodeElement
-      class="xy-flow__node angular-flow__node"
+      class="xy-flow__node angular-xyflow__node"
       [class]="nodeClasses()"
       [attr.data-node-id]="node().id"
       [attr.tabindex]="getTabIndex()"
@@ -57,7 +57,7 @@ import { AngularFlowService } from '../angular-flow.service';
       <!-- Source handles -->
       @if (shouldShowHandles()) {
         @if (hasSourceHandle()) {
-          <angular-flow-handle
+          <angular-xyflow-handle
             type="source"
             [position]="getSourcePosition()"
             [nodeId]="node().id"
@@ -71,14 +71,14 @@ import { AngularFlowService } from '../angular-flow.service';
       }
 
       <!-- Node content -->
-      <div class="angular-flow__node-content">
-        <div class="angular-flow__node-label">{{ node().data['label'] || node().id }}</div>
+      <div class="angular-xyflow__node-content">
+        <div class="angular-xyflow__node-label">{{ node().data['label'] || node().id }}</div>
       </div>
 
       <!-- Target handles -->
       @if (shouldShowHandles()) {
         @if (hasTargetHandle()) {
-          <angular-flow-handle
+          <angular-xyflow-handle
             type="target"
             [position]="getTargetPosition()"
             [nodeId]="node().id"
@@ -95,17 +95,17 @@ import { AngularFlowService } from '../angular-flow.service';
   styles: [`
     /* 基本定位和行為樣式 - 不包含顏色主題 */
     .xy-flow__node,
-    .angular-flow__node {
+    .angular-xyflow__node {
       position: absolute;
       cursor: grab;
     }
 
     .xy-flow__node.dragging,
-    .angular-flow__node.dragging {
+    .angular-xyflow__node.dragging {
       cursor: grabbing;
     }
 
-    .angular-flow__node-content {
+    .angular-xyflow__node-content {
       /* 繼承父容器的 padding，與系統樣式保持一致 */
       height: 100%;
       width: 100%;
@@ -114,7 +114,7 @@ import { AngularFlowService } from '../angular-flow.service';
       justify-content: center;
     }
 
-    .angular-flow__node-label {
+    .angular-xyflow__node-label {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -152,7 +152,7 @@ export class NodeWrapperComponent implements OnDestroy {
 
   // 計算屬性
   readonly nodeClasses = computed(() => {
-    const classes = ['xy-flow__node', 'angular-flow__node'];
+    const classes = ['xy-flow__node', 'angular-xyflow__node'];
     const nodeData = this.node();
     const nodeType = nodeData.type || 'default';
 

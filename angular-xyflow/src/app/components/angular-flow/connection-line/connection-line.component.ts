@@ -19,7 +19,7 @@ export interface ConnectionState {
 }
 
 @Component({
-  selector: '[angular-flow-connection-line]',
+  selector: '[angular-xyflow-connection-line]',
   standalone: true,
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,7 +32,7 @@ export interface ConnectionState {
       />
     } @else if (connectionPath()) {
       <!-- 使用預設連接線 -->
-      <svg:g class="angular-flow__connection xy-flow__connection">
+      <svg:g class="angular-xyflow__connection xy-flow__connection">
         <svg:path
           [attr.d]="connectionPath()"
           [attr.stroke]="connectionStroke()"
@@ -110,7 +110,7 @@ export class ConnectionLineComponent {
   });
 
   connectionClass = computed(() => {
-    const baseClass = 'angular-flow__connection-path xy-flow__connection-path';
+    const baseClass = 'angular-xyflow__connection-path xy-flow__connection-path';
     const type = this.connectionType();
     return type === 'react' ? `${baseClass} animated` : baseClass;
   });

@@ -14,29 +14,29 @@ import { AngularFlowPanZoomService } from '../panzoom.service';
 import { PanelComponent, type PanelPosition } from '../panel/panel.component';
 
 @Component({
-  selector: 'angular-flow-controls',
+  selector: 'angular-xyflow-controls',
   standalone: true,
   imports: [CommonModule, PanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <angular-flow-panel
+    <angular-xyflow-panel
       [position]="position()"
       [style]="style()"
-      [className]="'xy-flow__controls angular-flow__controls ' + orientation() + ' ' + (className() || '')"
+      [className]="'xy-flow__controls angular-xyflow__controls ' + orientation() + ' ' + (className() || '')"
       [attr.data-testid]="'af__controls'"
       [attr.aria-label]="ariaLabel()"
     >
       <div 
-        class="angular-flow__controls-inner nopan"
+        class="angular-xyflow__controls-inner nopan"
         (dblclick)="onDoubleClick($event)"
         (mousedown)="onMouseDown($event)"
       >
       <!-- Zoom In Button -->
       <button 
         type="button"
-        class="xy-flow__controls-button angular-flow__controls-button angular-flow__controls-zoomin nopan"
+        class="xy-flow__controls-button angular-xyflow__controls-button angular-xyflow__controls-zoomin nopan"
         [disabled]="!canZoomIn()"
         (click)="onZoomIn($event)"
         [attr.aria-label]="'Zoom in'"
@@ -50,7 +50,7 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
       <!-- Zoom Out Button -->
       <button 
         type="button"
-        class="xy-flow__controls-button angular-flow__controls-button angular-flow__controls-zoomout nopan"
+        class="xy-flow__controls-button angular-xyflow__controls-button angular-xyflow__controls-zoomout nopan"
         [disabled]="!canZoomOut()"
         (click)="onZoomOut($event)"
         [attr.aria-label]="'Zoom out'"
@@ -64,7 +64,7 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
       <!-- Fit View Button -->
       <button 
         type="button"
-        class="xy-flow__controls-button angular-flow__controls-button angular-flow__controls-fitview nopan"
+        class="xy-flow__controls-button angular-xyflow__controls-button angular-xyflow__controls-fitview nopan"
         (click)="onFitView($event)"
         [attr.aria-label]="'Fit view'"
         [title]="'Fit view'"
@@ -78,7 +78,7 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
       @if (showInteractive()) {
         <button 
           type="button"
-          class="xy-flow__controls-button angular-flow__controls-button angular-flow__controls-interactive nopan"
+          class="xy-flow__controls-button angular-xyflow__controls-button angular-xyflow__controls-interactive nopan"
           [class.active]="!isInteractive()"
           (click)="onToggleInteractivity($event)"
           [attr.aria-label]="isInteractive() ? 'Disable interaction' : 'Enable interaction'"
@@ -98,11 +98,11 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
         </button>
       }
       </div>
-    </angular-flow-panel>
+    </angular-xyflow-panel>
   `,
   styles: [`
     /* Angular 風格的 Controls，使用系統 CSS 變量支持顏色模式 */
-    .angular-flow__controls {
+    .angular-xyflow__controls {
       display: flex;
       gap: 4px;
       background: var(--xy-controls-button-background-color, var(--xy-controls-button-background-color-default));
@@ -112,15 +112,15 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
-    .angular-flow__controls.vertical {
+    .angular-xyflow__controls.vertical {
       flex-direction: column;
     }
     
-    .angular-flow__controls.horizontal {
+    .angular-xyflow__controls.horizontal {
       flex-direction: row;
     }
     
-    .angular-flow__controls-inner {
+    .angular-xyflow__controls-inner {
       display: flex;
       gap: 4px;
       flex-direction: inherit;
@@ -128,7 +128,7 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
     }
 
     /* Angular 風格的按鈕，使用系統變量 */
-    .angular-flow__controls-button {
+    .angular-xyflow__controls-button {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -145,33 +145,33 @@ import { PanelComponent, type PanelPosition } from '../panel/panel.component';
       user-select: none;
     }
 
-    .angular-flow__controls-button:hover:not(:disabled) {
+    .angular-xyflow__controls-button:hover:not(:disabled) {
       background: var(--xy-controls-button-background-color-hover, var(--xy-controls-button-background-color-hover-default));
       color: var(--xy-controls-button-color-hover, var(--xy-controls-button-color-hover-default));
       border-color: var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default));
     }
 
-    .angular-flow__controls-button:active:not(:disabled) {
+    .angular-xyflow__controls-button:active:not(:disabled) {
       transform: scale(0.95);
     }
 
-    .angular-flow__controls-button:disabled {
+    .angular-xyflow__controls-button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
 
-    .angular-flow__controls-button.active {
+    .angular-xyflow__controls-button.active {
       background: #ff0072 !important;
       border-color: #ff0072 !important;
       color: #fff !important;
     }
 
-    .angular-flow__controls-button.active:hover {
+    .angular-xyflow__controls-button.active:hover {
       background: #e6006a !important;
       border-color: #e6006a !important;
     }
 
-    .angular-flow__controls-button svg {
+    .angular-xyflow__controls-button svg {
       width: 16px;
       height: 16px;
     }

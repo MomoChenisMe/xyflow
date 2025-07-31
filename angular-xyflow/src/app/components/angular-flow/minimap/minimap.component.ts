@@ -19,14 +19,14 @@ import { XYMinimap, type XYMinimapInstance, type Rect } from '@xyflow/system';
 import type { XYPosition } from '@xyflow/system';
 
 @Component({
-  selector: 'angular-flow-minimap',
+  selector: 'angular-xyflow-minimap',
   standalone: true,
   imports: [CommonModule, PanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <angular-flow-panel 
+    <angular-xyflow-panel 
       [position]="position()"
       [style]="computedStyle()"
       [className]="'xy-flow__minimap ' + (className() || '')"
@@ -72,7 +72,7 @@ import type { XYPosition } from '@xyflow/system';
           [style.pointer-events]="'none'"
         />
       </svg:svg>
-    </angular-flow-panel>
+    </angular-xyflow-panel>
   `,
   styles: [`
     .xy-flow__minimap {
@@ -321,7 +321,7 @@ export class MinimapComponent implements OnInit, OnDestroy {
   });
   
   // 生成唯一ID - 不在 computed 中因為 Math.random() 不是純函數
-  readonly labelledBy = `angular-flow__minimap-desc-${Math.random().toString(36).substr(2, 9)}`;
+  readonly labelledBy = `angular-xyflow__minimap-desc-${Math.random().toString(36).substr(2, 9)}`;
   
   // 形狀渲染模式 - 不在 computed 中因為訪問 window 不是純函數
   readonly shapeRendering = typeof window === 'undefined' || !!(window as any).chrome ? 'crispEdges' : 'geometricPrecision';

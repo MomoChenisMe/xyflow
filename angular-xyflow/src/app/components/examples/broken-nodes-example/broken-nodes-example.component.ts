@@ -21,7 +21,7 @@ import {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <angular-flow
+    <angular-xyflow
       #angularFlow
       [defaultNodes]="initialNodes()"
       [defaultEdges]="initialEdges()"
@@ -36,7 +36,7 @@ import {
       (onConnect)="onConnect($event)"
       (onNodeDrag)="onNodeDrag($event)"
     >
-    </angular-flow>
+    </angular-xyflow>
   `,
   styles: [
     `
@@ -46,7 +46,7 @@ import {
         height: 100%;
       }
 
-      angular-flow {
+      angular-xyflow {
         width: 100%;
         height: 100%;
       }

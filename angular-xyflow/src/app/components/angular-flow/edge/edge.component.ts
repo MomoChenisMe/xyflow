@@ -10,7 +10,7 @@ import { Position } from '@xyflow/system';
 import { EdgeMarker, MarkerType } from '../types';
 
 @Component({
-  selector: '[angular-flow-edge]',
+  selector: '[angular-xyflow-edge]',
   standalone: true,
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,7 +21,7 @@ import { EdgeMarker, MarkerType } from '../types';
       [attr.fill]="'none'"
       [attr.marker-start]="markerStartUrl()"
       [attr.marker-end]="markerEndUrl()"
-      [class]="'angular-flow__edge-path xy-flow__edge-path'"
+      [class]="'angular-xyflow__edge-path xy-flow__edge-path'"
       [ngStyle]="edgeStyles()"
       style="pointer-events: none;"
     />
@@ -32,7 +32,7 @@ import { EdgeMarker, MarkerType } from '../types';
       [attr.stroke]="'transparent'"
       [attr.stroke-width]="20"
       [attr.fill]="'none'"
-      [class]="'angular-flow__edge-interaction xy-flow__edge-interaction'"
+      [class]="'angular-xyflow__edge-interaction xy-flow__edge-interaction'"
       style="pointer-events: stroke; cursor: pointer;"
       (click)="handleClick($event)"
     />
@@ -44,7 +44,7 @@ import { EdgeMarker, MarkerType } from '../types';
         [attr.y]="labelY()"
         text-anchor="middle"
         dominant-baseline="middle"
-        class="angular-flow__edge-label xy-flow__edge-label"
+        class="angular-xyflow__edge-label xy-flow__edge-label"
         style="font-size: 12px; fill: #222; pointer-events: none;"
       >
         {{ edge().data?.['label'] }}

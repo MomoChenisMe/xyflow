@@ -27,7 +27,7 @@ const CANCEL_AFTER = 5; // 秒數
       [show]="countdownService.counting()"
       [remaining]="countdownService.remaining()"
     />
-    <angular-flow
+    <angular-xyflow
       #angularFlow
       [defaultNodes]="initialNodes()"
       [defaultEdges]="initialEdges()"
@@ -39,9 +39,9 @@ const CANCEL_AFTER = 5; // 秒數
       (onConnectEnd)="onConnectEnd()"
       (onConnect)="onConnect($event)"
     >
-      <angular-flow-background />
-      <angular-flow-minimap />
-    </angular-flow>
+      <angular-xyflow-background />
+      <angular-xyflow-minimap />
+    </angular-xyflow>
   `,
   styles: [`
     :host {
@@ -50,7 +50,7 @@ const CANCEL_AFTER = 5; // 秒數
       height: 100%;
     }
 
-    angular-flow {
+    angular-xyflow {
       width: 100%;
       height: 100%;
     }

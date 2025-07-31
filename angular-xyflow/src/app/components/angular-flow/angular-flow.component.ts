@@ -44,7 +44,7 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
 import { ViewportComponent } from './viewport/viewport.component';
 
 @Component({
-  selector: 'angular-flow',
+  selector: 'angular-xyflow',
   standalone: true,
   imports: [CommonModule, ViewportComponent],
   providers: [AngularFlowService, AngularFlowDragService, AngularFlowPanZoomService],
@@ -64,7 +64,7 @@ import { ViewportComponent } from './viewport/viewport.component';
       (dblclick)="handlePaneDoubleClick($event)"
     >
       <!-- Viewport container -->
-      <angular-flow-viewport
+      <angular-xyflow-viewport
         #viewport
         [viewportTransform]="viewportTransform()"
         [visibleNodes]="visibleNodes()"
@@ -96,7 +96,7 @@ import { ViewportComponent } from './viewport/viewport.component';
   `,
   styles: [
     `
-      .angular-flow {
+      .angular-xyflow {
         width: 100%;
         height: 100%;
         position: relative;
@@ -105,23 +105,23 @@ import { ViewportComponent } from './viewport/viewport.component';
       }
 
       /* Viewport cursor styles - 對應 React Flow 的邏輯 */
-      .angular-flow__pane {
+      .angular-xyflow__pane {
         z-index: 1;
       }
 
-      .angular-flow__pane--draggable {
+      .angular-xyflow__pane--draggable {
         cursor: grab;
       }
 
-      .angular-flow__pane--dragging {
+      .angular-xyflow__pane--dragging {
         cursor: grabbing;
       }
 
-      .angular-flow__pane--selection {
+      .angular-xyflow__pane--selection {
         cursor: pointer;
       }
 
-      .angular-flow__viewport {
+      .angular-xyflow__viewport {
         position: absolute;
         top: 0;
         left: 0;
@@ -129,7 +129,7 @@ import { ViewportComponent } from './viewport/viewport.component';
         height: 100%;
       }
 
-      .angular-flow__edges {
+      .angular-xyflow__edges {
         position: absolute;
         top: 0;
         left: 0;
@@ -139,7 +139,7 @@ import { ViewportComponent } from './viewport/viewport.component';
         z-index: 1;
       }
 
-      .angular-flow__nodes {
+      .angular-xyflow__nodes {
         position: absolute;
         top: 0;
         left: 0;
@@ -148,47 +148,47 @@ import { ViewportComponent } from './viewport/viewport.component';
         z-index: 2;
       }
 
-      .angular-flow__edge-path {
+      .angular-xyflow__edge-path {
         stroke: #b1b1b7;
         stroke-width: 1;
         fill: none;
       }
       
       /* Dark mode default edge color */
-      .dark .angular-flow__edge-path {
+      .dark .angular-xyflow__edge-path {
         stroke: #3e3e3e;
       }
 
-      .angular-flow__edge.selectable:hover .angular-flow__edge-path {
+      .angular-xyflow__edge.selectable:hover .angular-xyflow__edge-path {
         stroke: #999;
       }
       
-      .dark .angular-flow__edge.selectable:hover .angular-flow__edge-path {
+      .dark .angular-xyflow__edge.selectable:hover .angular-xyflow__edge-path {
         stroke: #888;
       }
       
       /* Ensure focus outline is removed */
-      .angular-flow__edge:focus,
-      .angular-flow__edge:focus-visible {
+      .angular-xyflow__edge:focus,
+      .angular-xyflow__edge:focus-visible {
         outline: none;
       }
 
-      .angular-flow__edge-path.selected,
-      .angular-flow__edge.selectable:focus .angular-flow__edge-path,
-      .angular-flow__edge.selectable:focus-visible .angular-flow__edge-path {
+      .angular-xyflow__edge-path.selected,
+      .angular-xyflow__edge.selectable:focus .angular-xyflow__edge-path,
+      .angular-xyflow__edge.selectable:focus-visible .angular-xyflow__edge-path {
         stroke: #555;
         stroke-width: 2;
       }
       
       /* Dark mode edge selected/focus color */
-      .dark .angular-flow__edge-path.selected,
-      .dark .angular-flow__edge.selectable:focus .angular-flow__edge-path,
-      .dark .angular-flow__edge.selectable:focus-visible .angular-flow__edge-path {
+      .dark .angular-xyflow__edge-path.selected,
+      .dark .angular-xyflow__edge.selectable:focus .angular-xyflow__edge-path,
+      .dark .angular-xyflow__edge.selectable:focus-visible .angular-xyflow__edge-path {
         stroke: #727272;
         stroke-width: 2;
       }
 
-      .angular-flow__edge-path.animated {
+      .angular-xyflow__edge-path.animated {
         stroke-dasharray: 5;
         animation: flow 0.5s linear infinite;
       }
@@ -200,11 +200,11 @@ import { ViewportComponent } from './viewport/viewport.component';
       }
 
       /* ConnectionLine 現在是獨立的 SVG 層，z-index 已經通過 inline style 設定為 1001 */
-      .angular-flow__connectionline {
+      .angular-xyflow__connectionline {
         pointer-events: none;
       }
 
-      .angular-flow__connection-path {
+      .angular-xyflow__connection-path {
         stroke: #b1b1b7;
         stroke-width: 1;
         fill: none;
@@ -256,7 +256,7 @@ export class AngularFlowComponent<
       return baseId;
     }
     // 為沒有明確 ID 的 Flow 實例生成唯一 ID
-    return `angular-flow-${this.generateUniqueId()}`;
+    return `angular-xyflow-${this.generateUniqueId()}`;
   });
 
   // 計算實際的顏色模式類別
@@ -271,7 +271,7 @@ export class AngularFlowComponent<
 
   // 計算最終的類別字符串
   finalClasses = computed(() => {
-    return 'xy-flow angular-flow angular-flow__pane ' + this.className() + ' ' + this.viewportCursorClass() + ' ' + this.colorModeClass();
+    return 'xy-flow angular-xyflow angular-xyflow__pane ' + this.className() + ' ' + this.viewportCursorClass() + ' ' + this.colorModeClass();
   });
 
   // 輸出事件
@@ -396,12 +396,12 @@ export class AngularFlowComponent<
 
     // 當用戶選擇模式啟用且可選擇時，顯示指針鼠標
     if (isSelecting && elementsSelectable) {
-      return 'angular-flow__pane--selection';
+      return 'angular-xyflow__pane--selection';
     }
 
     // 當拖拽功能啟用時，根據拖拽狀態顯示對應鼠標
     if (panOnDragEnabled) {
-      return isDragging ? 'angular-flow__pane--dragging' : 'angular-flow__pane--draggable';
+      return isDragging ? 'angular-xyflow__pane--dragging' : 'angular-xyflow__pane--draggable';
     }
 
     return '';
@@ -819,9 +819,9 @@ export class AngularFlowComponent<
 
     // 檢查點擊的是否是背景元素
     if (
-      target.classList.contains('angular-flow') ||
+      target.classList.contains('angular-xyflow') ||
       target.classList.contains('xy-flow') ||
-      target.classList.contains('angular-flow__viewport') ||
+      target.classList.contains('angular-xyflow__viewport') ||
       target.classList.contains('xy-flow__viewport')
     ) {
       this._flowService.clearSelection();
@@ -885,7 +885,7 @@ export class AngularFlowComponent<
     }
     
     // 在當前Flow容器範圍內查找controls
-    const controlsElement = flowContainer.querySelector('.angular-flow__controls');
+    const controlsElement = flowContainer.querySelector('.angular-xyflow__controls');
     const isFromControls = controlsElement && controlsElement.contains(target);
 
     if (isFromControls) {
@@ -968,7 +968,7 @@ export class AngularFlowComponent<
   ): string => {
     const type = marker.type || MarkerType.ArrowClosed;
     const color = (marker.color || '#b1b1b7').replace('#', '');
-    return `angular-flow__marker-${position}-${type}-${color}`;
+    return `angular-xyflow__marker-${position}-${type}-${color}`;
   };
 
   // handleClick 包裝方法

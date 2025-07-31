@@ -11,15 +11,15 @@ import type { Connection } from '@xyflow/system';
   standalone: true,
   imports: [CommonModule, FormsModule, AngularFlowComponent, PanelComponent],
   template: `
-    <angular-flow
+    <angular-xyflow
       [defaultNodes]="initialNodes"
       [defaultEdges]="initialEdges"
       [paneClickDistance]="paneClickDistance()"
       (onConnect)="onConnect($event)"
       (onPaneClick)="onPaneClick($event)"
     >
-      <angular-flow-panel position="top-right">
-        <div class="angular-flow-panel">
+      <angular-xyflow-panel position="top-right">
+        <div class="angular-xyflow-panel">
           <label for="clickDistance" class="slider-label">
             <input
               id="clickDistance"
@@ -33,8 +33,8 @@ import type { Connection } from '@xyflow/system';
             <span>click distance: {{ paneClickDistance() }}</span>
           </label>
         </div>
-      </angular-flow-panel>
-    </angular-flow>
+      </angular-xyflow-panel>
+    </angular-xyflow>
   `,
   styles: [
     `
@@ -44,7 +44,7 @@ import type { Connection } from '@xyflow/system';
         height: 100%;
       }
 
-      angular-flow {
+      angular-xyflow {
         width: 100%;
         height: 100%;
       }
