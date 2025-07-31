@@ -172,9 +172,21 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
             }
           </svg:g>
           } }
+        </svg:svg>
 
-          <!-- Connection Line - 顯示連接進行中的線條 -->
-          @if (connectionInProgress() && (customConnectionLineTemplate() || connectionLinePath())) { 
+        <!-- Connection Line - 顯示連接進行中的線條（獨立層，高於節點） -->
+        @if (connectionInProgress() && (customConnectionLineTemplate() || connectionLinePath())) {
+          <svg:svg
+            class="xy-flow__connectionline angular-flow__connectionline xy-flow__container"
+            [style.position]="'absolute'"
+            [style.top]="'0'"
+            [style.left]="'0'"
+            [style.width]="'100%'"
+            [style.height]="'100%'"
+            [style.pointer-events]="'none'"
+            [style.z-index]="'1001'"
+            [style.overflow]="'visible'"
+          >
             @let connState = connectionInProgress();
             @let context = connectionLineContext();
             @if (customConnectionLineTemplate() && context) {
@@ -185,7 +197,7 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
               />
             } @else if (connectionLinePath()) {
               <!-- 使用預設連接線 -->
-              <svg:g class="angular-flow__connection-line xy-flow__connection-line">
+              <svg:g class="angular-flow__connection xy-flow__connection">
                 <svg:path
                   [attr.d]="connectionLinePath()"
                   [attr.stroke]="
@@ -215,8 +227,8 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
                 }
               </svg:g>
             }
-          }
-        </svg:svg>
+          </svg:svg>
+        }
 
         <!-- Nodes layer -->
         <div
@@ -361,9 +373,9 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
         }
       }
 
-      .angular-flow__connection-line {
+      /* ConnectionLine 現在是獨立的 SVG 層，z-index 已經通過 inline style 設定為 1001 */
+      .angular-flow__connectionline {
         pointer-events: none;
-        z-index: 1000;
       }
 
       .angular-flow__connection-path {
