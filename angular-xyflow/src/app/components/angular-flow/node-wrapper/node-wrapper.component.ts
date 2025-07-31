@@ -17,7 +17,7 @@ import {
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
-import { type Connection, type Position, getNodePositionWithOrigin } from '@xyflow/system';
+import { type Connection, type Position, getNodePositionWithOrigin, elementSelectionKeys } from '@xyflow/system';
 
 // 專案內部模組
 import { AngularNode } from '../types';
@@ -444,18 +444,30 @@ export class NodeWrapperComponent implements OnDestroy {
 
   onNodeKeyDown(event: KeyboardEvent): void {
     const nodeId = this.node().id;
+    const isSelectable = this._flowService.elementsSelectable();
 
-    // 處理 Enter 或 Space 鍵，模擬點擊
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-
-      // 觸發節點點擊事件
-      const mouseEvent = new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-      });
-
-      this.onNodeClick(mouseEvent);
+    // 處理選擇相關的按鍵（Enter, Space, Escape）- 與 React 版本保持一致
+    if (elementSelectionKeys.includes(event.key) && isSelectable) {
+      const unselect = event.key === 'Escape';
+      
+      if (unselect) {
+        event.preventDefault();
+        // 清除選擇
+        this._flowService.clearSelection();
+        // 移除焦點 - 與 React 版本保持一致
+        const element = this.nodeElement()?.nativeElement;
+        if (element) {
+          requestAnimationFrame(() => element.blur());
+        }
+      } else if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        // 觸發節點點擊事件
+        const mouseEvent = new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+        });
+        this.onNodeClick(mouseEvent);
+      }
     }
 
     // 處理方向鍵移動（可選功能）

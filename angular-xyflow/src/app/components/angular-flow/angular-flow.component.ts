@@ -351,6 +351,7 @@ export class AngularFlowComponent<
   autoPanOnNodeFocus = input<boolean>(true);
   panOnDrag = input<boolean>(true);
   colorMode = input<ColorMode>('light');
+  paneClickDistance = input<number>(0);
 
   // 生成唯一的容器 ID
   flowContainerId = computed(() => {
@@ -408,6 +409,7 @@ export class AngularFlowComponent<
     event: MouseEvent;
     nodes: NodeType[];
   }>();
+  onPaneClick = output<{ event: MouseEvent }>();
 
   // 視圖子元素
   flowContainer =
@@ -655,7 +657,7 @@ export class AngularFlowComponent<
       zoomOnDoubleClick: true, // 雙擊縮放：以雙擊位置為基準
       panOnDrag: this.panOnDrag(),
       preventScrolling: true,
-      paneClickDistance: 0,
+      paneClickDistance: this.paneClickDistance(),
       defaultViewport: { x: 0, y: 0, zoom: 1 },
     });
 
@@ -687,7 +689,7 @@ export class AngularFlowComponent<
       zoomOnDoubleClick: true, // 雙擊縮放：以雙擊位置為基準
       panOnDrag: this.panOnDrag(),
       preventScrolling: true,
-      paneClickDistance: 0,
+      paneClickDistance: this.paneClickDistance(),
       defaultViewport: { x: 0, y: 0, zoom: 1 },
     });
 
@@ -1059,6 +1061,8 @@ export class AngularFlowComponent<
       target.classList.contains('xy-flow__viewport')
     ) {
       this._flowService.clearSelection();
+      // 發出 pane 點擊事件
+      this.onPaneClick.emit({ event });
     }
   }
 
@@ -1207,14 +1211,25 @@ export class AngularFlowComponent<
     this._flowService.cancelConnection();
   }
 
-  // 全域鍵盤事件處理 - ESC 鍵取消連接
+  // 全域鍵盤事件處理 - ESC 鍵取消選擇或連接
   @HostListener('document:keydown', ['$event'])
   onDocumentKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
+      // 優先處理連接狀態
       const connectionState = this._flowService.connectionState();
       if (connectionState.inProgress) {
         event.preventDefault();
         this.cancelConnection();
+        return;
+      }
+
+      // 處理選擇狀態 - 檢查是否有任何元素被選中
+      const selectedNodeIds = this._flowService.selectedNodes();
+      const selectedEdgeIds = this._flowService.selectedEdges();
+      
+      if (selectedNodeIds.length > 0 || selectedEdgeIds.length > 0) {
+        event.preventDefault();
+        this._flowService.clearSelection();
       }
     }
   }

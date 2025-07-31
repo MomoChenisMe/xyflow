@@ -25,6 +25,8 @@ export type PanelPosition =
     <div 
       [class]="panelClasses()"
       [ngStyle]="panelStyles()"
+      (mousedown)="stopPropagation($event)"
+      (touchstart)="stopPropagation($event)"
     >
       <ng-content />
     </div>
@@ -34,6 +36,7 @@ export type PanelPosition =
       position: absolute;
       z-index: 5;
       margin: 10px;
+      pointer-events: auto;
     }
 
     .angular-flow__panel.position-top-left {
@@ -130,4 +133,9 @@ export class PanelComponent {
     const customStyle = this.style();
     return { ...styles, ...customStyle };
   });
+
+  // 阻止事件冒泡，防止觸發 viewport 拖曳
+  stopPropagation(event: Event): void {
+    event.stopPropagation();
+  }
 }
