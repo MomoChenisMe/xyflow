@@ -78,7 +78,7 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
         [style.height]="'100%'"
       >
         <!-- Edges layer -->
-        <svg
+        <svg:svg
           class="xy-flow__edges angular-flow__edges"
           [style.position]="'absolute'"
           [style.top]="'0'"
@@ -91,9 +91,9 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
         >
           <!-- Marker definitions -->
           @if (hasEdgeMarkers()) {
-          <defs>
+          <svg:defs>
             @for (marker of edgeMarkers(); track marker.id) {
-            <marker
+            <svg:marker
               [id]="marker.id"
               [attr.markerWidth]="marker.width || 10"
               [attr.markerHeight]="marker.height || 7"
@@ -103,25 +103,25 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
               [attr.markerUnits]="marker.markerUnits || 'strokeWidth'"
             >
               @if (marker.type === markerType.Arrow) {
-              <polyline
+              <svg:polyline
                 points="0,0 8,3.5 0,7"
                 [attr.stroke]="marker.color || '#b1b1b7'"
                 [attr.stroke-width]="marker.strokeWidth || 1"
                 fill="none"
               />
               } @else {
-              <polygon
+              <svg:polygon
                 points="0 0, 10 3.5, 0 7"
                 [attr.fill]="marker.color || '#b1b1b7'"
               />
               }
-            </marker>
+            </svg:marker>
             }
-          </defs>
+          </svg:defs>
           } @for (edge of visibleEdges(); track edge.id) { @let sourceNode =
           getNodeById(edge.source); @let targetNode = getNodeById(edge.target);
           @if (sourceNode && targetNode) {
-          <g
+          <svg:g
             class="angular-flow__edge xy-flow__edge"
             [class.selected]="edge.selected"
             [class.animated]="edge.animated"
@@ -131,7 +131,7 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
             (keydown)="handleEdgeKeyDown($event, edge)"
           >
             <!-- 可見的邊路徑 -->
-            <path
+            <svg:path
               [attr.d]="calculateEdgePath(sourceNode, targetNode, edge)"
               [attr.fill]="'none'"
               [attr.marker-start]="getMarkerUrl(edge, 'start')"
@@ -142,7 +142,7 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
             />
             
             <!-- 不可見的交互路徑，用於擴大點擊和 hover 範圍 -->
-            <path
+            <svg:path
               [attr.d]="calculateEdgePath(sourceNode, targetNode, edge)"
               [attr.stroke]="'transparent'"
               [attr.stroke-width]="20"
@@ -155,7 +155,7 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
             <!-- Edge label -->
             @if (edge.data?.['label']) { @let connectionPoints =
             getEdgeConnectionPoints(sourceNode, targetNode, edge);
-            <text
+            <svg:text
               [attr.x]="
                 (connectionPoints.sourceX + connectionPoints.targetX) / 2
               "
@@ -168,9 +168,9 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
               style="font-size: 12px; fill: #222; pointer-events: none;"
             >
               {{ edge.data?.['label'] }}
-            </text>
+            </svg:text>
             }
-          </g>
+          </svg:g>
           } }
 
           <!-- Connection Line - 顯示連接進行中的線條 -->
@@ -185,8 +185,8 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
               />
             } @else if (connectionLinePath()) {
               <!-- 使用預設連接線 -->
-              <g class="angular-flow__connection-line xy-flow__connection-line">
-                <path
+              <svg:g class="angular-flow__connection-line xy-flow__connection-line">
+                <svg:path
                   [attr.d]="connectionLinePath()"
                   [attr.stroke]="
                     customConnectionLineType() === 'react' 
@@ -203,7 +203,7 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
                   style="pointer-events: none;"
                 />
                 @if (customConnectionLineType() === 'react' && connState) {
-                <circle 
+                <svg:circle 
                   [attr.cx]="connState.to.x" 
                   [attr.cy]="connState.to.y" 
                   [attr.fill]="'#fff'" 
@@ -213,10 +213,10 @@ import { ConnectionLineTemplateDirective } from './connection-line-template.dire
                   style="pointer-events: none;"
                 />
                 }
-              </g>
+              </svg:g>
             }
           }
-        </svg>
+        </svg:svg>
 
         <!-- Nodes layer -->
         <div

@@ -17,7 +17,7 @@ import { BackgroundVariant } from '../types';
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <svg 
+    <svg:svg 
       class="xy-flow__background angular-flow__background"
       [class]="className()"
       [style.position]="'absolute'"
@@ -30,8 +30,8 @@ import { BackgroundVariant } from '../types';
       [style.--xy-background-color-props]="bgColor()"
       [style.--xy-background-pattern-color-props]="color()"
     >
-      <defs>
-        <pattern
+      <svg:defs>
+        <svg:pattern
           [id]="patternId()"
           [attr.x]="patternPosition().x"
           [attr.y]="patternPosition().y"
@@ -42,7 +42,7 @@ import { BackgroundVariant } from '../types';
         >
           @if (variant() === backgroundVariant.Dots) {
             <!-- Dot Pattern -->
-            <circle
+            <svg:circle
               [attr.cx]="scaledSize() / 2"
               [attr.cy]="scaledSize() / 2"
               [attr.r]="scaledSize() / 2"
@@ -50,24 +50,24 @@ import { BackgroundVariant } from '../types';
             />
           } @else {
             <!-- Line Pattern (includes Lines and Cross) -->
-            <path
+            <svg:path
               [attr.stroke-width]="lineWidth()"
               [attr.d]="linePath()"
               [class]="'xy-flow__background-pattern ' + variant() + ' ' + (patternClassName() || '')"
               fill="none"
             />
           }
-        </pattern>
-      </defs>
+        </svg:pattern>
+      </svg:defs>
       
-      <rect 
+      <svg:rect 
         x="0" 
         y="0" 
         width="100%" 
         height="100%" 
         [attr.fill]="'url(#' + patternId() + ')'"
       />
-    </svg>
+    </svg:svg>
   `,
   styles: [`
     .angular-flow__background {

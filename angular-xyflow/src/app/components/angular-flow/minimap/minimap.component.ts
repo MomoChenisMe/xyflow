@@ -32,7 +32,7 @@ import type { XYPosition } from '@xyflow/system';
       [className]="'xy-flow__minimap ' + (className() || '')"
       [attr.data-testid]="'af__minimap'"
     >
-      <svg 
+      <svg:svg 
         #svg
         [attr.width]="elementWidth()"
         [attr.height]="elementHeight()"
@@ -43,12 +43,12 @@ import type { XYPosition } from '@xyflow/system';
         (click)="onSvgClick($event)"
       >
         @if (ariaLabel()) {
-          <title [id]="labelledBy">{{ ariaLabel() }}</title>
+          <svg:title [id]="labelledBy">{{ ariaLabel() }}</svg:title>
         }
         
         <!-- 節點渲染 -->
         @for (node of visibleNodes(); track node.id) {
-          <rect
+          <svg:rect
             [attr.x]="getNodeVisualPosition(node).x"
             [attr.y]="getNodeVisualPosition(node).y"
             [attr.width]="node.width || 150"
@@ -65,13 +65,13 @@ import type { XYPosition } from '@xyflow/system';
         }
         
         <!-- 視口遮罩 -->
-        <path
+        <svg:path
           class="xy-flow__minimap-mask"
           [attr.d]="maskPath()"
           [attr.fill-rule]="'evenodd'"
           [style.pointer-events]="'none'"
         />
-      </svg>
+      </svg:svg>
     </angular-flow-panel>
   `,
   styles: [`
