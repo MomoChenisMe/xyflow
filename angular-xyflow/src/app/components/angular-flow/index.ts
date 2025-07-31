@@ -6,6 +6,9 @@ export { AngularFlowService } from './angular-flow.service';
 export { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
 export { HandleComponent } from './handle/handle.component';
 
+// Directives
+export { ConnectionLineTemplateDirective } from './connection-line-template.directive';
+
 // Additional components
 export { BackgroundComponent } from './background/background.component';
 export { ControlsComponent } from './controls/controls.component';

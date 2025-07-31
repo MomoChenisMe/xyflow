@@ -4,6 +4,7 @@ import {
   input,
   output,
   viewChild,
+  contentChild,
   effect,
   signal,
   computed,
@@ -39,8 +40,10 @@ import {
   AngularFlowInstance,
   EdgeMarker,
   MarkerType,
+  ConnectionLineTemplateContext,
 } from './types';
 import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
+import { ConnectionLineTemplateDirective } from './connection-line-template.directive';
 
 @Component({
   selector: 'angular-flow',
@@ -171,24 +174,47 @@ import { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
           } }
 
           <!-- Connection Line - 顯示連接進行中的線條 -->
-          @if (connectionInProgress() && connectionLinePath()) { @let connState
-          = connectionInProgress();
-          <g class="angular-flow__connection-line xy-flow__connection-line">
-            <path
-              [attr.d]="connectionLinePath()"
-              [attr.stroke]="
-                connState.isValid === true
-                  ? '#10b981'
-                  : connState.isValid === false
-                  ? '#f87171'
-                  : '#b1b1b7'
-              "
-              [attr.stroke-width]="1"
-              [attr.fill]="'none'"
-              class="angular-flow__connection-path xy-flow__connection-path"
-              style="pointer-events: none;"
-            />
-          </g>
+          @if (connectionInProgress() && (customConnectionLineTemplate() || connectionLinePath())) { 
+            @let connState = connectionInProgress();
+            @let context = connectionLineContext();
+            @if (customConnectionLineTemplate() && context) {
+              <!-- 使用自定義連接線模板 -->
+              <ng-container 
+                [ngTemplateOutlet]="customConnectionLineTemplate()!.templateRef"
+                [ngTemplateOutletContext]="context"
+              />
+            } @else if (connectionLinePath()) {
+              <!-- 使用預設連接線 -->
+              <g class="angular-flow__connection-line xy-flow__connection-line">
+                <path
+                  [attr.d]="connectionLinePath()"
+                  [attr.stroke]="
+                    customConnectionLineType() === 'react' 
+                      ? '#222'
+                      : connState.isValid === true
+                      ? '#10b981'
+                      : connState.isValid === false
+                      ? '#f87171'
+                      : '#b1b1b7'
+                  "
+                  [attr.stroke-width]="customConnectionLineType() === 'react' ? '1.5' : '1'"
+                  [attr.fill]="'none'"
+                  [class]="customConnectionLineType() === 'react' ? 'angular-flow__connection-path xy-flow__connection-path animated' : 'angular-flow__connection-path xy-flow__connection-path'"
+                  style="pointer-events: none;"
+                />
+                @if (customConnectionLineType() === 'react' && connState) {
+                <circle 
+                  [attr.cx]="connState.to.x" 
+                  [attr.cy]="connState.to.y" 
+                  [attr.fill]="'#fff'" 
+                  [attr.r]="'3'" 
+                  [attr.stroke]="'#222'" 
+                  [attr.stroke-width]="'1.5'"
+                  style="pointer-events: none;"
+                />
+                }
+              </g>
+            }
           }
         </svg>
 
@@ -359,6 +385,9 @@ export class AngularFlowComponent<
   private _dragService = inject(AngularFlowDragService);
   private _panZoomService = inject(AngularFlowPanZoomService);
 
+  // 自定義連接線模板
+  customConnectionLineTemplate = contentChild(ConnectionLineTemplateDirective);
+
   // 輸入信號
   id = input<string>();
   defaultNodes = input<NodeType[]>([]);
@@ -380,6 +409,7 @@ export class AngularFlowComponent<
   panOnDrag = input<boolean>(true);
   colorMode = input<ColorMode>('light');
   paneClickDistance = input<number>(0);
+  customConnectionLineType = input<'default' | 'react'>('default');
 
   // 生成唯一的容器 ID
   flowContainerId = computed(() => {
@@ -553,7 +583,14 @@ export class AngularFlowComponent<
 
     const { from, to, fromPosition, toPosition } = connState;
 
-    // 使用貝茲曲線路徑
+    // 根據自定義連接線類型選擇不同的路徑算法
+    const lineType = this.customConnectionLineType();
+    if (lineType === 'react') {
+      // 使用React樣式的路徑算法：M${fromX},${fromY} C ${fromX} ${toY} ${fromX} ${toY} ${toX},${toY}
+      return `M${from.x},${from.y} C ${from.x} ${to.y} ${from.x} ${to.y} ${to.x},${to.y}`;
+    }
+
+    // 預設使用貝茲曲線路徑
     return this._getBezierPath(
       from.x,
       from.y,
@@ -562,6 +599,31 @@ export class AngularFlowComponent<
       to.y,
       toPosition
     );
+  });
+
+  // 自定義連接線模板上下文
+  connectionLineContext = computed<ConnectionLineTemplateContext | null>(() => {
+    const connState = this.connectionInProgress();
+    if (!connState) return null;
+
+    const { from, to, fromPosition, toPosition } = connState;
+
+    const props = {
+      fromX: from.x,
+      fromY: from.y,
+      toX: to.x,
+      toY: to.y,
+      fromPosition,
+      toPosition,
+      isValid: connState.isValid,
+      connectionLineStyle: undefined,
+    };
+
+    // 使用 $implicit 作為預設值，並提供所有變數作為具名屬性
+    return {
+      $implicit: props,
+      ...props,
+    };
   });
 
   // 邊線標記相關計算

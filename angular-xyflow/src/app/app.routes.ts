@@ -9,6 +9,7 @@ import { CancelConnectionExampleComponent } from './components/examples/cancel-c
 import { ClickDistanceExampleComponent } from './components/examples/click-distance-example/click-distance-example.component';
 import { ControlledUncontrolledExampleComponent } from './components/examples/controlled-uncontrolled-example/controlled-uncontrolled-example.component';
 import { ControlledViewportExampleComponent } from './components/examples/controlled-viewport-example/controlled-viewport-example.component';
+import { CustomConnectionLineExampleComponent } from './components/examples/custom-connection-line-example/custom-connection-line-example.component';
 
 export interface IRoute {
   name: string;
@@ -67,6 +68,11 @@ export const routeList: IRoute[] = [
     path: 'controlled-viewport',
     component: ControlledViewportExampleComponent,
   },
+  {
+    name: 'Custom Connection Line',
+    path: 'custom-connection-line',
+    component: CustomConnectionLineExampleComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -81,4 +87,5 @@ export const routes: Routes = [
   { path: 'color-mode', component: ColorModeExampleComponent },
   { path: 'controlled-uncontrolled', component: ControlledUncontrolledExampleComponent },
   { path: 'controlled-viewport', component: ControlledViewportExampleComponent },
+  { path: 'custom-connection-line', component: CustomConnectionLineExampleComponent },
 ];

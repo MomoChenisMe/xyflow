@@ -208,3 +208,16 @@ export interface ConnectionLineComponentProps {
   isValid: boolean | null;
   connectionLineStyle?: Record<string, any>;
 }
+
+// Template context for connection line
+export interface ConnectionLineTemplateContext {
+  $implicit: ConnectionLineComponentProps;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  fromPosition: Position;
+  toPosition: Position;
+  isValid: boolean | null;
+  connectionLineStyle?: Record<string, any>;
+}
