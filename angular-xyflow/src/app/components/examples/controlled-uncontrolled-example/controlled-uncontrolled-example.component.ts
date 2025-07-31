@@ -178,8 +178,19 @@ export class ControlledUncontrolledExampleComponent {
       
       this._isProcessingBug = true;
       
-      // 重置controlled state
-      this.edges.set(this.defaultEdges);
+      // 修復：重置時保留現有邊的樣式修改
+      const currentEdges = this.edges();
+      const edgesWithPreservedStyles = this.defaultEdges.map(defaultEdge => {
+        // 尋找現有邊中是否有相同 ID 的邊，保留其樣式
+        const existingEdge = currentEdges.find(edge => edge.id === defaultEdge.id);
+        if (existingEdge && existingEdge.style) {
+          return { ...defaultEdge, style: existingEdge.style };
+        }
+        return defaultEdge;
+      });
+      
+      // 重置controlled state，但保留樣式
+      this.edges.set(edgesWithPreservedStyles);
       
       // 關鍵：同步清理service層的edge狀態，移除新添加的edges
       // 這確保了所有層級的狀態都被重置，避免後續操作重新觸發
@@ -228,8 +239,21 @@ export class ControlledUncontrolledExampleComponent {
   updateEdgeColors(): void {
     // 警告：這個操作直接修改 controlled 狀態，會加劇與 defaultEdges 的衝突
     // 在混合模式下，修改樣式後的 edge 點擊可能會消失或重置
+    
+    // 同時更新兩個層級的狀態以確保立即生效
+    // 1. 更新 service 層狀態
     this._flow.setEdges((edges: AngularEdge[]) =>
       edges.map((edge: AngularEdge) => ({
+        ...edge,
+        style: {
+          stroke: '#ff5050',
+        },
+      }))
+    );
+    
+    // 2. 同步更新組件層狀態（立即生效）
+    this.edges.update(edges =>
+      edges.map(edge => ({
         ...edge,
         style: {
           stroke: '#ff5050',
