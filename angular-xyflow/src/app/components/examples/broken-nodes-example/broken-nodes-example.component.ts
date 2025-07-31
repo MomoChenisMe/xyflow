@@ -51,12 +51,6 @@ import {
         height: 100%;
       }
 
-      /* Light node styles */
-      :host ::ng-deep .angular-flow__node.light {
-        background: #fff;
-        border-color: #ddd;
-        color: #222;
-      }
     `,
   ],
 })
@@ -71,25 +65,21 @@ export class BrokenNodesExampleComponent {
       type: 'input',
       data: { label: 'Node 1' },
       position: { x: 250, y: 5 },
-      className: 'light',
     },
     {
       id: '2a',
       data: { label: 'Node 2' },
       position: { x: 100, y: 100 },
-      className: 'light',
     },
     {
       id: '3a',
       data: { label: 'Node 3' },
       position: { x: 400, y: 100 },
-      className: 'light',
     },
     {
       id: '4a',
       data: { label: 'Node 4' },
       position: { x: NaN, y: 200 }, // 直接使用 NaN，與 React 版本一致
-      className: 'light',
     },
   ]);
 

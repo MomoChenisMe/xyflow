@@ -125,7 +125,6 @@ export class A11yExampleComponent {
         }
       } as Record<string, unknown>,
       position: { x: 250, y: 5 },
-      className: 'light',
     },
     {
       id: '2',
@@ -139,7 +138,6 @@ export class A11yExampleComponent {
         ariaRole: 'button'
       } as Record<string, unknown>,
       position: { x: 100, y: 100 },
-      className: 'light',
     },
     {
       id: '4',

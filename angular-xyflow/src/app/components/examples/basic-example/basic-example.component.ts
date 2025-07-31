@@ -116,18 +116,6 @@ import {
         background: #eee;
       }
 
-      /* Light/Dark node styles */
-      :host ::ng-deep .angular-flow__node.light {
-        background: #fff;
-        border-color: #ddd;
-        color: #222;
-      }
-
-      :host ::ng-deep .angular-flow__node.dark {
-        background: #333;
-        border-color: #555;
-        color: #fff;
-      }
     `,
   ],
 })
@@ -145,25 +133,21 @@ export class BasicExampleComponent {
       type: 'input',
       data: { label: 'Node 1' },
       position: { x: 250, y: 5 },
-      className: 'light',
     },
     {
       id: '2',
       data: { label: 'Node 2' },
       position: { x: 100, y: 100 },
-      className: 'light',
     },
     {
       id: '3',
       data: { label: 'Node 3' },
       position: { x: 400, y: 100 },
-      className: 'light',
     },
     {
       id: '4',
       data: { label: 'Node 4' },
       position: { x: 400, y: 200 },
-      className: 'light',
     },
   ]);
 
@@ -302,7 +286,6 @@ export class BasicExampleComponent {
       id: `${Math.random()}`,
       data: { label: 'Node' },
       position: { x: Math.random() * 300, y: Math.random() * 300 },
-      className: 'light',
     });
     this._flow.fitView();
   }

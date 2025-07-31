@@ -13,6 +13,7 @@ import {
   OnDestroy,
   inject,
   CUSTOM_ELEMENTS_SCHEMA,
+  HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -1199,5 +1200,22 @@ export class AngularFlowComponent<
       typeof marker === 'string' ? { type: MarkerType.ArrowClosed } : marker;
     const markerId = this._getMarkerId(edge, position, markerData);
     return `url(#${markerId})`;
+  }
+
+  // 連接控制方法
+  cancelConnection(): void {
+    this._flowService.cancelConnection();
+  }
+
+  // 全域鍵盤事件處理 - ESC 鍵取消連接
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      const connectionState = this._flowService.connectionState();
+      if (connectionState.inProgress) {
+        event.preventDefault();
+        this.cancelConnection();
+      }
+    }
   }
 }

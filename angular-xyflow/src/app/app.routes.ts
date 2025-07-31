@@ -5,6 +5,7 @@ import { AddNodeOnEdgeDropComponent } from './components/examples/add-node-on-ed
 import { BackgroundsExampleComponent } from './components/examples/backgrounds-example/backgrounds-example.component';
 import { BrokenNodesExampleComponent } from './components/examples/broken-nodes-example/broken-nodes-example.component';
 import { ColorModeExampleComponent } from './components/examples/color-mode-example/color-mode-example.component';
+import { CancelConnectionExampleComponent } from './components/examples/cancel-connection-example/cancel-connection-example.component';
 
 export interface IRoute {
   name: string;
@@ -39,6 +40,11 @@ export const routeList: IRoute[] = [
     component: BrokenNodesExampleComponent,
   },
   {
+    name: 'Cancel Connection',
+    path: 'cancel-connection',
+    component: CancelConnectionExampleComponent,
+  },
+  {
     name: 'Color Mode',
     path: 'color-mode',
     component: ColorModeExampleComponent,
@@ -52,5 +58,6 @@ export const routes: Routes = [
   { path: 'backgrounds', component: BackgroundsExampleComponent },
   { path: 'basic', component: BasicExampleComponent },
   { path: 'broken-nodes', component: BrokenNodesExampleComponent },
+  { path: 'cancel-connection', component: CancelConnectionExampleComponent },
   { path: 'color-mode', component: ColorModeExampleComponent },
 ];
