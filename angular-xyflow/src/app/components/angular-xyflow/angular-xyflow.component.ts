@@ -611,7 +611,7 @@ export class AngularXYFlowComponent<
   }
 
 
-  // 安全處理初始 fit view - 只執行一次
+  // 安全處理初始 fit view - 只執行一次，僅基於初始提供的節點
   private safeHandleInitialFitView() {
     // 如果已經執行過初始 fit view，則跳過
     if (this._initialFitViewExecuted()) {
@@ -624,10 +624,14 @@ export class AngularXYFlowComponent<
       return;
     }
 
-    // 檢查是否有節點存在
-    const nodes = this.visibleNodes();
-    if (nodes.length === 0) {
-      return; // 不標記為已處理，等待節點加載
+    // 【關鍵修正】檢查初始提供的節點，而不是當前可見的節點
+    // 這樣與 React Flow 的行為一致：只基於 defaultNodes 決定是否執行初始 fitView
+    const initialNodes = this.defaultNodes();
+    if (initialNodes.length === 0) {
+      // 如果沒有初始節點但設置了 fitView，標記為已處理以避免後續自動觸發
+      // 這樣保持與 React Flow 的行為一致：fitView 只基於初始節點，不會因動態添加節點而觸發
+      this._initialFitViewExecuted.set(true);
+      return;
     }
 
     // 確保 PanZoom 已初始化
@@ -635,6 +639,11 @@ export class AngularXYFlowComponent<
       return; // 等待 PanZoom 初始化完成
     }
 
+    // 確保初始節點已經渲染到 DOM（檢查 visibleNodes 以確保節點已測量）
+    const visibleNodes = this.visibleNodes();
+    if (visibleNodes.length === 0) {
+      return; // 等待節點渲染完成
+    }
 
     // 執行 fit view，傳遞選項
     this.performFitView(this.fitViewOptions());

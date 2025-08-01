@@ -10,6 +10,7 @@ import { ClickDistanceExampleComponent } from './components/examples/click-dista
 import { ControlledUncontrolledExampleComponent } from './components/examples/controlled-uncontrolled-example/controlled-uncontrolled-example.component';
 import { ControlledViewportExampleComponent } from './components/examples/controlled-viewport-example/controlled-viewport-example.component';
 import { CustomConnectionLineExampleComponent } from './components/examples/custom-connection-line-example/custom-connection-line-example.component';
+import { CustomMinimapNodeExampleComponent } from './components/examples/custom-minimap-node-example/custom-minimap-node-example.component';
 
 export interface IRoute {
   name: string;
@@ -73,6 +74,11 @@ export const routeList: IRoute[] = [
     path: 'custom-connection-line',
     component: CustomConnectionLineExampleComponent,
   },
+  {
+    name: 'Custom Minimap Node',
+    path: 'custom-minimap-node',
+    component: CustomMinimapNodeExampleComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -88,4 +94,5 @@ export const routes: Routes = [
   { path: 'controlled-uncontrolled', component: ControlledUncontrolledExampleComponent },
   { path: 'controlled-viewport', component: ControlledViewportExampleComponent },
   { path: 'custom-connection-line', component: CustomConnectionLineExampleComponent },
+  { path: 'custom-minimap-node', component: CustomMinimapNodeExampleComponent },
 ];
