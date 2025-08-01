@@ -1137,30 +1137,38 @@ export class SearchComponent {
 
 ## Project Overview
 
-This is the xyflow monorepo containing React Flow, Svelte Flow, Angular Flow (new), and the shared system library. It's a pnpm workspace with Turbo build system for managing multiple packages that create highly customizable node-based UI libraries.
+This repository contains two major projects:
+1. **XYFlow Monorepo** - A pnpm workspace with Turbo build system containing React Flow, Svelte Flow, and the shared system library
+2. **Angular XYFlow** - A standalone Angular implementation that ports React Flow functionality to Angular
 
-## Architecture
+---
 
-### Core Packages
+## React Flow (XYFlow Monorepo)
+
+### Overview
+The xyflow monorepo manages multiple packages that create highly customizable node-based UI libraries for React and Svelte.
+
+### Architecture
+
+#### Core Packages
 - **`packages/system`** - Shared core library (`@xyflow/system`) containing framework-agnostic utilities, types, and logic
-- **`packages/react`** - React Flow v12 (`@xyflow/react`) - React implementation 
+- **`packages/react`** - React Flow v12 (`@xyflow/react`) - React implementation
 - **`packages/svelte`** - Svelte Flow (`@xyflow/svelte`) - Svelte implementation
-- **`packages/angular`** - Angular Flow (new, in development) - Angular implementation
 
-### Examples & Testing
-- **`examples/`** - Working examples for React, Svelte, Angular, and Astro integrations
+#### Supporting Structure
+- **`examples/`** - Working examples for React, Svelte, and Astro integrations
 - **`tests/playwright/`** - Cross-framework E2E tests using Playwright
 - **`tooling/`** - Shared tooling configs (ESLint, Rollup, PostCSS, TypeScript)
 
-### Key Dependencies
+#### Key Dependencies
 - **State Management**: Zustand (React), Svelte stores (Svelte)
 - **Interactions**: D3 (drag, zoom, selection) in system package
 - **Build**: Rollup for libraries, Vite for examples
 - **Styling**: PostCSS with nested syntax and auto-prefixing
 
-## Common Commands
+### Common Commands
 
-### Development
+#### Development
 ```bash
 # Install dependencies
 pnpm install
@@ -1168,9 +1176,8 @@ pnpm install
 # Start all examples in development mode
 pnpm dev
 
-# Start specific framework examples
-pnpm dev:react    # React examples only
-pnpm dev:svelte   # Svelte examples only
+# Start React examples only
+pnpm dev:react
 
 # Build all packages
 pnpm build:all    # Everything including examples
@@ -1181,16 +1188,14 @@ pnpm lint
 pnpm typecheck
 ```
 
-### Testing
+#### Testing
 ```bash
-# Run E2E tests
+# Run React E2E tests
 pnpm test:react      # React tests
 pnpm test:react:ui   # React tests with UI
-pnpm test:svelte     # Svelte tests  
-pnpm test:svelte:ui  # Svelte tests with UI
 ```
 
-### Package-specific Commands
+#### React Package Commands
 ```bash
 # Work on React package
 cd packages/react
@@ -1198,69 +1203,146 @@ pnpm dev        # Watch mode with CSS rebuild
 pnpm build      # Production build
 pnpm lint       # ESLint
 pnpm typecheck  # TypeScript check
-
-# Work on Svelte package  
-cd packages/svelte
-pnpm dev        # Watch mode with CSS rebuild
-pnpm build      # Production build
-pnpm lint       # Prettier + ESLint
-pnpm typecheck  # svelte-check
-
-# Work on System package
-cd packages/system
-pnpm dev        # Watch mode
-pnpm build      # Production build
-pnpm lint       # ESLint
-pnpm typecheck  # TypeScript check
 ```
 
-## Development Workflow
+### Development Workflow
 
-### Making Changes
+#### Making Changes
 1. Use `pnpm dev` for parallel development across packages
 2. Changes to `packages/system` automatically rebuild dependent packages
 3. Examples auto-refresh when packages rebuild
 4. CSS changes in packages trigger automatic rebuilds
 
-### Adding Features
-1. Core functionality goes in `packages/system`
-2. Framework-specific implementations go in respective packages
-3. Add examples to demonstrate new features
-4. Follow the changeset workflow for releases
-
-### Release Process
+#### Release Process
 Uses [changesets](https://github.com/changesets/changesets):
 1. Add changeset for each PR with user-facing changes: `npx changeset`
 2. Merge PR to main
 3. Changesets creates release PR with version bumps
 4. Merge release PR to publish to npm
 
-## Code Organization
+### Code Organization
 
-### System Package Structure
+#### System Package Structure
 - **`utils/`** - Core utilities (graph operations, edge calculations, etc.)
 - **`types/`** - Shared TypeScript types
 - **`xy*/`** - Modular systems (XYDrag, XYPanZoom, XYHandle, XYResizer)
 
-### React Package Structure  
+#### React Package Structure
 - **`components/`** - React-specific components (Handle, NodeWrapper, etc.)
 - **`container/`** - Main container components (ReactFlow, FlowRenderer, etc.)
 - **`hooks/`** - React hooks for flow functionality
 - **`additional-components/`** - Optional components (Controls, MiniMap, Background, etc.)
 
-### Svelte Package Structure
-- **`lib/components/`** - Svelte components
-- **`lib/container/`** - Main container components  
-- **`lib/hooks/`** - Svelte stores and reactive utilities
-- **`lib/plugins/`** - Optional plugins (Controls, MiniMap, Background, etc.)
+---
+
+## Angular XYFlow
+
+### Overview
+Angular XYFlow (`angular-xyflow/`) is a standalone Angular project that converts React Flow concepts and functionality into Angular-native components, services, and patterns. This project provides a complete Angular implementation with Signal-based state management, standalone components, and modern Angular practices while maintaining feature parity with the React version.
+
+### Architecture
+- **Standalone Project**: Independent from the monorepo structure
+- **Package Scope**: `@angular-xyflow/*`
+- **State Management**: Angular Signals (Angular 20+)
+- **Component Model**: Standalone components with new control flow syntax
+- **Build System**: Angular CLI with Vite
+
+### Common Commands
+
+#### Development
+```bash
+# Navigate to Angular project
+cd angular-xyflow
+
+# Install dependencies
+npm install
+
+# Start development server
+npm start           # Runs on http://localhost:4200
+npm run dev         # Alternative development command
+
+# Build for production
+npm run build       # Production build with optimization
+```
+
+#### Testing
+```bash
+# Unit tests
+npm test            # Run unit tests with Karma
+npm run test:watch  # Run tests in watch mode
+
+# E2E tests
+npm run e2e         # Run Playwright E2E tests
+npm run e2e:ui      # Run Playwright tests with UI mode
+```
+
+#### Code Quality
+```bash
+# Linting
+npm run lint        # Run ESLint and Angular linting
+
+# Type checking
+npm run typecheck   # TypeScript type checking
+
+# Format code
+npm run format      # Format code with Prettier
+npm run format:fix  # Auto-fix formatting issues
+```
+
+#### Angular-specific Commands
+```bash
+# Generate components
+ng generate component components/my-component
+ng g c components/my-component --standalone
+
+# Generate services
+ng generate service services/my-service
+ng g s services/my-service
+
+# Generate directives
+ng generate directive directives/my-directive
+ng g d directives/my-directive --standalone
+
+# Analyze bundle size
+npm run analyze     # Webpack bundle analyzer
+
+# Update Angular dependencies
+ng update           # Check for Angular updates
+ng update @angular/core @angular/cli
+```
+
+### Code Organization
+
+#### Component Structure
+- **`src/app/components/angular-xyflow/`** - Core flow components
+- **`src/app/components/examples/`** - Example implementations
+- **`src/app/components/header/`** - Application header
+
+#### Service Architecture
+- **`angular-xyflow.service.ts`** - Main flow state management
+- **`drag.service.ts`** - Node dragging functionality
+- **`panzoom.service.ts`** - Viewport pan and zoom
+
+#### Key Components
+- **`angular-xyflow.component.ts`** - Main flow container
+- **`viewport/`** - Viewport management
+- **`node-wrapper/`** - Node rendering wrapper
+- **`edge/`** - Edge components
+- **`handle/`** - Connection handles
+- **`minimap/`** - Minimap visualization
+- **`controls/`** - Zoom and pan controls
+- **`background/`** - Background patterns
+- **`panel/`** - Overlay panels
+
+---
 
 ## Important Notes
 
-- **Framework coordination**: Changes affecting multiple frameworks require updates to React, Svelte, and potentially Angular packages
-- **System-first approach**: Most core logic should be framework-agnostic in the system package
-- **CSS coordination**: Styles are built separately for each package but share base styles
-- **Examples matter**: Always test changes against relevant examples before submitting
-- **Backward compatibility**: v12 React Flow is a breaking change from v11, but current development maintains API stability
+- **React Flow**: Part of a monorepo with shared system packages, uses pnpm workspaces
+- **Angular XYFlow**: Standalone project with its own build and dependency management
+- **No Cross-Dependencies**: Angular XYFlow does not depend on the monorepo packages
+- **Feature Parity**: Both implementations aim to provide the same features with framework-appropriate patterns
+- **Backward Compatibility**: React Flow v12 is a breaking change from v11, Angular XYFlow targets v12 features
 
 ## Response Language
 Always response in #zh-tw
