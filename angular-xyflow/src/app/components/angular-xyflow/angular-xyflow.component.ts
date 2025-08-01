@@ -19,9 +19,9 @@ import {
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
-import { 
-  type Connection, 
-  Position, 
+import {
+  type Connection,
+  Position,
   getEdgePosition,
   ConnectionMode,
   ColorMode,
@@ -153,7 +153,7 @@ import { ViewportComponent } from './viewport/viewport.component';
         stroke-width: 1;
         fill: none;
       }
-      
+
       /* Dark mode default edge color */
       .dark .angular-xyflow__edge-path {
         stroke: #3e3e3e;
@@ -162,11 +162,11 @@ import { ViewportComponent } from './viewport/viewport.component';
       .angular-xyflow__edge.selectable:hover .angular-xyflow__edge-path {
         stroke: #999;
       }
-      
+
       .dark .angular-xyflow__edge.selectable:hover .angular-xyflow__edge-path {
         stroke: #888;
       }
-      
+
       /* Ensure focus outline is removed */
       .angular-xyflow__edge:focus,
       .angular-xyflow__edge:focus-visible {
@@ -179,7 +179,7 @@ import { ViewportComponent } from './viewport/viewport.component';
         stroke: #555;
         stroke-width: 2;
       }
-      
+
       /* Dark mode edge selected/focus color */
       .dark .angular-xyflow__edge-path.selected,
       .dark .angular-xyflow__edge.selectable:focus .angular-xyflow__edge-path,
@@ -313,7 +313,7 @@ export class AngularXYFlowComponent<
     viewChild.required<ElementRef<HTMLDivElement>>('flowContainer');
   viewportComponent =
     viewChild.required<ViewportComponent>('viewport');
-    
+
   // 獲取 viewport 元素的方法
   get viewportElement() {
     return this.viewportComponent().viewportElement;
@@ -332,14 +332,14 @@ export class AngularXYFlowComponent<
     const controlledNodes = this.nodes();
     const defaultNodes = this.defaultNodes();
     const serviceNodes = this._flowService.nodes();
-    
+
     // 混合模式衝突邏輯：當同時提供controlled和default時產生不一致
     if (controlledNodes && controlledNodes.length > 0 && defaultNodes && defaultNodes.length > 0) {
       // 故意使用不一致的邏輯：某些情況下回退到default，造成狀態混亂
       const hasNewNodes = serviceNodes.length > Math.max(controlledNodes.length, defaultNodes.length);
       return hasNewNodes ? defaultNodes : controlledNodes;
     }
-    
+
     // 正常情況
     if (controlledNodes && controlledNodes.length > 0) {
       return controlledNodes;
@@ -354,7 +354,7 @@ export class AngularXYFlowComponent<
     const defaultOptions = this.defaultEdgeOptions();
 
     let result: EdgeType[];
-    
+
     // 簡化的混合模式邏輯：主要的bug處理已移至onEdgesChange中
     if (controlledEdges && controlledEdges.length > 0 && defaultEdges && defaultEdges.length > 0) {
       // 當同時存在controlled和default時，優先使用controlled
@@ -472,17 +472,17 @@ export class AngularXYFlowComponent<
     effect(() => {
       const defaultNodes = this.defaultNodes();
       const defaultEdges = this.defaultEdges();
-      
+
       // 設置模式標誌（與 React Flow 一致）
       this._flowService.setHasDefaultNodes(defaultNodes.length > 0);
       this._flowService.setHasDefaultEdges(defaultEdges.length > 0);
     });
-    
+
     // 設置事件回調
     this._flowService.setOnNodesChange((nodes) => {
       this.onNodesChange.emit(nodes);
     });
-    
+
     this._flowService.setOnEdgesChange((edges) => {
       this.onEdgesChange.emit(edges);
     });
@@ -503,7 +503,7 @@ export class AngularXYFlowComponent<
         });
       }
     });
-    
+
     // 同步 controlled nodes（如果有提供）
     effect(() => {
       const controlledNodes = this.nodes();
@@ -512,7 +512,7 @@ export class AngularXYFlowComponent<
         this._flowService.syncNodesFromControlled(controlledNodes);
       }
     });
-    
+
     // 同步 controlled edges（如果有提供）
     effect(() => {
       const controlledEdges = this.edges();
@@ -666,7 +666,7 @@ export class AngularXYFlowComponent<
     const createInternalNode = (node: NodeType) => {
       const internals = this._flowService.getNodeInternals(node.id);
       const handleBounds = this._flowService.measureNodeHandleBounds(node.id);
-      
+
       return {
         ...node,
         internals: {
@@ -713,12 +713,12 @@ export class AngularXYFlowComponent<
   private getFallbackEdgePosition(sourceNode: NodeType, targetNode: NodeType) {
     const sourcePosition = sourceNode.sourcePosition || Position.Bottom;
     const targetPosition = targetNode.targetPosition || Position.Top;
-    
+
     const getSimpleHandlePosition = (node: NodeType, position: Position) => {
       const internals = this._flowService.getNodeInternals(node.id);
       const nodePos = internals?.positionAbsolute || { x: node.position.x, y: node.position.y };
       const measured = internals?.measured || { width: node.width || 150, height: node.height || 40 };
-      
+
       switch (position) {
         case Position.Top:
           return { x: nodePos.x + measured.width / 2, y: nodePos.y };
@@ -780,7 +780,7 @@ export class AngularXYFlowComponent<
     if (node.selected) {
       return;
     }
-    
+
     // 選擇節點（focus時不進行多選）
     this._flowService.selectNode(node.id, false);
 
@@ -838,13 +838,13 @@ export class AngularXYFlowComponent<
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
       const multiSelect = event.ctrlKey || event.metaKey;
-      
+
       this._flowService.selectEdge(edge.id, multiSelect);
-      
+
       // 觸發狀態變化事件
       const updatedEdges = this._flowService.edges();
       this.onEdgesChange.emit(updatedEdges);
-      
+
       // 觸發點擊事件（為了一致性）
       this.onEdgeClick.emit({ event: event as any, edge });
     }
@@ -862,13 +862,13 @@ export class AngularXYFlowComponent<
       target.classList.contains('xy-flow__viewport')
     ) {
       this._flowService.clearSelection();
-      
+
       // 觸發狀態變化事件（controlled 模式需要）
       const updatedNodes = this._flowService.nodes();
       const updatedEdges = this._flowService.edges();
       this.onNodesChange.emit(updatedNodes);
       this.onEdgesChange.emit(updatedEdges);
-      
+
       // 發出 pane 點擊事件
       this.onPaneClick.emit({ event });
     }
@@ -915,12 +915,12 @@ export class AngularXYFlowComponent<
     // 檢查事件是否來自 controls 或其子元素 - 限制在當前Flow實例範圍內
     const target = event.target as HTMLElement;
     const flowContainer = this.flowContainer().nativeElement;
-    
+
     // 首先確認事件目標在當前Flow容器內
     if (!flowContainer.contains(target)) {
       return;
     }
-    
+
     // 在當前Flow容器範圍內查找controls
     const controlsElement = flowContainer.querySelector('.angular-xyflow__controls');
     const isFromControls = controlsElement && controlsElement.contains(target);
@@ -938,8 +938,8 @@ export class AngularXYFlowComponent<
 
   handleConnectStart(event: MouseEvent, node: NodeType) {
     // 發出連接開始事件，包含節點資訊
-    this.onConnectStart.emit({ 
-      event, 
+    this.onConnectStart.emit({
+      event,
       nodeId: node.id,
       handleType: 'source', // 默認為source，實際可能需要從事件中獲取
       handleId: undefined // 實際可能需要從事件中獲取
@@ -949,12 +949,12 @@ export class AngularXYFlowComponent<
   handleConnectEnd(eventData: { connection?: Connection; event: MouseEvent }) {
     // 發出連接結束事件
     this.onConnectEnd.emit(eventData);
-    
+
     // 如果有連接，處理連接邏輯
     if (eventData.connection) {
       this._flowService.onConnect(eventData.connection);
       this.onConnect.emit(eventData.connection);
-      
+
       // 新edge建立後立即觸發onEdgesChange以支持controlled模式
       // 這在controlled/uncontrolled混合模式下會加劇狀態衝突問題
       const updatedEdges = this._flowService.edges();
@@ -1041,26 +1041,26 @@ export class AngularXYFlowComponent<
       // 處理選擇狀態 - 在controlled模式下檢查視圖狀態而不僅是服務狀態
       const selectedNodeIds = this._flowService.selectedNodes();
       const selectedEdgeIds = this._flowService.selectedEdges();
-      
+
       // 檢查視圖中的選中狀態（controlled模式下更可靠）
       const visibleSelectedNodes = this.visibleNodes().filter(n => n.selected);
       const visibleSelectedEdges = this.visibleEdges().filter(e => e.selected);
-      
+
       // 檢查是否有元素被選中（服務狀態 OR 視圖狀態）
-      const hasSelectedElements = selectedNodeIds.length > 0 || selectedEdgeIds.length > 0 || 
+      const hasSelectedElements = selectedNodeIds.length > 0 || selectedEdgeIds.length > 0 ||
                                   visibleSelectedNodes.length > 0 || visibleSelectedEdges.length > 0;
-      
+
       if (hasSelectedElements) {
         event.preventDefault();
-        
+
         // 清除DOM focus狀態（解決controlled模式下的focus殘留問題）
         const activeElement = document.activeElement as HTMLElement;
         if (activeElement && activeElement.blur) {
           activeElement.blur();
         }
-        
+
         this._flowService.clearSelection();
-        
+
         // 觸發狀態變化事件（controlled 模式需要）
         const updatedNodes = this._flowService.nodes();
         const updatedEdges = this._flowService.edges();
