@@ -33,6 +33,7 @@ import { EdgeMarker, MarkerType } from '../types';
       [attr.stroke-width]="20"
       [attr.fill]="'none'"
       [class]="'angular-xyflow__edge-interaction xy-flow__edge-interaction'"
+      [ngStyle]="interactionStyles()"
       style="pointer-events: stroke; cursor: pointer;"
       (click)="handleClick($event)"
     />
@@ -93,7 +94,23 @@ export class EdgeComponent {
     };
 
     // 合併自定義樣式，優先級高於默認樣式
-    return edge.style ? { ...defaultStyles, ...edge.style } : defaultStyles;
+    const styles = edge.style ? { ...defaultStyles, ...edge.style } : defaultStyles;
+    
+    // 如果是 animated edge，添加動畫相關的樣式
+    if (edge.animated) {
+      styles.strokeDasharray = '5';
+      styles.animation = 'dashdraw 0.5s linear infinite';
+    }
+    
+    return styles;
+  });
+
+  interactionStyles = computed(() => {
+    // 交互路徑永遠不應該有動畫效果
+    return {
+      strokeDasharray: 'none',
+      animation: 'none',
+    };
   });
 
   markerStartUrl = computed(() => {
@@ -103,6 +120,7 @@ export class EdgeComponent {
   markerEndUrl = computed(() => {
     return this.getMarkerUrl('end');
   });
+
 
   private calculateEdgePath(): string {
     // 根據邊類型返回不同的路徑

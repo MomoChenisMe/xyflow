@@ -12,18 +12,20 @@ import {
   ChangeDetectionStrategy,
   OnDestroy,
   inject,
-  CUSTOM_ELEMENTS_SCHEMA
+  CUSTOM_ELEMENTS_SCHEMA,
+  TemplateRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
-import { type Connection, type Position, getNodePositionWithOrigin, elementSelectionKeys } from '@xyflow/system';
+import { type Connection, Position, getNodePositionWithOrigin, elementSelectionKeys } from '@xyflow/system';
 
 // 專案內部模組
-import { AngularNode } from '../types';
+import { AngularNode, NodeTemplateContext } from '../types';
 import { HandleComponent } from '../handle/handle.component';
 import { AngularXYFlowDragService } from '../services/drag.service';
 import { AngularXYFlowService } from '../services/angular-xyflow.service';
+import { NodeTemplateDirective } from '../node-template.directive';
 
 @Component({
   selector: 'angular-xyflow-node',
@@ -43,7 +45,7 @@ import { AngularXYFlowService } from '../services/angular-xyflow.service';
       [style.position]="'absolute'"
       [style.transform]="nodeTransform()"
       [style.z-index]="node().zIndex || 1"
-      [style.width]="node().width ? node().width + 'px' : '150px'"
+      [style.width]="getNodeWidth()"
       [style.height]="node().height ? node().height + 'px' : 'auto'"
       [style.user-select]="'none'"
       [style.pointer-events]="'auto'"
@@ -54,41 +56,67 @@ import { AngularXYFlowService } from '../services/angular-xyflow.service';
       (focus)="onNodeFocus($event)"
       (keydown)="onNodeKeyDown($event)"
     >
-      <!-- Source handles -->
-      @if (shouldShowHandles()) {
-        @if (hasSourceHandle()) {
-          <angular-xyflow-handle
-            type="source"
-            [position]="getSourcePosition()"
-            [nodeId]="node().id"
-            [isConnectable]="node().connectable !== false"
-            [selected]="isHandleSelected('source')"
-            (connectStart)="connectStart.emit($event)"
-            (connectEnd)="connectEnd.emit($event)"
-            (handleClick)="handleClick.emit($event)"
-          />
-        }
+      <!-- Target handle (左側) - 只在沒有自定義模板時顯示 -->
+      @if (shouldShowHandles() && hasTargetHandle() && !customTemplate()) {
+        <angular-xyflow-handle
+          type="target"
+          [position]="getTargetPosition()"
+          [nodeId]="node().id"
+          [isConnectable]="node().connectable !== false"
+          [selected]="isHandleSelected('target')"
+          [style]="{}"
+          (connectStart)="connectStart.emit($event)"
+          (connectEnd)="connectEnd.emit($event)"
+          (handleClick)="handleClick.emit($event)"
+        />
       }
 
       <!-- Node content -->
       <div class="angular-xyflow__node-content">
-        <div class="angular-xyflow__node-label">{{ node().data['label'] || node().id }}</div>
+        @if (customTemplate(); as template) {
+          <!-- 使用自定義模板 -->
+          <ng-container
+            [ngTemplateOutlet]="template.templateRef"
+            [ngTemplateOutletContext]="{
+              $implicit: {
+                node: node(),
+                selected: selected(),
+                dragging: dragging(),
+                onNodeClick: onNodeClick.bind(this),
+                onColorChange: onColorChange.bind(this),
+                onConnectStart: onConnectStart.bind(this),
+                onConnectEnd: onConnectEnd.bind(this),
+                onHandleClick: onHandleClick.bind(this)
+              },
+              node: node(),
+              selected: selected(),
+              dragging: dragging(),
+              onNodeClick: onNodeClick.bind(this),
+              onColorChange: onColorChange.bind(this),
+              onConnectStart: onConnectStart.bind(this),
+              onConnectEnd: onConnectEnd.bind(this),
+              onHandleClick: onHandleClick.bind(this)
+            }"
+          />
+        } @else {
+          <!-- 默認節點內容 -->
+          <div class="angular-xyflow__node-label">{{ node().data['label'] || node().id }}</div>
+        }
       </div>
 
-      <!-- Target handles -->
-      @if (shouldShowHandles()) {
-        @if (hasTargetHandle()) {
-          <angular-xyflow-handle
-            type="target"
-            [position]="getTargetPosition()"
-            [nodeId]="node().id"
-            [isConnectable]="node().connectable !== false"
-            [selected]="isHandleSelected('target')"
-            (connectStart)="connectStart.emit($event)"
-            (connectEnd)="connectEnd.emit($event)"
-            (handleClick)="handleClick.emit($event)"
-          />
-        }
+      <!-- Source handles (右側) - 只在沒有自定義模板時顯示 -->
+      @if (shouldShowHandles() && hasSourceHandle() && !customTemplate()) {
+        <!-- 默認單個 source handle -->
+        <angular-xyflow-handle
+          type="source"
+          [position]="getSourcePosition()"
+          [nodeId]="node().id"
+          [isConnectable]="node().connectable !== false"
+          [selected]="isHandleSelected('source')"
+          (connectStart)="connectStart.emit($event)"
+          (connectEnd)="connectEnd.emit($event)"
+          (handleClick)="handleClick.emit($event)"
+        />
       }
     </div>
   `,
@@ -123,6 +151,42 @@ import { AngularXYFlowService } from '../services/angular-xyflow.service';
     /* 讓系統 CSS 處理所有顏色和主題相關的樣式 */
     /* 移除所有硬編碼的顏色、背景、邊框樣式 */
     /* 這些現在由 packages/system/src/styles/style.css 中的 .xy-flow 和 .xy-flow.dark 處理 */
+
+    /* 自定義顏色選擇器節點樣式 - 與React版本保持一致的垂直布局 */
+    .color-selector-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      width: auto;
+    }
+
+    .color-picker {
+      width: 50px;
+      height: 25px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      cursor: pointer;
+      /* 確保顏色選擇器不會影響文字排列 */
+      flex-shrink: 0;
+    }
+
+    /* nodrag 類防止拖拽時移動節點 */
+    .nodrag {
+      pointer-events: auto;
+    }
+
+    /* 為 selectorNode 添加特殊樣式 - 與React版本保持一致 */
+    .xy-flow__node-selectorNode {
+      font-size: 12px;
+      background: #f0f2f3;
+      border: 1px solid #555;
+      border-radius: 5px;
+      text-align: center;
+      padding: 10px;
+      /* 移除width設定，讓內容自然撐開 */
+    }
   `]
 })
 export class NodeWrapperComponent implements OnDestroy {
@@ -130,6 +194,7 @@ export class NodeWrapperComponent implements OnDestroy {
   readonly node = input.required<AngularNode>();
   readonly selected = input<boolean>(false);
   readonly dragging = input<boolean>(false);
+  readonly customNodeTemplates = input<readonly any[]>([]);
 
   // 輸出事件
   readonly nodeClick = output<MouseEvent>();
@@ -206,6 +271,19 @@ export class NodeWrapperComponent implements OnDestroy {
     const nodeType = this.node().type;
     // Default 和 output 節點有 target handle，input 節點沒有
     return !nodeType || nodeType === 'default' || nodeType === 'output';
+  });
+
+  // 查找當前節點類型的自定義模板
+  readonly customTemplate = computed(() => {
+    const nodeType = this.node().type;
+    const templates = this.customNodeTemplates();
+    
+    // 只有 selectorNode 類型才使用自定義模板，其他類型使用默認模板
+    if (nodeType === 'selectorNode' && templates.length > 0) {
+      return templates[0] || null;
+    }
+    
+    return null;
   });
 
   constructor() {
@@ -356,12 +434,29 @@ export class NodeWrapperComponent implements OnDestroy {
   }
 
   // 輔助方法
+  getNodeWidth(): string {
+    const nodeData = this.node();
+    if (nodeData.width) {
+      return nodeData.width + 'px';
+    }
+    
+    // 使用自定義模板的節點使用 auto 寬度，讓內容自然撐開
+    if (this.customTemplate()) {
+      return 'auto';
+    }
+    
+    // 默認寬度
+    return '150px';
+  }
+
   getSourcePosition(): Position {
-    return (this.node().sourcePosition as Position) || 'bottom';
+    const node = this.node();
+    return (node.sourcePosition as Position) || Position.Bottom;
   }
 
   getTargetPosition(): Position {
-    return (this.node().targetPosition as Position) || 'top';
+    const node = this.node();
+    return (node.targetPosition as Position) || Position.Top;
   }
 
   getCursor(): string {
@@ -376,10 +471,36 @@ export class NodeWrapperComponent implements OnDestroy {
     return this.isDragging() ? 'grabbing' : 'grab';
   }
 
+  // 顏色改變處理（用於 selectorNode）
+  onColorChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const nodeData = this.node().data;
+    
+    console.log('Color changed:', target.value);
+    
+    // 調用節點數據中的 onChange 函數（如果存在）
+    if (nodeData && typeof nodeData['onChange'] === 'function') {
+      nodeData['onChange'](event);
+    }
+  }
+
+  // Handle 事件處理方法 - 轉發到父組件
+  onConnectStart(event: { event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }): void {
+    this.connectStart.emit(event);
+  }
+
+  onConnectEnd(event: { connection?: Connection; event: MouseEvent }): void {
+    this.connectEnd.emit(event);
+  }
+
+  onHandleClick(event: { event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }): void {
+    this.handleClick.emit(event);
+  }
+
   // 檢查 Handle 是否被選中
-  isHandleSelected(type: 'source' | 'target'): boolean {
+  isHandleSelected(type: 'source' | 'target', handleId?: string): boolean {
     const nodeId = this.node().id;
-    return this._flowService.isHandleSelected(nodeId, undefined, type);
+    return this._flowService.isHandleSelected(nodeId, handleId, type);
   }
 
   // A11y 相關方法

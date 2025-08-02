@@ -42,36 +42,37 @@ export class AngularXYFlowService<
   EdgeType extends AngularEdge = AngularEdge
 > {
   private injector = inject(Injector);
-  
+
   constructor() {
     // 使用 computed 來自動計算節點內部狀態，避免 effect 無窮迴圈
     this._nodeInternals = computed(() => {
       const nodes = this._nodes();
       const measuredDimensions = this._nodeMeasuredDimensions();
       const internals = new Map();
-      
+
       nodes.forEach(node => {
-        // 計算絕對位置（考慮 origin）
-        const positionAbsolute = getNodePositionWithOrigin(node, this._nodeOrigin());
-        
+        // 計算絕對位置（考慮節點特定的 origin 或全局 origin）
+        const nodeOrigin = node.origin || this._nodeOrigin();
+        const positionAbsolute = getNodePositionWithOrigin(node, nodeOrigin);
+
         // 優先使用測量的尺寸，然後是節點的尺寸，最後是默認值
-        const measured = measuredDimensions.get(node.id) || 
-          node.measured || 
+        const measured = measuredDimensions.get(node.id) ||
+          node.measured ||
           {
             width: node.width || 150,
             height: node.height || 40
           };
-        
+
         internals.set(node.id, {
           positionAbsolute,
           measured
         });
       });
-      
+
       return internals;
     });
   }
-  
+
   // 核心信號狀態
   private _nodes = signal<NodeType[]>([]);
   private _edges = signal<EdgeType[]>([]);
@@ -99,15 +100,15 @@ export class AngularXYFlowService<
     width: 0,
     height: 0,
   });
-  
+
   // Controlled/Uncontrolled 模式標誌
   private _hasDefaultNodes = signal<boolean>(false);
   private _hasDefaultEdges = signal<boolean>(false);
-  
+
   // 事件回調
   private _onNodesChange: ((nodes: NodeType[]) => void) | null = null;
   private _onEdgesChange: ((edges: EdgeType[]) => void) | null = null;
-  
+
   // 統一位置計算系統 - 內部節點狀態管理 (使用 computed 避免無窮迴圈)
   private _nodeMeasuredDimensions = signal<Map<string, { width: number; height: number }>>(new Map());
   private _nodeOrigin = signal<[number, number]>([0, 0]);
@@ -115,39 +116,39 @@ export class AngularXYFlowService<
     positionAbsolute: XYPosition;
     measured: { width: number; height: number };
   }>>;
-  
+
   // 設置事件回調
   setOnNodesChange(callback: ((nodes: NodeType[]) => void) | null) {
     this._onNodesChange = callback;
   }
-  
+
   setOnEdgesChange(callback: ((edges: EdgeType[]) => void) | null) {
     this._onEdgesChange = callback;
   }
-  
+
   // 設置 controlled/uncontrolled 模式
   setHasDefaultNodes(value: boolean) {
     this._hasDefaultNodes.set(value);
   }
-  
+
   setHasDefaultEdges(value: boolean) {
     this._hasDefaultEdges.set(value);
   }
-  
+
   // 獲取模式狀態
   hasDefaultNodes(): boolean {
     return this._hasDefaultNodes();
   }
-  
+
   hasDefaultEdges(): boolean {
     return this._hasDefaultEdges();
   }
-  
+
   // 內部方法：更新狀態而不觸發事件（用於 controlled 模式同步）
   syncNodesFromControlled(nodes: NodeType[]) {
     this._nodes.set([...nodes]);
   }
-  
+
   syncEdgesFromControlled(edges: EdgeType[]) {
     this._edges.set([...edges]);
   }
@@ -226,19 +227,19 @@ export class AngularXYFlowService<
     const measuredDimensions = this._nodeMeasuredDimensions();
     const nodeInternals = this._nodeInternals();
     const lookup = new Map();
-    
+
     nodes.forEach((node) => {
       // 使用實際測量尺寸，優先順序：實際測量 > 節點自帶 measured > 節點 width/height > 默認值
-      const measured = measuredDimensions.get(node.id) || 
-        node.measured || 
+      const measured = measuredDimensions.get(node.id) ||
+        node.measured ||
         {
           width: (node as any).width || 150,
           height: (node as any).height || 32,
         };
-      
+
       // 獲取節點內部狀態中的絕對位置
       const internals = nodeInternals.get(node.id);
-      
+
       lookup.set(node.id, {
         ...node,
         measured,
@@ -272,19 +273,24 @@ export class AngularXYFlowService<
       getEdges: () => [...this._edges()],
       getEdge: (id: string) => this.edgeLookup().get(id),
       setNodes: (nodes: NodeType[] | ((nodes: NodeType[]) => NodeType[])) => {
-        if (typeof nodes === 'function') {
-          this._nodes.update(nodes);
-        } else {
-          this._nodes.set([...nodes]);
+        const newNodes = typeof nodes === 'function'
+          ? nodes(this._nodes())
+          : [...nodes];
+          
+        this._nodes.set(newNodes);
+        
+        // 觸發 onNodesChange 回調（類似 setEdges）
+        if (this._onNodesChange) {
+          this._onNodesChange(newNodes);
         }
       },
       setEdges: (edges: EdgeType[] | ((edges: EdgeType[]) => EdgeType[])) => {
-        const newEdges = typeof edges === 'function' 
+        const newEdges = typeof edges === 'function'
           ? edges(this._edges())
           : [...edges];
-        
+
         this._edges.set(newEdges);
-        
+
         // 觸發 onEdgesChange 回調（類似 React Flow）
         if (this._onEdgesChange) {
           this._onEdgesChange(newEdges);
@@ -300,69 +306,90 @@ export class AngularXYFlowService<
             height: node.height || 40  // 默認高度（估算）
           }
         }));
+
+        const newNodes = [...this._nodes(), ...nodesWithDefaults];
+        this._nodes.set(newNodes);
         
-        this._nodes.update((existingNodes) => [
-          ...existingNodes,
-          ...nodesWithDefaults,
-        ]);
+        // 觸發 onNodesChange 回調
+        if (this._onNodesChange) {
+          this._onNodesChange(newNodes);
+        }
       },
       addEdges: (edges: EdgeType | EdgeType[]) => {
         const edgesToAdd = Array.isArray(edges) ? edges : [edges];
-        this._edges.update((existingEdges) => [
-          ...existingEdges,
-          ...edgesToAdd,
-        ]);
+        const newEdges = [...this._edges(), ...edgesToAdd];
+        this._edges.set(newEdges);
+        
+        // 觸發 onEdgesChange 回調
+        if (this._onEdgesChange) {
+          this._onEdgesChange(newEdges);
+        }
       },
       updateNode: (
         id: string,
         nodeUpdate: Partial<NodeType> | ((node: NodeType) => Partial<NodeType>)
       ) => {
-        this._nodes.update((nodes) =>
-          nodes.map((node) => {
-            if (node.id === id) {
-              const update =
-                typeof nodeUpdate === 'function'
-                  ? nodeUpdate(node)
-                  : nodeUpdate;
-              return { ...node, ...update };
-            }
-            return node;
-          })
-        );
+        const newNodes = this._nodes().map((node) => {
+          if (node.id === id) {
+            const update =
+              typeof nodeUpdate === 'function'
+                ? nodeUpdate(node)
+                : nodeUpdate;
+            return { ...node, ...update };
+          }
+          return node;
+        });
+        
+        this._nodes.set(newNodes);
+        
+        // 觸發 onNodesChange 回調
+        if (this._onNodesChange) {
+          this._onNodesChange(newNodes);
+        }
       },
       updateNodeData: (
         id: string,
         dataUpdate: any | ((node: NodeType) => any)
       ) => {
-        this._nodes.update((nodes) =>
-          nodes.map((node) => {
-            if (node.id === id) {
-              const newData =
-                typeof dataUpdate === 'function'
-                  ? dataUpdate(node)
-                  : dataUpdate;
-              return { ...node, data: { ...node.data, ...newData } };
-            }
-            return node;
-          })
-        );
+        const newNodes = this._nodes().map((node) => {
+          if (node.id === id) {
+            const newData =
+              typeof dataUpdate === 'function'
+                ? dataUpdate(node)
+                : dataUpdate;
+            return { ...node, data: { ...node.data, ...newData } };
+          }
+          return node;
+        });
+        
+        this._nodes.set(newNodes);
+        
+        // 觸發 onNodesChange 回調
+        if (this._onNodesChange) {
+          this._onNodesChange(newNodes);
+        }
       },
       updateEdge: (
         id: string,
         edgeUpdate: Partial<EdgeType> | ((edge: EdgeType) => Partial<EdgeType>)
       ) => {
-        this._edges.update((edges) =>
-          edges.map((edge) => {
-            if (edge.id === id) {
-              const update =
-                typeof edgeUpdate === 'function'
-                  ? edgeUpdate(edge)
-                  : edgeUpdate;
-              return { ...edge, ...update };
-            }
-            return edge;
-          })
-        );
+        const newEdges = this._edges().map((edge) => {
+          if (edge.id === id) {
+            const update =
+              typeof edgeUpdate === 'function'
+                ? edgeUpdate(edge)
+                : edgeUpdate;
+            return { ...edge, ...update };
+          }
+          return edge;
+        });
+        
+        this._edges.set(newEdges);
+        
+        // 觸發 onEdgesChange 回調
+        if (this._onEdgesChange) {
+          this._onEdgesChange(newEdges);
+        }
       },
       deleteElements: (elements: {
         nodes?: { id: string }[];
@@ -370,18 +397,27 @@ export class AngularXYFlowService<
       }) => {
         if (elements.nodes?.length) {
           const nodeIdsToDelete = new Set(elements.nodes.map((n) => n.id));
-          this._nodes.update((nodes) =>
-            nodes.filter((node) => !nodeIdsToDelete.has(node.id))
-          );
+          const newNodes = this._nodes().filter((node) => !nodeIdsToDelete.has(node.id));
+          this._nodes.set(newNodes);
+          
+          // 觸發 onNodesChange 回調
+          if (this._onNodesChange) {
+            this._onNodesChange(newNodes);
+          }
         }
+        
         if (elements.edges?.length) {
           const edgeIdsToDelete = new Set(elements.edges.map((e) => e.id));
-          this._edges.update((edges) =>
-            edges.filter((edge) => !edgeIdsToDelete.has(edge.id))
-          );
+          const newEdges = this._edges().filter((edge) => !edgeIdsToDelete.has(edge.id));
+          this._edges.set(newEdges);
+          
+          // 觸發 onEdgesChange 回調
+          if (this._onEdgesChange) {
+            this._onEdgesChange(newEdges);
+          }
         }
       },
-      fitView: (options?) => {
+      fitView: (_options?) => {
         this._fitViewQueued.set(true);
         // 實際的 fitView 邏輯會在組件中處理
       },
@@ -398,7 +434,7 @@ export class AngularXYFlowService<
   }
 
   // ============= 統一位置計算系統 API =============
-  
+
   /**
    * 獲取節點的絕對位置（考慮 origin）
    */
@@ -406,7 +442,7 @@ export class AngularXYFlowService<
     const internals = this._nodeInternals().get(nodeId);
     return internals ? internals.positionAbsolute : null;
   }
-  
+
   /**
    * 獲取節點的視覺位置（用於 transform）
    */
@@ -415,24 +451,25 @@ export class AngularXYFlowService<
     if (internals) {
       return internals.positionAbsolute;
     }
-    // 備用計算
-    return getNodePositionWithOrigin(node, this._nodeOrigin());
+    // 備用計算 - 使用節點特定的 origin 或全局 origin
+    const nodeOrigin = node.origin || this._nodeOrigin();
+    return getNodePositionWithOrigin(node, nodeOrigin);
   }
-  
+
   /**
    * 獲取節點的內部狀態
    */
   getNodeInternals(nodeId: string): { positionAbsolute: XYPosition; measured: { width: number; height: number }; } | null {
     return this._nodeInternals().get(nodeId) || null;
   }
-  
+
   /**
    * 獲取節點原點設定
    */
   getNodeOrigin(): [number, number] {
     return this._nodeOrigin();
   }
-  
+
   /**
    * 測量節點的實際 Handle bounds（類似 React 版本的 getHandleBounds）
    */
@@ -440,7 +477,7 @@ export class AngularXYFlowService<
     // 限制在當前Flow實例的容器範圍內查詢節點
     const container = this.getContainerElement();
     if (!container) return null;
-    
+
     const nodeElement = container.querySelector(`[data-node-id="${nodeId}"]`) as HTMLElement;
     if (!nodeElement) return null;
 
@@ -481,25 +518,25 @@ export class AngularXYFlowService<
 
     return { source, target };
   }
-  
+
   /**
    * 獲取 Handle 的絕對位置
    */
   getHandlePositionAbsolute(
-    nodeId: string, 
+    nodeId: string,
     handleType: 'source' | 'target',
     handlePosition?: Position
   ): XYPosition | null {
     const node = this._nodes().find(n => n.id === nodeId);
     const internals = this._nodeInternals().get(nodeId);
-    
+
     if (!node || !internals) return null;
-    
-    const position = handlePosition || 
+
+    const position = handlePosition ||
       (handleType === 'source' ? Position.Bottom : Position.Top);
     const { width, height } = internals.measured;
     const { x, y } = internals.positionAbsolute;
-    
+
     // Handle 現在使用 CSS transform 來定位，所以位置計算已經考慮了中心點
     switch (position) {
       case Position.Top:
@@ -514,9 +551,9 @@ export class AngularXYFlowService<
         return { x: x + width / 2, y: y + height / 2 };
     }
   }
-  
+
   // 移除了 updateNodeInternals 方法，因為現在使用 computed 自動計算
-  
+
   /**
    * 更新節點的測量尺寸（由 ResizeObserver 調用）
    */
@@ -525,7 +562,7 @@ export class AngularXYFlowService<
     currentDimensions.set(nodeId, dimensions);
     this._nodeMeasuredDimensions.set(currentDimensions);
   }
-  
+
   // ============= 統一位置計算系統 API 結束 =============
 
   // 初始化方法 - 配置流程现境
@@ -576,11 +613,17 @@ export class AngularXYFlowService<
   onConnect(connection: Connection): void {
     if (this.isValidConnection(connection)) {
       const newEdge = this.createEdgeFromConnection(connection);
-      this._edges.update(
-        (edges) => systemAddEdge(newEdge as any, edges as any) as EdgeType[]
-      );
+      const newEdges = systemAddEdge(newEdge as any, this._edges() as any) as EdgeType[];
+
+      this._edges.set(newEdges);
+
+      // 觸發 onEdgesChange 回調（與 setEdges 保持一致）
+      if (this._onEdgesChange) {
+        this._onEdgesChange(newEdges);
+      }
     }
   }
+
 
   // 驗證連接是否有效
   private isValidConnection(connection: Connection): boolean {
@@ -818,11 +861,11 @@ export class AngularXYFlowService<
 
     const rect = container.getBoundingClientRect();
     const viewport = this._viewport();
-    
+
     // 轉換為容器相對座標
     const containerX = clientPosition.x - rect.left;
     const containerY = clientPosition.y - rect.top;
-    
+
     // 套用視口變換（考慮平移和縮放）
     return {
       x: (containerX - viewport.x) / viewport.zoom,
@@ -837,11 +880,11 @@ export class AngularXYFlowService<
 
     const rect = container.getBoundingClientRect();
     const viewport = this._viewport();
-    
+
     // 套用視口變換
     const containerX = flowPosition.x * viewport.zoom + viewport.x;
     const containerY = flowPosition.y * viewport.zoom + viewport.y;
-    
+
     // 轉換為螢幕座標
     return {
       x: containerX + rect.left,
@@ -929,19 +972,19 @@ export class AngularXYFlowService<
   ): { x: number; y: number } {
     // 使用統一系統獲取 Handle 位置
     const position = this.getHandlePositionAbsolute(
-      node.id, 
-      handleType, 
+      node.id,
+      handleType,
       handlePosition
     );
-    
+
     if (position) {
       return position;
     }
-    
+
     // 備用計算（如果統一系統尚未初始化）
     const adjustedPosition = getNodePositionWithOrigin(node, [0, 0]);
     const pos = handlePosition || (handleType === 'source' ? Position.Bottom : Position.Top);
-    
+
     switch (pos) {
       case Position.Top:
         return { x: adjustedPosition.x + nodeWidth / 2, y: adjustedPosition.y };
@@ -1062,7 +1105,7 @@ export class AngularXYFlowService<
     if (handleBounds) {
       const handles: Handle[] = [];
       const internals = this._nodeInternals().get(node.id);
-      
+
       if (internals) {
         // 將相對位置轉換為絕對位置
         handleBounds.source.forEach(h => {
@@ -1072,7 +1115,7 @@ export class AngularXYFlowService<
             y: internals.positionAbsolute.y + h.y + h.height / 2
           });
         });
-        
+
         handleBounds.target.forEach(h => {
           handles.push({
             ...h,
@@ -1081,10 +1124,10 @@ export class AngularXYFlowService<
           });
         });
       }
-      
+
       return handles;
     }
-    
+
     // 備用方法：使用計算位置
     const handles: Handle[] = [];
     const internals = this._nodeInternals().get(node.id);
@@ -1176,7 +1219,7 @@ export class AngularXYFlowService<
     // 檢查節點是否已經在視窗範圍內（與 React 版本一致）
     const transform: Transform = [viewport.x, viewport.y, viewport.zoom];
     const viewportRect: Rect = { x: 0, y: 0, width: dimensions.width, height: dimensions.height };
-    
+
     // 創建只包含當前節點的 Map 來檢查是否在視窗內
     const singleNodeLookup = new Map();
     const internalNode = this.internalNodeLookup().get(nodeId);
@@ -1200,19 +1243,19 @@ export class AngularXYFlowService<
     // 節點不在視窗範圍內，移動到節點中心
     const nodeWidth = (node as any).width || 150;
     const nodeHeight = (node as any).height || 32;
-    
+
     // 計算節點中心點
     const nodeCenterX = node.position.x + nodeWidth / 2;
     const nodeCenterY = node.position.y + nodeHeight / 2;
-    
+
     // 計算視窗中心點
     const viewportCenterX = dimensions.width / 2;
     const viewportCenterY = dimensions.height / 2;
-    
+
     // 計算需要的平移量，與 React 版本的 setCenter 邏輯一致
     const targetX = viewportCenterX - nodeCenterX * viewport.zoom;
     const targetY = viewportCenterY - nodeCenterY * viewport.zoom;
-    
+
     const newViewport = {
       x: targetX,
       y: targetY,
@@ -1221,11 +1264,11 @@ export class AngularXYFlowService<
 
     // 使用 PanZoom 實例進行平滑動畫（保留平滑動畫效果）
     if (this.panZoom && typeof this.panZoom.setViewport === 'function') {
-      this.panZoom.setViewport(newViewport, { 
+      this.panZoom.setViewport(newViewport, {
         duration: 200 // 保留 200ms 平滑動畫
       });
     } else {
-      // 如果沒有 PanZoom 實例，直接更新 viewport  
+      // 如果沒有 PanZoom 實例，直接更新 viewport
       this._viewport.set(newViewport);
     }
   }

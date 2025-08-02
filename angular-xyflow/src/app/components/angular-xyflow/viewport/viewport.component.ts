@@ -16,6 +16,7 @@ import {
   MarkerType,
   ConnectionLineTemplateContext,
 } from '../types';
+import { NodeTemplateDirective } from '../node-template.directive';
 import { NodeWrapperComponent } from '../node-wrapper/node-wrapper.component';
 import { EdgeComponent } from '../edge/edge.component';
 import { ConnectionLineComponent } from '../connection-line/connection-line.component';
@@ -150,6 +151,7 @@ export interface EdgeConnectionPoints {
           [connectionState]="connectionInProgress()"
           [customTemplate]="customConnectionLineTemplate()"
           [connectionType]="customConnectionLineType()"
+          [connectionLineStyle]="connectionLineStyle()"
         />
       }
 
@@ -168,6 +170,7 @@ export interface EdgeConnectionPoints {
           [node]="node"
           [selected]="node.selected || false"
           [dragging]="node.dragging || false"
+          [customNodeTemplates]="customNodeTemplates()"
           (nodeClick)="nodeClick.emit({ event: $event, node })"
           (nodeFocus)="nodeFocus.emit({ event: $event, node })"
           (nodeDragStart)="nodeDragStart.emit({ event: $event, node })"
@@ -234,6 +237,8 @@ export class ViewportComponent<
   connectionInProgress = input.required<ConnectionState | null>();
   customConnectionLineTemplate = input<TemplateRef<ConnectionLineTemplateContext> | undefined>();
   customConnectionLineType = input<'default' | 'react'>('default');
+  connectionLineStyle = input<Record<string, any>>();
+  customNodeTemplates = input<readonly any[]>([]);
   isDarkMode = input<boolean>(false);
   
   // 函數輸入

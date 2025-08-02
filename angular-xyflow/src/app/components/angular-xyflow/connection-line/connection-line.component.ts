@@ -62,6 +62,7 @@ export class ConnectionLineComponent {
   connectionState = input.required<ConnectionState | null>();
   customTemplate = input<TemplateRef<ConnectionLineTemplateContext> | undefined>();
   connectionType = input<'default' | 'react'>('default');
+  connectionLineStyle = input<Record<string, any>>();
 
   // 計算信號
   connectionPath = computed(() => {
@@ -90,6 +91,13 @@ export class ConnectionLineComponent {
 
   connectionStroke = computed(() => {
     const state = this.connectionState();
+    const style = this.connectionLineStyle();
+    
+    // 優先使用自定義樣式中的stroke
+    if (style?.['stroke']) {
+      return style['stroke'];
+    }
+    
     if (!state) return '#b1b1b7';
 
     const type = this.connectionType();

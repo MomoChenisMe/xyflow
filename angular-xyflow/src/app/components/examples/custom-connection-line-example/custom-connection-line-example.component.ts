@@ -26,9 +26,11 @@ import {
   schemas: [NO_ERRORS_SCHEMA],
   template: `
     <angular-xyflow
-      [defaultNodes]="initialNodes()"
-      [defaultEdges]="initialEdges()"
+      [nodes]="initialNodes()"
+      [edges]="initialEdges()"
       [className]="'custom-connection-line-flow'"
+      (onNodesChange)="onNodesChange($event)"
+      (onEdgesChange)="onEdgesChange($event)"
       (onConnect)="onConnect($event)"
     >
       <!-- 自定義連接線模板 - 相當於React的ConnectionLine組件 -->
@@ -112,6 +114,15 @@ export class CustomConnectionLineExampleComponent {
   readonly initialEdges = signal<AngularEdge[]>([]);
 
   // 連接事件處理
+  // Controlled mode event handlers
+  onNodesChange(newNodes: AngularNode[]): void {
+    this.initialNodes.set(newNodes);
+  }
+
+  onEdgesChange(newEdges: AngularEdge[]): void {
+    this.initialEdges.set(newEdges);
+  }
+
   onConnect(connection: Connection): void {
     console.log('建立連接:', connection);
 

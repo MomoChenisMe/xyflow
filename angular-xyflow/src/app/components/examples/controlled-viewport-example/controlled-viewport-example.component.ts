@@ -11,6 +11,7 @@ import {
   BackgroundVariant,
   Viewport,
 } from '../../angular-xyflow/types';
+import { Connection, addEdge } from '@xyflow/system';
 
 @Component({
   selector: 'app-controlled-viewport-example',
@@ -26,9 +27,12 @@ import {
   template: `
     <angular-xyflow
       #angularFlow
-      [defaultNodes]="initialNodes"
-      [defaultEdges]="initialEdges"
+      [nodes]="nodes()"
+      [edges]="edges()"
       [className]="'controlled-viewport-flow'"
+      (onNodesChange)="onNodesChange($event)"
+      (onEdgesChange)="onEdgesChange($event)"
+      (onConnect)="onConnect($event)"
     >
       <angular-xyflow-background [variant]="backgroundVariant.Dots" />
       <angular-xyflow-minimap />
@@ -81,8 +85,8 @@ export class ControlledViewportExampleComponent {
   private viewport2 = signal<Viewport>({ x: 100, y: 100, zoom: 1.5 });
   currentViewportIndex = signal(0);
 
-  // 初始節點配置 - 與 React 版本一致
-  initialNodes: AngularNode[] = [
+  // 節點狀態 - 轉為 controlled mode 信號
+  nodes = signal<AngularNode[]>([
     {
       id: '1a',
       type: 'input',
@@ -108,13 +112,26 @@ export class ControlledViewportExampleComponent {
       position: { x: 400, y: 200 },
       className: 'light',
     },
-  ];
+  ]);
 
-  // 初始邊配置 - 與 React 版本一致
-  initialEdges: AngularEdge[] = [
+  // 邊狀態 - 轉為 controlled mode 信號
+  edges = signal<AngularEdge[]>([
     { id: 'e1-2', source: '1a', target: '2a' },
     { id: 'e1-3', source: '1a', target: '3a' },
-  ];
+  ]);
+
+  // Controlled mode event handlers
+  onNodesChange(newNodes: AngularNode[]): void {
+    this.nodes.set(newNodes);
+  }
+
+  onEdgesChange(newEdges: AngularEdge[]): void {
+    this.edges.set(newEdges);
+  }
+
+  onConnect(connection: Connection): void {
+    this.edges.update(edges => addEdge(connection, edges));
+  }
 
   constructor() {
     // 初始化時設置第一個視口

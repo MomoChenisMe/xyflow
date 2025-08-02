@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
 import { PanelComponent } from '../../angular-xyflow/panel/panel.component';
 import { AngularNode, AngularEdge } from '../../angular-xyflow/types';
-import type { Connection } from '@xyflow/system';
+import { Connection, addEdge } from '@xyflow/system';
 
 @Component({
   selector: 'app-click-distance-example',
@@ -12,9 +12,11 @@ import type { Connection } from '@xyflow/system';
   imports: [CommonModule, FormsModule, AngularXYFlowComponent, PanelComponent],
   template: `
     <angular-xyflow
-      [defaultNodes]="initialNodes"
-      [defaultEdges]="initialEdges"
+      [nodes]="nodes()"
+      [edges]="edges()"
       [paneClickDistance]="paneClickDistance()"
+      (onNodesChange)="onNodesChange($event)"
+      (onEdgesChange)="onEdgesChange($event)"
       (onConnect)="onConnect($event)"
       (onPaneClick)="onPaneClick($event)"
     >
@@ -55,8 +57,8 @@ export class ClickDistanceExampleComponent {
   // 點擊距離的信號
   paneClickDistance = signal(0);
 
-  // 初始節點配置
-  initialNodes: AngularNode[] = [
+  // 初始節點配置 - 轉為 controlled mode 信號
+  nodes = signal<AngularNode[]>([
     {
       id: '1a',
       type: 'input',
@@ -80,13 +82,22 @@ export class ClickDistanceExampleComponent {
       data: { label: 'Node 4' } as Record<string, unknown>,
       position: { x: 400, y: 200 },
     },
-  ];
+  ]);
 
-  // 初始邊配置
-  initialEdges: AngularEdge[] = [
+  // 初始邊配置 - 轉為 controlled mode 信號
+  edges = signal<AngularEdge[]>([
     { id: 'e1-2', source: '1a', target: '2a', ariaLabel: undefined },
     { id: 'e1-3', source: '1a', target: '3a' },
-  ];
+  ]);
+
+  // Controlled mode event handlers
+  onNodesChange(newNodes: AngularNode[]): void {
+    this.nodes.set(newNodes);
+  }
+
+  onEdgesChange(newEdges: AngularEdge[]): void {
+    this.edges.set(newEdges);
+  }
 
   // 處理距離變更
   onDistanceChange(event: Event): void {
@@ -95,10 +106,10 @@ export class ClickDistanceExampleComponent {
     console.log('Click distance changed to:', target.value);
   }
 
-  // 處理連接事件
+  // 處理連接事件 - 使用 controlled mode
   onConnect(params: Connection): void {
     console.log('Connection created:', params);
-    // 在實際應用中，這裡會更新邊的狀態
+    this.edges.update(edges => addEdge(params, edges));
   }
 
   // 處理面板點擊

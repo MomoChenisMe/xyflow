@@ -37,16 +37,20 @@ import { Handle } from '../types';
       [attr.data-handlepos]="position()"
       [attr.data-nodeid]="nodeId()"
       [style.position]="'absolute'"
-      [style.transform]="handleTransform()"
-      [style.width]="'8px'"
-      [style.height]="'8px'"
-      [style.background]="handleColor()"
-      [style.border]="'1px solid #555'"
-      [style.border-radius]="'50%'"
+      [style.transform]="style()['transform'] || ''"
+      [style.width]="style()['width'] || '8px'"
+      [style.height]="style()['height'] || '8px'"
+      [style.background]="style()['background'] || handleColor()"
+      [style.border]="style()['border'] || '1px solid #555'"
+      [style.border-radius]="style()['borderRadius'] || '50%'"
       [style.cursor]="'crosshair'"
       [style.pointer-events]="canConnect() ? 'auto' : 'none'"
       [style.opacity]="canConnect() ? 1 : 0.5"
       [style.z-index]="4"
+      [style.top]="style()['top']"
+      [style.bottom]="style()['bottom']"
+      [style.left]="style()['left']"
+      [style.right]="style()['right']"
       (mousedown)="handleMouseDown($event)"
       (mouseup)="handleMouseUp($event)"
       (mouseenter)="handleMouseEnter($event)"
@@ -79,6 +83,7 @@ import { Handle } from '../types';
       /* Target specific styles */
     }
 
+    /* 默認位置樣式 - 內聯樣式會自動覆蓋 */
     .angular-xyflow__handle.position-top {
       top: 0;
       left: 50%;
@@ -92,15 +97,14 @@ import { Handle } from '../types';
     }
 
     .angular-xyflow__handle.position-bottom {
-      top: auto;
       left: 50%;
       bottom: 0;
       transform: translate(-50%, 50%);
     }
 
     .angular-xyflow__handle.position-left {
-      top: 50%;
       left: 0;
+      top: 50%;
       transform: translate(-50%, -50%);
     }
 
@@ -137,6 +141,7 @@ export class HandleComponent implements OnDestroy {
   readonly handleId = input<string>();
   readonly isConnectable = input<boolean>(true);
   readonly selected = input<boolean>(false);
+  readonly style = input<Record<string, any>>({});
   
   // 輸出事件
   readonly connectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }>();
@@ -186,10 +191,7 @@ export class HandleComponent implements OnDestroy {
     return classes.join(' ');
   });
   
-  readonly handleTransform = computed(() => {
-    // Handle 位置調整邏輯
-    return '';
-  });
+  // 簡化的transform邏輯 - 讓CSS默認值和內聯樣式自然配合
   
   readonly handleColor = computed(() => {
     if (this.connectionValid() === true) {

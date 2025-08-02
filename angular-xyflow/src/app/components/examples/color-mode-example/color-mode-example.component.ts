@@ -6,7 +6,7 @@ import { ControlsComponent } from '../../angular-xyflow/controls/controls.compon
 import { MinimapComponent } from '../../angular-xyflow/minimap/minimap.component';
 import { PanelComponent } from '../../angular-xyflow/panel/panel.component';
 import { AngularNode, AngularEdge } from '../../angular-xyflow/types';
-import { Position, ColorMode } from '@xyflow/system';
+import { Position, ColorMode, Connection, addEdge } from '@xyflow/system';
 
 const nodeDefaults = {
   sourcePosition: Position.Right,
@@ -26,10 +26,12 @@ const nodeDefaults = {
   ],
   template: `
     <angular-xyflow
-      [defaultNodes]="initialNodes"
-      [defaultEdges]="initialEdges"
+      [nodes]="nodes()"
+      [edges]="edges()"
       [colorMode]="colorMode()"
       [fitView]="true"
+      (onNodesChange)="onNodesChange($event)"
+      (onEdgesChange)="onEdgesChange($event)"
       (onConnect)="onConnect($event)"
     >
       <angular-xyflow-minimap />
@@ -111,8 +113,8 @@ export class ColorModeExampleComponent {
   // 顏色模式狀態
   colorMode = signal<ColorMode>('light');
 
-  // 初始節點配置
-  initialNodes: AngularNode[] = [
+  // 節點狀態 - 轉為 controlled mode 信號
+  nodes = signal<AngularNode[]>([
     {
       id: 'A',
       type: 'input',
@@ -138,10 +140,10 @@ export class ColorModeExampleComponent {
       data: { label: 'D' } as Record<string, unknown>,
       ...nodeDefaults
     },
-  ];
+  ]);
 
-  // 初始邊配置
-  initialEdges: AngularEdge[] = [
+  // 邊狀態 - 轉為 controlled mode 信號
+  edges = signal<AngularEdge[]>([
     {
       id: 'A-B',
       source: 'A',
@@ -157,13 +159,21 @@ export class ColorModeExampleComponent {
       source: 'A',
       target: 'D',
     },
-  ];
+  ]);
 
-  // 連接事件處理
-  onConnect(connection: any): void {
+  // Controlled mode event handlers
+  onNodesChange(newNodes: AngularNode[]): void {
+    this.nodes.set(newNodes);
+  }
+
+  onEdgesChange(newEdges: AngularEdge[]): void {
+    this.edges.set(newEdges);
+  }
+
+  // 連接事件處理 - 使用 controlled mode
+  onConnect(connection: Connection): void {
     console.log('on connect', connection);
-    // 在實際應用中，這裡會添加新的邊到 edges 狀態
-    // 但對於這個簡單示例，我們只是記錄事件
+    this.edges.update(edges => addEdge(connection, edges));
   }
 
   // 顏色模式變更處理

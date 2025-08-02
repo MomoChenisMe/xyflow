@@ -29,8 +29,8 @@ const CANCEL_AFTER = 5; // 秒數
     />
     <angular-xyflow
       #angularFlow
-      [defaultNodes]="initialNodes()"
-      [defaultEdges]="initialEdges()"
+      [nodes]="initialNodes()"
+      [edges]="initialEdges()"
       [maxZoom]="2"
       [fitView]="true"
       (onNodesChange)="onNodesChange($event)"

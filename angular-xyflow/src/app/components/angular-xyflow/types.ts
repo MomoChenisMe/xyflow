@@ -31,6 +31,9 @@ export interface AngularNode<T extends Record<string, unknown> = Record<string, 
   height?: number;
   parentId?: string;
   zIndex?: number;
+  style?: Record<string, any>;
+  origin?: [number, number]; // 新增：節點原點屬性，用於定位計算
+  measured?: { width: number; height: number }; // 新增：測量的尺寸屬性
 }
 
 // Edge marker type
@@ -220,4 +223,23 @@ export interface ConnectionLineTemplateContext {
   toPosition: Position;
   isValid: boolean | null;
   connectionLineStyle?: Record<string, any>;
+}
+
+// Node template component props
+export interface NodeTemplateComponentProps<NodeType extends AngularNode = AngularNode> {
+  node: NodeType;
+  selected: boolean;
+  dragging: boolean;
+  onNodeClick?: (event: MouseEvent) => void;
+  onColorChange?: (event: Event) => void;
+}
+
+// Template context for custom nodes
+export interface NodeTemplateContext<NodeType extends AngularNode = AngularNode> {
+  $implicit: NodeTemplateComponentProps<NodeType>;
+  node: NodeType;
+  selected: boolean;
+  dragging: boolean;
+  onNodeClick?: (event: MouseEvent) => void;
+  onColorChange?: (event: Event) => void;
 }

@@ -169,12 +169,13 @@ export class CustomMinimapComponent extends MinimapComponent {
   template: `
     <angular-xyflow
       #angularFlow
-      [defaultNodes]="nodes()"
-      [defaultEdges]="edges()"
+      [nodes]="nodes()"
+      [edges]="edges()"
       [minZoom]="0.2"
       [maxZoom]="4"
       className="angular-xyflow-custom-minimap-node-example"
       (onNodesChange)="onNodesChange($event)"
+      (onEdgesChange)="onEdgesChange($event)"
       (onConnect)="onConnect($event)"
       (onNodeClick)="onNodeClick($event)"
       (onNodeDragStop)="onNodeDragStop($event)"
@@ -253,6 +254,12 @@ export class CustomMinimapNodeExampleComponent {
   // 節點變化回調
   onNodesChange(nodes: AngularNode[]): void {
     console.log('nodes change', nodes);
+    this.nodes.set(nodes);
+  }
+
+  onEdgesChange(edges: AngularEdge[]): void {
+    console.log('edges change', edges);
+    this.edges.set(edges);
   }
 
   // 連接回調

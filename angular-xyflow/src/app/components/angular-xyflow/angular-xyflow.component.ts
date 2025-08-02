@@ -5,6 +5,7 @@ import {
   output,
   viewChild,
   contentChild,
+  contentChildren,
   effect,
   signal,
   computed,
@@ -41,6 +42,7 @@ import {
   MarkerType,
 } from './types';
 import { ConnectionLineTemplateDirective } from './connection-line-template.directive';
+import { NodeTemplateDirective } from './node-template.directive';
 import { ViewportComponent } from './viewport/viewport.component';
 
 @Component({
@@ -74,6 +76,8 @@ import { ViewportComponent } from './viewport/viewport.component';
         [connectionInProgress]="connectionInProgress()"
         [customConnectionLineTemplate]="customConnectionLineTemplate()?.templateRef"
         [customConnectionLineType]="customConnectionLineType()"
+        [connectionLineStyle]="connectionLineStyle()"
+        [customNodeTemplates]="customNodeTemplates()"
         [isDarkMode]="colorModeClass() === 'dark'"
         [getNodeById]="getNodeById.bind(this)"
         [getEdgeConnectionPoints]="getEdgeConnectionPoints.bind(this)"
@@ -188,14 +192,20 @@ import { ViewportComponent } from './viewport/viewport.component';
         stroke-width: 2;
       }
 
-      .angular-xyflow__edge-path.animated {
+      .angular-xyflow__edge.animated path {
         stroke-dasharray: 5;
-        animation: flow 0.5s linear infinite;
+        animation: dashdraw 0.5s linear infinite;
       }
 
-      @keyframes flow {
-        to {
-          stroke-dashoffset: -10;
+      /* 針對交互路徑禁用動畫（與 React 版本保持一致） */
+      .angular-xyflow__edge.animated path.angular-xyflow__edge-interaction {
+        stroke-dasharray: none;
+        animation: none;
+      }
+
+      @keyframes dashdraw {
+        from {
+          stroke-dashoffset: 10;
         }
       }
 
@@ -225,6 +235,8 @@ export class AngularXYFlowComponent<
 
   // 自定義連接線模板
   customConnectionLineTemplate = contentChild(ConnectionLineTemplateDirective);
+  // 自定義節點模板
+  customNodeTemplates = contentChildren(NodeTemplateDirective);
 
   // 輸入信號
   id = input<string>();
@@ -248,6 +260,7 @@ export class AngularXYFlowComponent<
   colorMode = input<ColorMode>('light');
   paneClickDistance = input<number>(0);
   customConnectionLineType = input<'default' | 'react'>('default');
+  connectionLineStyle = input<Record<string, any>>();
 
   // 生成唯一的容器 ID
   flowContainerId = computed(() => {
@@ -330,40 +343,44 @@ export class AngularXYFlowComponent<
   // 計算信號
   visibleNodes = computed(() => {
     const controlledNodes = this.nodes();
-    const defaultNodes = this.defaultNodes();
     const serviceNodes = this._flowService.nodes();
+    const initialized = this._flowService.initialized();
 
-    // 混合模式衝突邏輯：當同時提供controlled和default時產生不一致
-    if (controlledNodes && controlledNodes.length > 0 && defaultNodes && defaultNodes.length > 0) {
-      // 故意使用不一致的邏輯：某些情況下回退到default，造成狀態混亂
-      const hasNewNodes = serviceNodes.length > Math.max(controlledNodes.length, defaultNodes.length);
-      return hasNewNodes ? defaultNodes : controlledNodes;
-    }
-
-    // 正常情況
-    if (controlledNodes && controlledNodes.length > 0) {
+    // 如果提供了 controlled nodes（即使是空陣列），就使用它們
+    if (controlledNodes !== undefined) {
       return controlledNodes;
     }
-    return serviceNodes;
+    
+    // 在 uncontrolled 模式下：
+    // - 如果服務已初始化，使用服務內部狀態（允許動態更新）
+    // - 如果服務未初始化，使用 defaultNodes 作為初始值
+    if (initialized) {
+      return serviceNodes;
+    } else {
+      return this.defaultNodes();
+    }
   });
 
   visibleEdges = computed(() => {
     const controlledEdges = this.edges();
-    const defaultEdges = this.defaultEdges();
     const serviceEdges = this._flowService.edges();
+    const initialized = this._flowService.initialized();
     const defaultOptions = this.defaultEdgeOptions();
 
     let result: EdgeType[];
 
-    // 簡化的混合模式邏輯：主要的bug處理已移至onEdgesChange中
-    if (controlledEdges && controlledEdges.length > 0 && defaultEdges && defaultEdges.length > 0) {
-      // 當同時存在controlled和default時，優先使用controlled
-      // bug邏輯現在在onEdgesChange中處理，確保狀態一致性
-      result = controlledEdges;
-    } else if (controlledEdges && controlledEdges.length > 0) {
+    // 如果提供了 controlled edges（即使是空陣列），就使用它們
+    if (controlledEdges !== undefined) {
       result = controlledEdges;
     } else {
-      result = serviceEdges;
+      // 在 uncontrolled 模式下：
+      // - 如果服務已初始化，使用服務內部狀態（允許動態更新）
+      // - 如果服務未初始化，使用 defaultEdges 作為初始值
+      if (initialized) {
+        result = serviceEdges;
+      } else {
+        result = this.defaultEdges();
+      }
     }
 
     // 應用 defaultEdgeOptions 到所有邊
@@ -472,10 +489,24 @@ export class AngularXYFlowComponent<
     effect(() => {
       const defaultNodes = this.defaultNodes();
       const defaultEdges = this.defaultEdges();
+      const controlledNodes = this.nodes();
+      const controlledEdges = this.edges();
 
-      // 設置模式標誌（與 React Flow 一致）
-      this._flowService.setHasDefaultNodes(defaultNodes.length > 0);
-      this._flowService.setHasDefaultEdges(defaultEdges.length > 0);
+      console.log('Setting mode flags:');
+      console.log('defaultNodes.length:', defaultNodes.length);
+      console.log('defaultEdges.length:', defaultEdges.length);
+      console.log('controlledNodes defined:', !!controlledNodes);
+      console.log('controlledEdges defined:', !!controlledEdges);
+
+      // 設置模式標誌：只有當沒有 controlled 模式且有 default 數據時才設為 true
+      const hasDefaultNodes = !controlledNodes && defaultNodes.length > 0;
+      const hasDefaultEdges = !controlledEdges && defaultEdges.length > 0;
+      
+      console.log('Setting hasDefaultNodes:', hasDefaultNodes);
+      console.log('Setting hasDefaultEdges:', hasDefaultEdges);
+
+      this._flowService.setHasDefaultNodes(hasDefaultNodes);
+      this._flowService.setHasDefaultEdges(hasDefaultEdges);
     });
 
     // 設置事件回調
@@ -489,8 +520,14 @@ export class AngularXYFlowComponent<
 
     // 監聽輸入變化的副作用
     effect(() => {
-      const nodes = this.defaultNodes();
-      const edges = this.defaultEdges();
+      const defaultNodes = this.defaultNodes();
+      const defaultEdges = this.defaultEdges();
+      const controlledNodes = this.nodes();
+      const controlledEdges = this.edges();
+
+      // 優先使用 controlled，然後使用 default
+      const nodes = (controlledNodes && controlledNodes.length > 0) ? controlledNodes : defaultNodes;
+      const edges = (controlledEdges && controlledEdges.length > 0) ? controlledEdges : defaultEdges;
 
       if (nodes.length > 0 || edges.length > 0) {
         this._flowService.initialize(this.flowContainer().nativeElement, {
@@ -504,21 +541,31 @@ export class AngularXYFlowComponent<
       }
     });
 
-    // 同步 controlled nodes（如果有提供）
-    effect(() => {
+    // 使用 afterRenderEffect 同步 controlled nodes，確保在渲染週期後執行
+    afterRenderEffect(() => {
       const controlledNodes = this.nodes();
-      if (controlledNodes && !this._flowService.hasDefaultNodes()) {
-        // Controlled 模式：同步外部狀態到內部（不觸發 onChange 事件）
+      const currentLength = controlledNodes?.length || 0;
+      console.log('🔄 SYNC: nodes afterRenderEffect triggered, length:', currentLength);
+      console.log('🔄 SYNC: nodes content:', controlledNodes);
+      
+      if (controlledNodes !== undefined && !this._flowService.hasDefaultNodes()) {
+        console.log('Syncing controlled nodes:', controlledNodes);
         this._flowService.syncNodesFromControlled(controlledNodes);
+        console.log('✅ SYNC: nodes synced to service');
       }
     });
 
-    // 同步 controlled edges（如果有提供）
-    effect(() => {
+    // 使用 afterRenderEffect 同步 controlled edges，確保在渲染週期後執行
+    afterRenderEffect(() => {
       const controlledEdges = this.edges();
-      if (controlledEdges && !this._flowService.hasDefaultEdges()) {
-        // Controlled 模式：同步外部狀態到內部（不觸發 onChange 事件）
+      const currentLength = controlledEdges?.length || 0;
+      console.log('🔄 SYNC: edges afterRenderEffect triggered, length:', currentLength);
+      console.log('🔄 SYNC: edges content:', controlledEdges);
+      
+      if (controlledEdges !== undefined && !this._flowService.hasDefaultEdges()) {
+        console.log('Syncing controlled edges:', controlledEdges);
         this._flowService.syncEdgesFromControlled(controlledEdges);
+        console.log('✅ SYNC: edges synced to service');
       }
     });
 
@@ -624,9 +671,12 @@ export class AngularXYFlowComponent<
       return;
     }
 
-    // 【關鍵修正】檢查初始提供的節點，而不是當前可見的節點
-    // 這樣與 React Flow 的行為一致：只基於 defaultNodes 決定是否執行初始 fitView
-    const initialNodes = this.defaultNodes();
+    // 【關鍵修正】檢查初始提供的節點，支持 controlled 和 uncontrolled 模式
+    // 在 controlled 模式下使用 nodes()，在 uncontrolled 模式下使用 defaultNodes()
+    const controlledNodes = this.nodes();
+    const defaultNodes = this.defaultNodes();
+    const initialNodes = controlledNodes && controlledNodes.length > 0 ? controlledNodes : defaultNodes;
+    
     if (initialNodes.length === 0) {
       // 如果沒有初始節點但設置了 fitView，標記為已處理以避免後續自動觸發
       // 這樣保持與 React Flow 的行為一致：fitView 只基於初始節點，不會因動態添加節點而觸發
@@ -956,18 +1006,42 @@ export class AngularXYFlowComponent<
   }
 
   handleConnectEnd(eventData: { connection?: Connection; event: MouseEvent }) {
-    // 發出連接結束事件
+    console.log('🔗 handleConnectEnd called with:', eventData);
+    
+    // 發出連接結束事件 - 無論是否有連接都要發出（這是關鍵！）
+    console.log('🚀 Emitting onConnectEnd event to parent:', eventData);
     this.onConnectEnd.emit(eventData);
 
     // 如果有連接，處理連接邏輯
     if (eventData.connection) {
-      this._flowService.onConnect(eventData.connection);
+      console.log('✅ Processing connection:', eventData.connection);
+      
+      // 先發出 onConnect 事件給父組件，讓父組件有機會處理
       this.onConnect.emit(eventData.connection);
-
-      // 新edge建立後立即觸發onEdgesChange以支持controlled模式
-      // 這在controlled/uncontrolled混合模式下會加劇狀態衝突問題
-      const updatedEdges = this._flowService.edges();
-      this.onEdgesChange.emit(updatedEdges);
+      
+      // 檢查父組件是否已經處理了 edges（通過檢查是否有新的 edges）
+      const currentEdgeCount = this._flowService.edges().length;
+      
+      // 使用 setTimeout 確保父組件的事件處理完成後再檢查
+      setTimeout(() => {
+        const newEdgeCount = this._flowService.edges().length;
+        
+        // 如果父組件沒有添加新的 edge，則使用默認邏輯創建
+        if (newEdgeCount === currentEdgeCount) {
+          console.log('父組件未處理連接，使用默認邏輯創建 edge');
+          this._flowService.onConnect(eventData.connection!);
+          console.log('After Flow Service onConnect, edges:', this._flowService.edges());
+        } else {
+          console.log('父組件已處理連接，跳過默認邏輯');
+        }
+        
+        // 觸發 onEdgesChange（無論父組件是否處理）
+        const updatedEdges = this._flowService.edges();
+        console.log('Emitting onEdgesChange with edges:', updatedEdges);
+        this.onEdgesChange.emit(updatedEdges);
+      }, 0);
+    } else {
+      console.log('❌ No connection in eventData - but still emitting onConnectEnd');
     }
   }
 
