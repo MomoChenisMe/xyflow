@@ -230,8 +230,31 @@ export class AngularXYFlowDragService implements OnDestroy {
         // 節點拖拽結束處理
       },
       updateNodePositions: (dragItems: Map<string, any>, dragging?: boolean) => {
-        // 更新節點位置 - 使用統一位置計算系統
+        // 檢查是否在 controlled 模式 - 與 React Flow 邏輯一致
+        const isControlled = !this._flowService.hasDefaultNodes() && !this._flowService.hasDefaultEdges();
         
+        if (isControlled) {
+          // 在 controlled 模式下，創建帶有新位置和拖拽狀態的節點陣列
+          // 但不直接更新內部狀態，而是透過事件讓父組件處理
+          const currentNodes = this._flowService.nodes();
+          const updatedNodes = currentNodes.map(node => {
+            const dragItem = dragItems.get(node.id);
+            if (dragItem) {
+              return {
+                ...node,
+                position: dragItem.position, // 在 controlled 模式下透過事件傳遞新位置
+                dragging: dragging || false
+              };
+            }
+            return node;
+          });
+          
+          // 觸發事件讓父組件處理位置更新
+          this._flowService.triggerNodesChange(updatedNodes);
+          return;
+        }
+        
+        // 在 uncontrolled 模式下的原有邏輯
         // 當 selectNodesOnDrag=false 時，只更新實際被拖拽的節點
         const selectNodesOnDrag = this._flowService.selectNodesOnDrag();
         

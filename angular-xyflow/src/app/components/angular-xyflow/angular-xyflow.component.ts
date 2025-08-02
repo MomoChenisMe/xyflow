@@ -990,7 +990,16 @@ export class AngularXYFlowComponent<
       // 先發出 onConnect 事件給父組件，讓父組件有機會處理
       this.onConnect.emit(eventData.connection);
       
-      // 檢查父組件是否已經處理了 edges（通過檢查是否有新的 edges）
+      // 檢查是否在 controlled 模式 - 與 React Flow 邏輯一致
+      const isControlled = !this._flowService.hasDefaultNodes() && !this._flowService.hasDefaultEdges();
+      
+      if (isControlled) {
+        // 在 controlled 模式下，只發出事件，不自動創建連接
+        // 完全依賴父組件處理 onConnect 事件
+        return;
+      }
+      
+      // 在 uncontrolled 模式下，檢查父組件是否已經處理了 edges
       const currentEdgeCount = this._flowService.edges().length;
       
       // 使用 setTimeout 確保父組件的事件處理完成後再檢查

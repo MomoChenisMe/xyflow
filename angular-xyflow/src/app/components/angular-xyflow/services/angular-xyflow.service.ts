@@ -167,6 +167,12 @@ export class AngularXYFlowService<
     return this._hasDefaultEdges();
   }
 
+  // 檢查是否在 controlled 模式 - 與 React Flow 邏輯一致
+  private isControlledMode(): boolean {
+    // 如果沒有 defaultNodes 和 defaultEdges，就是 controlled 模式
+    return !this._hasDefaultNodes() && !this._hasDefaultEdges();
+  }
+
   // 內部方法：更新狀態而不觸發事件（用於 controlled 模式同步）
   syncNodesFromControlled(nodes: NodeType[]) {
     this._nodes.set([...nodes]);
@@ -299,21 +305,29 @@ export class AngularXYFlowService<
         const newNodes = typeof nodes === 'function'
           ? nodes(this._nodes())
           : [...nodes];
-          
-        this._nodes.set(newNodes);
         
-        // 使用 trigger 方法處理回調（與 React Flow 一致）
-        this.triggerNodesChange(newNodes);
+        // 在 controlled 模式下，只發出事件，不更新內部狀態
+        if (this.isControlledMode()) {
+          this.triggerNodesChange(newNodes);
+        } else {
+          // 在 uncontrolled 模式下，更新內部狀態並發出事件
+          this._nodes.set(newNodes);
+          this.triggerNodesChange(newNodes);
+        }
       },
       setEdges: (edges: EdgeType[] | ((edges: EdgeType[]) => EdgeType[])) => {
         const newEdges = typeof edges === 'function'
           ? edges(this._edges())
           : [...edges];
 
-        this._edges.set(newEdges);
-
-        // 使用 trigger 方法處理回調（與 React Flow 一致）
-        this.triggerEdgesChange(newEdges);
+        // 在 controlled 模式下，只發出事件，不更新內部狀態
+        if (this.isControlledMode()) {
+          this.triggerEdgesChange(newEdges);
+        } else {
+          // 在 uncontrolled 模式下，更新內部狀態並發出事件
+          this._edges.set(newEdges);
+          this.triggerEdgesChange(newEdges);
+        }
       },
       addNodes: (nodes: NodeType | NodeType[]) => {
         const nodesToAdd = Array.isArray(nodes) ? nodes : [nodes];
@@ -327,18 +341,28 @@ export class AngularXYFlowService<
         }));
 
         const newNodes = [...this._nodes(), ...nodesWithDefaults];
-        this._nodes.set(newNodes);
         
-        // 使用 trigger 方法處理回調
-        this.triggerNodesChange(newNodes);
+        // 在 controlled 模式下，只發出事件，不更新內部狀態
+        if (this.isControlledMode()) {
+          this.triggerNodesChange(newNodes);
+        } else {
+          // 在 uncontrolled 模式下，更新內部狀態並發出事件
+          this._nodes.set(newNodes);
+          this.triggerNodesChange(newNodes);
+        }
       },
       addEdges: (edges: EdgeType | EdgeType[]) => {
         const edgesToAdd = Array.isArray(edges) ? edges : [edges];
         const newEdges = [...this._edges(), ...edgesToAdd];
-        this._edges.set(newEdges);
         
-        // 使用 trigger 方法處理回調
-        this.triggerEdgesChange(newEdges);
+        // 在 controlled 模式下，只發出事件，不更新內部狀態
+        if (this.isControlledMode()) {
+          this.triggerEdgesChange(newEdges);
+        } else {
+          // 在 uncontrolled 模式下，更新內部狀態並發出事件
+          this._edges.set(newEdges);
+          this.triggerEdgesChange(newEdges);
+        }
       },
       updateNode: (
         id: string,
@@ -355,10 +379,14 @@ export class AngularXYFlowService<
           return node;
         });
         
-        this._nodes.set(newNodes);
-        
-        // 使用 trigger 方法處理回調
-        this.triggerNodesChange(newNodes);
+        // 在 controlled 模式下，只發出事件，不更新內部狀態
+        if (this.isControlledMode()) {
+          this.triggerNodesChange(newNodes);
+        } else {
+          // 在 uncontrolled 模式下，更新內部狀態並發出事件
+          this._nodes.set(newNodes);
+          this.triggerNodesChange(newNodes);
+        }
       },
       updateNodeData: (
         id: string,
@@ -375,10 +403,14 @@ export class AngularXYFlowService<
           return node;
         });
         
-        this._nodes.set(newNodes);
-        
-        // 使用 trigger 方法處理回調
-        this.triggerNodesChange(newNodes);
+        // 在 controlled 模式下，只發出事件，不更新內部狀態
+        if (this.isControlledMode()) {
+          this.triggerNodesChange(newNodes);
+        } else {
+          // 在 uncontrolled 模式下，更新內部狀態並發出事件
+          this._nodes.set(newNodes);
+          this.triggerNodesChange(newNodes);
+        }
       },
       updateEdge: (
         id: string,
@@ -395,10 +427,14 @@ export class AngularXYFlowService<
           return edge;
         });
         
-        this._edges.set(newEdges);
-        
-        // 使用 trigger 方法處理回調
-        this.triggerEdgesChange(newEdges);
+        // 在 controlled 模式下，只發出事件，不更新內部狀態
+        if (this.isControlledMode()) {
+          this.triggerEdgesChange(newEdges);
+        } else {
+          // 在 uncontrolled 模式下，更新內部狀態並發出事件
+          this._edges.set(newEdges);
+          this.triggerEdgesChange(newEdges);
+        }
       },
       deleteElements: (elements: {
         nodes?: { id: string }[];
@@ -407,19 +443,29 @@ export class AngularXYFlowService<
         if (elements.nodes?.length) {
           const nodeIdsToDelete = new Set(elements.nodes.map((n) => n.id));
           const newNodes = this._nodes().filter((node) => !nodeIdsToDelete.has(node.id));
-          this._nodes.set(newNodes);
           
-          // 使用 trigger 方法處理回調
-          this.triggerNodesChange(newNodes);
+          // 在 controlled 模式下，只發出事件，不更新內部狀態
+          if (this.isControlledMode()) {
+            this.triggerNodesChange(newNodes);
+          } else {
+            // 在 uncontrolled 模式下，更新內部狀態並發出事件
+            this._nodes.set(newNodes);
+            this.triggerNodesChange(newNodes);
+          }
         }
         
         if (elements.edges?.length) {
           const edgeIdsToDelete = new Set(elements.edges.map((e) => e.id));
           const newEdges = this._edges().filter((edge) => !edgeIdsToDelete.has(edge.id));
-          this._edges.set(newEdges);
           
-          // 使用 trigger 方法處理回調
-          this.triggerEdgesChange(newEdges);
+          // 在 controlled 模式下，只發出事件，不更新內部狀態
+          if (this.isControlledMode()) {
+            this.triggerEdgesChange(newEdges);
+          } else {
+            // 在 uncontrolled 模式下，更新內部狀態並發出事件
+            this._edges.set(newEdges);
+            this.triggerEdgesChange(newEdges);
+          }
         }
       },
       fitView: (_options?) => {
@@ -620,10 +666,14 @@ export class AngularXYFlowService<
       const newEdge = this.createEdgeFromConnection(connection);
       const newEdges = systemAddEdge(newEdge as any, this._edges() as any) as EdgeType[];
 
-      this._edges.set(newEdges);
-
-      // 使用 trigger 方法處理回調
-      this.triggerEdgesChange(newEdges);
+      // 在 controlled 模式下，只發出事件，不更新內部狀態
+      if (this.isControlledMode()) {
+        this.triggerEdgesChange(newEdges);
+      } else {
+        // 在 uncontrolled 模式下，更新內部狀態並發出事件
+        this._edges.set(newEdges);
+        this.triggerEdgesChange(newEdges);
+      }
     }
   }
 
@@ -701,48 +751,89 @@ export class AngularXYFlowService<
     // 同步更新選中節點列表
     this._selectedNodes.set(newSelectedNodes);
 
-    // 立即同步更新節點的選中狀態
-    this._nodes.update((nodes) =>
-      nodes.map((node) => ({
+    // 在 controlled 模式下，只觸發事件，不直接更新內部狀態
+    if (this.isControlledMode()) {
+      // 創建帶有選中狀態的新節點陣列，用於事件
+      const nodesWithSelection = this._nodes().map((node) => ({
         ...node,
         selected: newSelectedNodes.includes(node.id),
-      }))
-    );
-
-    // 清除邊的選中狀態（如果不是多選）
-    if (!multiSelect) {
-      this._edges.update((edges) =>
-        edges.map((edge) => ({ ...edge, selected: false }))
+      }));
+      
+      const edgesWithSelection = !multiSelect 
+        ? this._edges().map((edge) => ({ ...edge, selected: false }))
+        : this._edges();
+      
+      // 只觸發事件，讓父組件決定如何更新狀態
+      this.triggerNodesChange(nodesWithSelection);
+      if (!multiSelect) {
+        this.triggerEdgesChange(edgesWithSelection);
+      }
+    } else {
+      // 在 uncontrolled 模式下，直接更新內部狀態
+      this._nodes.update((nodes) =>
+        nodes.map((node) => ({
+          ...node,
+          selected: newSelectedNodes.includes(node.id),
+        }))
       );
+
+      // 清除邊的選中狀態（如果不是多選）
+      if (!multiSelect) {
+        this._edges.update((edges) =>
+          edges.map((edge) => ({ ...edge, selected: false }))
+        );
+      }
     }
   }
 
   // 邊選擇 - 支援單選和多選
   selectEdge(edgeId: string, multiSelect = false): void {
+    let newSelectedEdges: string[];
+    
     if (multiSelect) {
-      this._selectedEdges.update((selected) =>
-        selected.includes(edgeId)
-          ? selected.filter((id) => id !== edgeId)
-          : [...selected, edgeId]
-      );
+      const currentSelected = this._selectedEdges();
+      newSelectedEdges = currentSelected.includes(edgeId)
+        ? currentSelected.filter((id) => id !== edgeId)
+        : [...currentSelected, edgeId];
+      this._selectedEdges.set(newSelectedEdges);
     } else {
-      this._selectedEdges.set([edgeId]);
+      newSelectedEdges = [edgeId];
+      this._selectedEdges.set(newSelectedEdges);
       this._selectedNodes.set([]); // 清除節點選擇
     }
 
-    // 更新邊的選中狀態
-    this._edges.update((edges) =>
-      edges.map((edge) => ({
+    // 在 controlled 模式下，只觸發事件，不直接更新內部狀態
+    if (this.isControlledMode()) {
+      // 創建帶有選中狀態的新邊陣列，用於事件
+      const edgesWithSelection = this._edges().map((edge) => ({
         ...edge,
-        selected: this._selectedEdges().includes(edge.id),
-      }))
-    );
-
-    // 清除節點的選中狀態（如果不是多選）
-    if (!multiSelect) {
-      this._nodes.update((nodes) =>
-        nodes.map((node) => ({ ...node, selected: false }))
+        selected: newSelectedEdges.includes(edge.id),
+      }));
+      
+      const nodesWithSelection = !multiSelect
+        ? this._nodes().map((node) => ({ ...node, selected: false }))
+        : this._nodes();
+      
+      // 只觸發事件，讓父組件決定如何更新狀態
+      this.triggerEdgesChange(edgesWithSelection);
+      if (!multiSelect) {
+        this.triggerNodesChange(nodesWithSelection);
+      }
+    } else {
+      // 在 uncontrolled 模式下，直接更新內部狀態
+      this._edges.update((edges) =>
+        edges.map((edge) => ({
+          ...edge,
+          selected: newSelectedEdges.includes(edge.id),
+        }))
       );
+
+      // 清除節點的選中狀態（如果不是多選）
+      if (!multiSelect) {
+        this._nodes.update((nodes) =>
+          nodes.map((node) => ({ ...node, selected: false }))
+        );
+      }
     }
   }
 
@@ -803,12 +894,25 @@ export class AngularXYFlowService<
     this._selectedNodes.set([]);
     this._selectedEdges.set([]);
     this._selectedHandles.set([]);
-    this._nodes.update((nodes) =>
-      nodes.map((node) => ({ ...node, selected: false }))
-    );
-    this._edges.update((edges) =>
-      edges.map((edge) => ({ ...edge, selected: false }))
-    );
+    
+    // 在 controlled 模式下，只觸發事件，不直接更新內部狀態
+    if (this.isControlledMode()) {
+      // 創建沒有選中狀態的陣列，用於事件
+      const nodesWithoutSelection = this._nodes().map((node) => ({ ...node, selected: false }));
+      const edgesWithoutSelection = this._edges().map((edge) => ({ ...edge, selected: false }));
+      
+      // 只觸發事件，讓父組件決定如何更新狀態
+      this.triggerNodesChange(nodesWithoutSelection);
+      this.triggerEdgesChange(edgesWithoutSelection);
+    } else {
+      // 在 uncontrolled 模式下，直接更新內部狀態
+      this._nodes.update((nodes) =>
+        nodes.map((node) => ({ ...node, selected: false }))
+      );
+      this._edges.update((edges) =>
+        edges.map((edge) => ({ ...edge, selected: false }))
+      );
+    }
   }
 
   // 取得選中的節點
