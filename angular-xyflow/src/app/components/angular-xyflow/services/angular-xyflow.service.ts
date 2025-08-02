@@ -126,6 +126,37 @@ export class AngularXYFlowService<
     this._onEdgesChange = callback;
   }
 
+  // React Flow 風格的觸發機制
+  triggerNodesChange(newNodes?: NodeType[]) {
+    const currentNodes = this._nodes();
+    const nodesToEmit = newNodes || currentNodes;
+    
+    // 如果在 uncontrolled 模式且提供了新節點，更新內部狀態
+    if (this._hasDefaultNodes() && newNodes) {
+      this._nodes.set([...newNodes]);
+    }
+    
+    // 總是觸發回調（與 React Flow 一致）
+    if (this._onNodesChange) {
+      this._onNodesChange(nodesToEmit);
+    }
+  }
+
+  triggerEdgesChange(newEdges?: EdgeType[]) {
+    const currentEdges = this._edges();
+    const edgesToEmit = newEdges || currentEdges;
+    
+    // 如果在 uncontrolled 模式且提供了新邊，更新內部狀態
+    if (this._hasDefaultEdges() && newEdges) {
+      this._edges.set([...newEdges]);
+    }
+    
+    // 總是觸發回調（與 React Flow 一致）
+    if (this._onEdgesChange) {
+      this._onEdgesChange(edgesToEmit);
+    }
+  }
+
   // 設置 controlled/uncontrolled 模式
   setHasDefaultNodes(value: boolean) {
     this._hasDefaultNodes.set(value);
@@ -279,10 +310,8 @@ export class AngularXYFlowService<
           
         this._nodes.set(newNodes);
         
-        // 觸發 onNodesChange 回調（類似 setEdges）
-        if (this._onNodesChange) {
-          this._onNodesChange(newNodes);
-        }
+        // 使用 trigger 方法處理回調（與 React Flow 一致）
+        this.triggerNodesChange(newNodes);
       },
       setEdges: (edges: EdgeType[] | ((edges: EdgeType[]) => EdgeType[])) => {
         const newEdges = typeof edges === 'function'
@@ -291,10 +320,8 @@ export class AngularXYFlowService<
 
         this._edges.set(newEdges);
 
-        // 觸發 onEdgesChange 回調（類似 React Flow）
-        if (this._onEdgesChange) {
-          this._onEdgesChange(newEdges);
-        }
+        // 使用 trigger 方法處理回調（與 React Flow 一致）
+        this.triggerEdgesChange(newEdges);
       },
       addNodes: (nodes: NodeType | NodeType[]) => {
         const nodesToAdd = Array.isArray(nodes) ? nodes : [nodes];
@@ -310,20 +337,16 @@ export class AngularXYFlowService<
         const newNodes = [...this._nodes(), ...nodesWithDefaults];
         this._nodes.set(newNodes);
         
-        // 觸發 onNodesChange 回調
-        if (this._onNodesChange) {
-          this._onNodesChange(newNodes);
-        }
+        // 使用 trigger 方法處理回調
+        this.triggerNodesChange(newNodes);
       },
       addEdges: (edges: EdgeType | EdgeType[]) => {
         const edgesToAdd = Array.isArray(edges) ? edges : [edges];
         const newEdges = [...this._edges(), ...edgesToAdd];
         this._edges.set(newEdges);
         
-        // 觸發 onEdgesChange 回調
-        if (this._onEdgesChange) {
-          this._onEdgesChange(newEdges);
-        }
+        // 使用 trigger 方法處理回調
+        this.triggerEdgesChange(newEdges);
       },
       updateNode: (
         id: string,
@@ -342,10 +365,8 @@ export class AngularXYFlowService<
         
         this._nodes.set(newNodes);
         
-        // 觸發 onNodesChange 回調
-        if (this._onNodesChange) {
-          this._onNodesChange(newNodes);
-        }
+        // 使用 trigger 方法處理回調
+        this.triggerNodesChange(newNodes);
       },
       updateNodeData: (
         id: string,
@@ -364,10 +385,8 @@ export class AngularXYFlowService<
         
         this._nodes.set(newNodes);
         
-        // 觸發 onNodesChange 回調
-        if (this._onNodesChange) {
-          this._onNodesChange(newNodes);
-        }
+        // 使用 trigger 方法處理回調
+        this.triggerNodesChange(newNodes);
       },
       updateEdge: (
         id: string,
@@ -386,10 +405,8 @@ export class AngularXYFlowService<
         
         this._edges.set(newEdges);
         
-        // 觸發 onEdgesChange 回調
-        if (this._onEdgesChange) {
-          this._onEdgesChange(newEdges);
-        }
+        // 使用 trigger 方法處理回調
+        this.triggerEdgesChange(newEdges);
       },
       deleteElements: (elements: {
         nodes?: { id: string }[];
@@ -400,10 +417,8 @@ export class AngularXYFlowService<
           const newNodes = this._nodes().filter((node) => !nodeIdsToDelete.has(node.id));
           this._nodes.set(newNodes);
           
-          // 觸發 onNodesChange 回調
-          if (this._onNodesChange) {
-            this._onNodesChange(newNodes);
-          }
+          // 使用 trigger 方法處理回調
+          this.triggerNodesChange(newNodes);
         }
         
         if (elements.edges?.length) {
@@ -411,10 +426,8 @@ export class AngularXYFlowService<
           const newEdges = this._edges().filter((edge) => !edgeIdsToDelete.has(edge.id));
           this._edges.set(newEdges);
           
-          // 觸發 onEdgesChange 回調
-          if (this._onEdgesChange) {
-            this._onEdgesChange(newEdges);
-          }
+          // 使用 trigger 方法處理回調
+          this.triggerEdgesChange(newEdges);
         }
       },
       fitView: (_options?) => {
@@ -617,10 +630,8 @@ export class AngularXYFlowService<
 
       this._edges.set(newEdges);
 
-      // 觸發 onEdgesChange 回調（與 setEdges 保持一致）
-      if (this._onEdgesChange) {
-        this._onEdgesChange(newEdges);
-      }
+      // 使用 trigger 方法處理回調
+      this.triggerEdgesChange(newEdges);
     }
   }
 

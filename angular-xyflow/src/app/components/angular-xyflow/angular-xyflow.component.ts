@@ -483,16 +483,14 @@ export class AngularXYFlowComponent<
   });
 
   constructor() {
-    // 設置 controlled/uncontrolled 模式標誌
+    // 設置 controlled/uncontrolled 模式標誌（與 React Flow 邏輯一致）
     effect(() => {
       const defaultNodes = this.defaultNodes();
       const defaultEdges = this.defaultEdges();
-      const controlledNodes = this.nodes();
-      const controlledEdges = this.edges();
 
-      // 設置模式標誌：只有當沒有 controlled 模式且有 default 數據時才設為 true
-      const hasDefaultNodes = !controlledNodes && defaultNodes.length > 0;
-      const hasDefaultEdges = !controlledEdges && defaultEdges.length > 0;
+      // React Flow 邏輯：只要提供了 defaultNodes/defaultEdges 就是 uncontrolled 模式
+      const hasDefaultNodes = defaultNodes && defaultNodes.length > 0;
+      const hasDefaultEdges = defaultEdges && defaultEdges.length > 0;
 
       this._flowService.setHasDefaultNodes(hasDefaultNodes);
       this._flowService.setHasDefaultEdges(hasDefaultEdges);
@@ -800,10 +798,8 @@ export class AngularXYFlowComponent<
     this._flowService.selectNode(node.id, multiSelect);
 
     // 觸發狀態變化事件（controlled 模式需要）
-    const updatedNodes = this._flowService.nodes();
-    const updatedEdges = this._flowService.edges();
-    this.onNodesChange.emit(updatedNodes);
-    this.onEdgesChange.emit(updatedEdges);
+    this._flowService.triggerNodesChange();
+    this._flowService.triggerEdgesChange();
 
     this.onNodeClick.emit({ event, node });
   }
@@ -823,10 +819,8 @@ export class AngularXYFlowComponent<
     this._flowService.selectNode(node.id, false);
 
     // 觸發狀態變化事件（controlled 模式需要）
-    const updatedNodes = this._flowService.nodes();
-    const updatedEdges = this._flowService.edges();
-    this.onNodesChange.emit(updatedNodes);
-    this.onEdgesChange.emit(updatedEdges);
+    this._flowService.triggerNodesChange();
+    this._flowService.triggerEdgesChange();
   }
 
   handleEdgeClick(event: MouseEvent, edge: EdgeType) {
@@ -844,9 +838,8 @@ export class AngularXYFlowComponent<
     // 選擇邊線
     this._flowService.selectEdge(edge.id, multiSelect);
 
-    // 觸發 onEdgesChange 事件以通知父組件邊狀態變化（controlled 模式需要）
-    const updatedEdges = this._flowService.edges();
-    this.onEdgesChange.emit(updatedEdges);
+    // 觸發狀態變化事件（controlled 模式需要）
+    this._flowService.triggerEdgesChange();
 
     // 觸發 edge 點擊事件
     this.onEdgeClick.emit({ event, edge });
@@ -862,8 +855,7 @@ export class AngularXYFlowComponent<
     this._flowService.selectEdge(edge.id, false);
 
     // 觸發狀態變化事件
-    const updatedEdges = this._flowService.edges();
-    this.onEdgesChange.emit(updatedEdges);
+    this._flowService.triggerEdgesChange();
   }
 
   handleEdgeKeyDown(event: KeyboardEvent, edge: EdgeType) {
@@ -880,8 +872,7 @@ export class AngularXYFlowComponent<
       this._flowService.selectEdge(edge.id, multiSelect);
 
       // 觸發狀態變化事件
-      const updatedEdges = this._flowService.edges();
-      this.onEdgesChange.emit(updatedEdges);
+      this._flowService.triggerEdgesChange();
 
       // 觸發點擊事件（為了一致性）
       this.onEdgeClick.emit({ event: event as any, edge });
@@ -902,10 +893,8 @@ export class AngularXYFlowComponent<
       this._flowService.clearSelection();
 
       // 觸發狀態變化事件（controlled 模式需要）
-      const updatedNodes = this._flowService.nodes();
-      const updatedEdges = this._flowService.edges();
-      this.onNodesChange.emit(updatedNodes);
-      this.onEdgesChange.emit(updatedEdges);
+      this._flowService.triggerNodesChange();
+      this._flowService.triggerEdgesChange();
 
       // 發出 pane 點擊事件
       this.onPaneClick.emit({ event });
@@ -1005,9 +994,8 @@ export class AngularXYFlowComponent<
           this._flowService.onConnect(eventData.connection!);
         }
         
-        // 觸發 onEdgesChange（無論父組件是否處理）
-        const updatedEdges = this._flowService.edges();
-        this.onEdgesChange.emit(updatedEdges);
+        // 觸發狀態變化事件（無論父組件是否處理）
+        this._flowService.triggerEdgesChange();
       }, 0);
     }
   }
@@ -1112,10 +1100,8 @@ export class AngularXYFlowComponent<
         this._flowService.clearSelection();
 
         // 觸發狀態變化事件（controlled 模式需要）
-        const updatedNodes = this._flowService.nodes();
-        const updatedEdges = this._flowService.edges();
-        this.onNodesChange.emit(updatedNodes);
-        this.onEdgesChange.emit(updatedEdges);
+        this._flowService.triggerNodesChange();
+        this._flowService.triggerEdgesChange();
       }
     }
   }
