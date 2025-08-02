@@ -1,14 +1,11 @@
 // Angular 核心模組
-import { Injectable, inject, signal, computed, Signal, effect, Injector } from '@angular/core';
+import { Injectable, signal, computed, Signal } from '@angular/core';
 
 // XyFlow 系統模組
 import {
   type PanZoomInstance,
   type XYDragInstance,
-  type NodeBase,
-  type EdgeBase,
   type XYPosition,
-  type Viewport as SystemViewport,
   type Connection,
   type Transform,
   type Rect,
@@ -16,10 +13,6 @@ import {
   ColorMode,
   ColorModeClass,
   addEdge as systemAddEdge,
-  evaluateAbsolutePosition,
-  getConnectedEdges,
-  getIncomers,
-  getOutgoers,
   getNodesInside,
   getNodePositionWithOrigin,
 } from '@xyflow/system';
@@ -41,7 +34,6 @@ export class AngularXYFlowService<
   NodeType extends AngularNode = AngularNode,
   EdgeType extends AngularEdge = AngularEdge
 > {
-  private injector = inject(Injector);
 
   constructor() {
     // 使用 computed 來自動計算節點內部狀態，避免 effect 無窮迴圈

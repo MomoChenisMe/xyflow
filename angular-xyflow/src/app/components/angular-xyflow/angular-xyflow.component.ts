@@ -16,6 +16,7 @@ import {
   inject,
   CUSTOM_ELEMENTS_SCHEMA,
   HostListener,
+  untracked,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -336,6 +337,9 @@ export class AngularXYFlowComponent<
   private _initialFitViewExecuted = signal(false);
   private _isDragging = signal(false);
   private _isSelecting = signal(false);
+  private _resizeObserver?: ResizeObserver;
+  private _windowResizeHandler?: () => void;
+  private _resizeObserverInitialized = signal(false);
   markerType = MarkerType;
 
   // 計算信號
@@ -563,6 +567,7 @@ export class AngularXYFlowComponent<
       this.safeUpdateContainerSize();
       this.safeSetupPanZoom();
       this.safeHandleInitialFitView();
+      this.safeSetupResizeObserver();
     });
   }
 
@@ -573,6 +578,9 @@ export class AngularXYFlowComponent<
 
 
   ngOnDestroy() {
+    // 清理 ResizeObserver 和 window resize listener
+    this.cleanupResizeObserver();
+    
     this._panZoomService.destroy();
     this._dragService.destroy();
     this._flowService.destroy();
@@ -1104,5 +1112,86 @@ export class AngularXYFlowComponent<
         this._flowService.triggerEdgesChange();
       }
     }
+  }
+
+  // 安全設置 ResizeObserver 和 window resize listener - 與 React useResizeHandler 一致的實現
+  private safeSetupResizeObserver() {
+    // 如果已經初始化過，則跳過
+    if (this._resizeObserverInitialized()) {
+      return;
+    }
+
+    const container = this.flowContainer()?.nativeElement;
+    if (!container) {
+      return;
+    }
+
+    // 創建 updateDimensions 函數 - 與 React 版本一致
+    const updateDimensions = () => {
+      if (!container) {
+        return false;
+      }
+
+      const rect = container.getBoundingClientRect();
+      const size = { width: rect.width, height: rect.height };
+
+      // 與 React 版本一致的錯誤處理
+      if (size.height === 0 || size.width === 0) {
+        console.warn('Angular XYFlow: Container dimensions are zero, this might affect the minimap and other functionality');
+      }
+
+      // 使用 untracked 避免在 resize 過程中觸發變更偵測循環
+      untracked(() => {
+        // 更新服務的尺寸 - 與 React store.setState({ width, height }) 等效
+        this._flowService.setDimensions({ 
+          width: size.width || 500, 
+          height: size.height || 500 
+        });
+
+        // 同時更新本地信號
+        this._containerSize.set({ 
+          width: size.width || 500, 
+          height: size.height || 500 
+        });
+      });
+
+      return true;
+    };
+
+    // 立即更新一次尺寸
+    updateDimensions();
+
+    // 設置 window resize listener - 與 React 版本一致
+    this._windowResizeHandler = updateDimensions;
+    window.addEventListener('resize', this._windowResizeHandler);
+
+    // 設置 ResizeObserver - 與 React 版本一致
+    this._resizeObserver = new ResizeObserver(() => updateDimensions());
+    this._resizeObserver.observe(container);
+
+    // 標記為已初始化
+    this._resizeObserverInitialized.set(true);
+  }
+
+  // 清理 ResizeObserver 和 window resize listener
+  private cleanupResizeObserver() {
+    // 清理 window resize listener
+    if (this._windowResizeHandler) {
+      window.removeEventListener('resize', this._windowResizeHandler);
+      this._windowResizeHandler = undefined;
+    }
+
+    // 清理 ResizeObserver
+    if (this._resizeObserver) {
+      const container = this.flowContainer()?.nativeElement;
+      if (container) {
+        this._resizeObserver.unobserve(container);
+      }
+      this._resizeObserver.disconnect();
+      this._resizeObserver = undefined;
+    }
+
+    // 重置初始化標記
+    this._resizeObserverInitialized.set(false);
   }
 }

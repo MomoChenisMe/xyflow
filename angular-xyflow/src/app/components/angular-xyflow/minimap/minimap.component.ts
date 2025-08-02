@@ -16,7 +16,14 @@ import {
 import { CommonModule } from '@angular/common';
 import { AngularXYFlowService } from '../services/angular-xyflow.service';
 import { PanelComponent, type PanelPosition } from '../panel/panel.component';
-import { XYMinimap, type XYMinimapInstance, type Rect } from '@xyflow/system';
+import { 
+  XYMinimap, 
+  type XYMinimapInstance, 
+  type Rect,
+  getInternalNodesBounds,
+  getBoundsOfRects,
+  type GetInternalNodesBoundsParams
+} from '@xyflow/system';
 import type { XYPosition } from '@xyflow/system';
 import { MinimapNodeTemplateDirective } from '../minimap-node-template.directive';
 import type { MinimapNodeTemplateContext, MinimapNodeComponentProps } from '../types';
@@ -150,12 +157,12 @@ export class MinimapComponent implements OnInit, OnDestroy {
   private _flowService = inject(AngularXYFlowService);
   
   constructor() {
-    // 設置XYMinimap實例
+    // 設置XYMinimap實例 - 只在 SVG 元素和 panZoom 可用時執行一次
     effect(() => {
       const svgEl = this.svg()?.nativeElement;
       const panZoom = this._flowService.getPanZoomInstance();
       
-      if (svgEl && panZoom) {
+      if (svgEl && panZoom && !this.minimapInstance) {
         this.minimapInstance = XYMinimap({
           domNode: svgEl,
           panZoom,
@@ -170,14 +177,39 @@ export class MinimapComponent implements OnInit, OnDestroy {
       }
     });
     
-    // 監聽viewScale變化
+    // 監聽 viewScale 變化並更新引用
     effect(() => {
       this.viewScaleRef = this.viewScale();
     });
     
-    // 監聽其他屬性變化並更新minimap
+    // 監聽 minimap 相關配置變化
     effect(() => {
+      // 觸發依賴：pannable, zoomable, inversePan, zoomStep, 容器尺寸
+      const pannable = this.pannable();
+      const zoomable = this.zoomable();
+      const inversePan = this.inversePan();
+      const zoomStep = this.zoomStep();
+      const dimensions = this._flowService.dimensions();
+      
       this.updateMinimap();
+    });
+    
+    // 監聽視窗變化 - 確保視窗變化時立即更新
+    effect(() => {
+      const viewport = this._flowService.viewport();
+      const dimensions = this._flowService.dimensions();
+      
+      // 這個 effect 的存在確保當視窗或容器尺寸變化時，
+      // boundingRect 和相關的計算屬性會重新計算
+      // React 版本中這是通過 useStore 自動處理的
+    });
+    
+    // 監聽節點變化 - 確保節點增減或移動時更新
+    effect(() => {
+      const nodes = this._flowService.nodes();
+      const internalNodeLookup = this._flowService.internalNodeLookup();
+      
+      // 觸發重新計算，確保節點變化時邊界會更新
     });
   }
   
@@ -231,57 +263,32 @@ export class MinimapComponent implements OnInit, OnDestroy {
   
   readonly boundingRect = computed(() => {
     const viewport = this._flowService.viewport();
+    const dimensions = this._flowService.dimensions();
+    
+    // 計算 viewBB - 與 React 版本一致的邏輯
     const viewBB: Rect = {
       x: -viewport.x / viewport.zoom,
       y: -viewport.y / viewport.zoom,
-      width: this._flowService.dimensions().width / viewport.zoom,
-      height: this._flowService.dimensions().height / viewport.zoom,
+      width: dimensions.width / viewport.zoom,
+      height: dimensions.height / viewport.zoom,
     };
     
-    const nodes = this.visibleNodes();
-    if (nodes.length === 0) {
+    // 獲取內部節點查找表
+    const internalNodeLookup = this._flowService.internalNodeLookup();
+    
+    // 如果沒有節點，直接返回 viewBB
+    if (internalNodeLookup.size === 0) {
       return viewBB;
     }
     
-    // 手動計算節點邊界
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
+    // 使用系統包的函數計算節點邊界 - 與 React 版本完全一致
+    const filterHidden = (node: any) => !node.hidden;
+    const nodesBounds = getInternalNodesBounds(internalNodeLookup, { 
+      filter: filterHidden 
+    } as GetInternalNodesBoundsParams<any>);
     
-    nodes.forEach(node => {
-      // 使用 minimap 顯示尺寸（標準節點用固定尺寸，自定義節點用測量尺寸）
-      const nodeWidth = this.getNodeMeasuredWidth(node);
-      const nodeHeight = this.getNodeMeasuredHeight(node);
-      
-      // 使用統一位置計算系統獲取視覺位置（考慮 origin）
-      const visualPosition = this._flowService.getNodeVisualPosition(node);
-      
-      minX = Math.min(minX, visualPosition.x);
-      minY = Math.min(minY, visualPosition.y);
-      maxX = Math.max(maxX, visualPosition.x + nodeWidth);
-      maxY = Math.max(maxY, visualPosition.y + nodeHeight);
-    });
-    
-    const nodeBounds = {
-      x: minX,
-      y: minY,
-      width: maxX - minX,
-      height: maxY - minY
-    };
-    
-    // 合併viewBB和nodeBounds
-    const combinedMinX = Math.min(viewBB.x, nodeBounds.x);
-    const combinedMinY = Math.min(viewBB.y, nodeBounds.y);
-    const combinedMaxX = Math.max(viewBB.x + viewBB.width, nodeBounds.x + nodeBounds.width);
-    const combinedMaxY = Math.max(viewBB.y + viewBB.height, nodeBounds.y + nodeBounds.height);
-    
-    return {
-      x: combinedMinX,
-      y: combinedMinY,
-      width: combinedMaxX - combinedMinX,
-      height: combinedMaxY - combinedMinY
-    };
+    // 合併 viewBB 和節點邊界 - 與 React 版本一致
+    return getBoundsOfRects(nodesBounds, viewBB);
   });
   
   readonly elementWidth = computed(() => {
@@ -315,11 +322,12 @@ export class MinimapComponent implements OnInit, OnDestroy {
   
   readonly viewBB = computed(() => {
     const viewport = this._flowService.viewport();
+    const dimensions = this._flowService.dimensions();
     return {
       x: -viewport.x / viewport.zoom,
       y: -viewport.y / viewport.zoom,
-      width: this._flowService.dimensions().width / viewport.zoom,
-      height: this._flowService.dimensions().height / viewport.zoom,
+      width: dimensions.width / viewport.zoom,
+      height: dimensions.height / viewport.zoom,
     };
   });
   
@@ -334,6 +342,7 @@ export class MinimapComponent implements OnInit, OnDestroy {
     const height = viewHeight + offset * 2;
     const viewBB = this.viewBB();
     
+    // 與 React 版本完全一致的 mask path 計算
     return `M${x - offset},${y - offset}h${width + offset * 2}v${height + offset * 2}h${-width - offset * 2}z
         M${viewBB.x},${viewBB.y}h${viewBB.width}v${viewBB.height}h${-viewBB.width}z`;
   });
