@@ -60,7 +60,7 @@ export interface ColorSelectorNodeData extends Record<string, unknown> {
       [minZoom]="0.3"
       [maxZoom]="2"
       [fitView]="true"
-      [connectionLineStyle]="{ stroke: '#fff' }"
+      [connectionLineStyle]="connectionLineStyle"
       className="angular-xyflow-custom-node-example"
       (onNodesChange)="onNodesChange($event)"
       (onEdgesChange)="onEdgesChange($event)"
@@ -260,6 +260,9 @@ export class CustomNodeExampleComponent {
 
   // 初始背景顏色（與 React 版本一致）
   private readonly initBgColor = '#1A192B';
+
+  // 連接線樣式（與 React 版本一致）
+  readonly connectionLineStyle = { stroke: '#fff' };
 
   // 背景顏色信號
   readonly bgColor = signal<string>(this.initBgColor);

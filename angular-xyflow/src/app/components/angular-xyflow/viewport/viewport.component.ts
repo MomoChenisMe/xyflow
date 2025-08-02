@@ -150,7 +150,6 @@ export interface EdgeConnectionPoints {
           angular-xyflow-connection-line
           [connectionState]="connectionInProgress()"
           [customTemplate]="customConnectionLineTemplate()"
-          [connectionType]="customConnectionLineType()"
           [connectionLineStyle]="connectionLineStyle()"
         />
       }
@@ -236,7 +235,6 @@ export class ViewportComponent<
   }>>();
   connectionInProgress = input.required<ConnectionState | null>();
   customConnectionLineTemplate = input<TemplateRef<ConnectionLineTemplateContext> | undefined>();
-  customConnectionLineType = input<'default' | 'react'>('default');
   connectionLineStyle = input<Record<string, any>>();
   customNodeTemplates = input<readonly any[]>([]);
   isDarkMode = input<boolean>(false);

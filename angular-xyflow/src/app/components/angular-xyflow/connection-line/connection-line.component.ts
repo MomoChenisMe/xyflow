@@ -32,27 +32,13 @@ export interface ConnectionState {
       />
     } @else if (connectionPath()) {
       <!-- 使用預設連接線 -->
-      <svg:g class="angular-xyflow__connection xy-flow__connection">
+      <svg:g [class]="connectionWrapperClass()">
         <svg:path
           [attr.d]="connectionPath()"
-          [attr.stroke]="connectionStroke()"
-          [attr.stroke-width]="connectionStrokeWidth()"
-          [attr.fill]="'none'"
+          [ngStyle]="connectionStyle()"
           [class]="connectionClass()"
           style="pointer-events: none;"
         />
-        @if (connectionType() === 'react' && connectionState()) {
-          @let state = connectionState()!;
-          <svg:circle 
-            [attr.cx]="state.to.x" 
-            [attr.cy]="state.to.y" 
-            [attr.fill]="'#fff'" 
-            [attr.r]="'3'" 
-            [attr.stroke]="'#222'" 
-            [attr.stroke-width]="'1.5'"
-            style="pointer-events: none;"
-          />
-        }
       </svg:g>
     }
   `,
@@ -61,7 +47,6 @@ export class ConnectionLineComponent {
   // 輸入信號
   connectionState = input.required<ConnectionState | null>();
   customTemplate = input<TemplateRef<ConnectionLineTemplateContext> | undefined>();
-  connectionType = input<'default' | 'react'>('default');
   connectionLineStyle = input<Record<string, any>>();
 
   // 計算信號
@@ -70,41 +55,32 @@ export class ConnectionLineComponent {
     if (!state) return null;
 
     const { from, to, fromPosition, toPosition } = state;
-    const type = this.connectionType();
 
-    // 根據自定義連接線類型選擇不同的路徑算法
-    if (type === 'react') {
-      // 使用React樣式的路徑算法
-      return `M${from.x},${from.y} C ${from.x} ${to.y} ${from.x} ${to.y} ${to.x},${to.y}`;
-    }
-
-    // 預設使用貝茲曲線路徑
-    return this.getBezierPath(
-      from.x,
-      from.y,
-      fromPosition,
-      to.x,
-      to.y,
-      toPosition
-    );
+    // 使用 React Flow 預設的貝茲曲線路徑算法
+    const [path] = this.getBezierPath({
+      sourceX: from.x,
+      sourceY: from.y,
+      sourcePosition: fromPosition,
+      targetX: to.x,
+      targetY: to.y,
+      targetPosition: toPosition
+    });
+    
+    return path;
   });
 
   connectionStroke = computed(() => {
-    const state = this.connectionState();
     const style = this.connectionLineStyle();
     
-    // 優先使用自定義樣式中的stroke
+    // 始終優先使用自定義樣式中的stroke
     if (style?.['stroke']) {
       return style['stroke'];
     }
     
+    const state = this.connectionState();
     if (!state) return '#b1b1b7';
 
-    const type = this.connectionType();
-    if (type === 'react') {
-      return '#222';
-    }
-
+    // 使用 React Flow 的預設行為：預設為灰色
     return state.isValid === true
       ? '#10b981'
       : state.isValid === false
@@ -113,14 +89,49 @@ export class ConnectionLineComponent {
   });
 
   connectionStrokeWidth = computed(() => {
-    const type = this.connectionType();
-    return type === 'react' ? '1.5' : '1';
+    const style = this.connectionLineStyle();
+    
+    // 優先使用自定義樣式中的 stroke-width
+    if (style?.['stroke-width']) {
+      return style['stroke-width'];
+    }
+    if (style?.['strokeWidth']) {
+      return style['strokeWidth'];
+    }
+    
+    // React Flow 預設寬度
+    return '1';
   });
 
   connectionClass = computed(() => {
-    const baseClass = 'angular-xyflow__connection-path xy-flow__connection-path';
-    const type = this.connectionType();
-    return type === 'react' ? `${baseClass} animated` : baseClass;
+    return 'angular-xyflow__connection-path xy-flow__connection-path';
+  });
+
+  // 包裝器類別，包含連接狀態
+  connectionWrapperClass = computed(() => {
+    const state = this.connectionState();
+    const baseClass = 'angular-xyflow__connection xy-flow__connection';
+    
+    if (!state) return baseClass;
+    
+    // 添加連接狀態類別 (valid/invalid)
+    const statusClass = state.isValid === null 
+      ? '' 
+      : state.isValid 
+        ? 'valid' 
+        : 'invalid';
+    
+    return statusClass ? `${baseClass} ${statusClass}` : baseClass;
+  });
+
+  connectionStyle = computed(() => {
+    const stroke = this.connectionStroke();
+    const strokeWidth = this.connectionStrokeWidth();
+    return {
+      stroke,
+      'stroke-width': strokeWidth,
+      fill: 'none'
+    };
   });
 
   templateContext = computed<ConnectionLineTemplateContext | null>(() => {
@@ -137,7 +148,7 @@ export class ConnectionLineComponent {
       fromPosition,
       toPosition,
       isValid: state.isValid ?? null,
-      connectionLineStyle: undefined,
+      connectionLineStyle: this.connectionLineStyle(),
     };
 
     // 使用 $implicit 作為預設值，並提供所有變數作為具名屬性
@@ -147,54 +158,87 @@ export class ConnectionLineComponent {
     };
   });
 
-  private getBezierPath(
-    sourceX: number,
-    sourceY: number,
-    sourcePosition: Position,
-    targetX: number,
-    targetY: number,
-    targetPosition: Position,
-    curvature: number = 0.25
-  ): string {
-    const getControlPoint = (
-      pos: Position,
-      x: number,
-      y: number,
-      targetX: number,
-      targetY: number
-    ): [number, number] => {
-      const distance = Math.sqrt((targetX - x) ** 2 + (targetY - y) ** 2);
-      const offset = Math.max(distance * curvature, 20);
-
-      switch (pos) {
-        case Position.Left:
-          return [x - offset, y];
-        case Position.Right:
-          return [x + offset, y];
-        case Position.Top:
-          return [x, y - offset];
-        case Position.Bottom:
-          return [x, y + offset];
-        default:
-          return [x, y];
-      }
-    };
-
-    const [sourceControlX, sourceControlY] = getControlPoint(
-      sourcePosition,
+  // 實現 React Flow 的貝茲曲線路徑算法
+  private getBezierPath(params: {
+    sourceX: number;
+    sourceY: number;
+    sourcePosition: Position;
+    targetX: number;
+    targetY: number;
+    targetPosition: Position;
+    curvature?: number;
+  }): [string, number, number, number, number] {
+    const {
       sourceX,
       sourceY,
-      targetX,
-      targetY
-    );
-    const [targetControlX, targetControlY] = getControlPoint(
-      targetPosition,
+      sourcePosition,
       targetX,
       targetY,
-      sourceX,
-      sourceY
-    );
+      targetPosition,
+      curvature = 0.25,
+    } = params;
 
-    return `M ${sourceX},${sourceY} C ${sourceControlX},${sourceControlY} ${targetControlX},${targetControlY} ${targetX},${targetY}`;
+    const [sourceControlX, sourceControlY] = this.getControlWithCurvature({
+      pos: sourcePosition,
+      x1: sourceX,
+      y1: sourceY,
+      x2: targetX,
+      y2: targetY,
+      c: curvature,
+    });
+
+    const [targetControlX, targetControlY] = this.getControlWithCurvature({
+      pos: targetPosition,
+      x1: targetX,
+      y1: targetY,
+      x2: sourceX,
+      y2: sourceY,
+      c: curvature,
+    });
+
+    // 計算中心點（用於標籤，但連接線不需要）
+    const centerX = sourceX * 0.125 + sourceControlX * 0.375 + targetControlX * 0.375 + targetX * 0.125;
+    const centerY = sourceY * 0.125 + sourceControlY * 0.375 + targetControlY * 0.375 + targetY * 0.125;
+    const offsetX = Math.abs(centerX - sourceX);
+    const offsetY = Math.abs(centerY - sourceY);
+
+    return [
+      `M${sourceX},${sourceY} C${sourceControlX},${sourceControlY} ${targetControlX},${targetControlY} ${targetX},${targetY}`,
+      centerX,
+      centerY,
+      offsetX,
+      offsetY,
+    ];
+  }
+
+  private calculateControlOffset(distance: number, curvature: number): number {
+    if (distance >= 0) {
+      return 0.5 * distance;
+    }
+    return curvature * 25 * Math.sqrt(-distance);
+  }
+
+  private getControlWithCurvature(params: {
+    pos: Position;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    c: number;
+  }): [number, number] {
+    const { pos, x1, y1, x2, y2, c } = params;
+
+    switch (pos) {
+      case Position.Left:
+        return [x1 - this.calculateControlOffset(x1 - x2, c), y1];
+      case Position.Right:
+        return [x1 + this.calculateControlOffset(x2 - x1, c), y1];
+      case Position.Top:
+        return [x1, y1 - this.calculateControlOffset(y1 - y2, c)];
+      case Position.Bottom:
+        return [x1, y1 + this.calculateControlOffset(y2 - y1, c)];
+      default:
+        return [x1, y1];
+    }
   }
 }

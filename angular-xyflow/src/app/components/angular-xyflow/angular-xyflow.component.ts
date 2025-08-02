@@ -75,7 +75,6 @@ import { ViewportComponent } from './viewport/viewport.component';
         [edgeMarkers]="edgeMarkers()"
         [connectionInProgress]="connectionInProgress()"
         [customConnectionLineTemplate]="customConnectionLineTemplate()?.templateRef"
-        [customConnectionLineType]="customConnectionLineType()"
         [connectionLineStyle]="connectionLineStyle()"
         [customNodeTemplates]="customNodeTemplates()"
         [isDarkMode]="colorModeClass() === 'dark'"
@@ -259,7 +258,6 @@ export class AngularXYFlowComponent<
   panOnDrag = input<boolean>(true);
   colorMode = input<ColorMode>('light');
   paneClickDistance = input<number>(0);
-  customConnectionLineType = input<'default' | 'react'>('default');
   connectionLineStyle = input<Record<string, any>>();
 
   // 生成唯一的容器 ID

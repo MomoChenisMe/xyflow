@@ -29,6 +29,7 @@ import {
       [nodes]="initialNodes()"
       [edges]="initialEdges()"
       [className]="'custom-connection-line-flow'"
+      [connectionLineStyle]="{ stroke: '#ff6b6b', strokeWidth: '2' }"
       (onNodesChange)="onNodesChange($event)"
       (onEdgesChange)="onEdgesChange($event)"
       (onConnect)="onConnect($event)"
@@ -43,25 +44,26 @@ import {
         let-fromPosition="fromPosition"
         let-toPosition="toPosition"
         let-isValid="isValid"
+        let-connectionLineStyle="connectionLineStyle"
       >
         <svg:g class="angular-xyflow__connection-line xy-flow__connection-line">
-          <!-- React風格的連接線路徑：與React版本完全相同的樣式 -->
+          <!-- React風格的連接線路徑：使用動態樣式 -->
           <svg:path
             [attr.d]="'M' + fromX + ',' + fromY + ' C ' + fromX + ' ' + toY + ' ' + fromX + ' ' + toY + ' ' + toX + ',' + toY"
             fill="none"
-            stroke="#222"
-            stroke-width="1.5"
+            [attr.stroke]="connectionLineStyle?.stroke || '#222'"
+            [attr.stroke-width]="connectionLineStyle?.['stroke-width'] || connectionLineStyle?.strokeWidth || '1.5'"
             class="animated"
           />
           
-          <!-- 終點圓圈：與React版本完全相同的樣式 -->
+          <!-- 終點圓圈：使用動態樣式 -->
           <svg:circle
             [attr.cx]="toX"
             [attr.cy]="toY"
             fill="#fff"
             r="3"
-            stroke="#222"
-            stroke-width="1.5"
+            [attr.stroke]="connectionLineStyle?.stroke || '#222'"
+            [attr.stroke-width]="connectionLineStyle?.['stroke-width'] || connectionLineStyle?.strokeWidth || '1.5'"
           />
         </svg:g>
       </ng-template>
