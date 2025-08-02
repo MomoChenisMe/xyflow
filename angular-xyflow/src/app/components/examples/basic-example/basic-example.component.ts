@@ -113,21 +113,25 @@ export class BasicExampleComponent {
       type: 'input',
       data: { label: 'Node 1' },
       position: { x: 250, y: 5 },
+      className: 'light',
     },
     {
       id: '2',
       data: { label: 'Node 2' },
       position: { x: 100, y: 100 },
+      className: 'light',
     },
     {
       id: '3',
       data: { label: 'Node 3' },
       position: { x: 400, y: 100 },
+      className: 'light',
     },
     {
       id: '4',
       data: { label: 'Node 4' },
       position: { x: 400, y: 200 },
+      className: 'light',
     },
   ]);
 
@@ -152,10 +156,11 @@ export class BasicExampleComponent {
 
   // 事件處理方法
   onNodesChange(nodes: AngularNode[]): void {
-    // React 中沒有這個 log
+    console.log(nodes);
   }
 
   onConnect(connection: Connection): void {
+    console.log('onConnect', connection);
     this._flow.setEdges((edges: AngularEdge[]) => addEdge(connection, edges));
   }
 
@@ -168,7 +173,7 @@ export class BasicExampleComponent {
     node: AngularNode;
     nodes: AngularNode[];
   }): void {
-    // React 中沒有這個 log
+    console.log('drag start', data.node, data.nodes);
   }
 
   onNodeDrag(data: {
@@ -176,7 +181,7 @@ export class BasicExampleComponent {
     node: AngularNode;
     nodes: AngularNode[];
   }): void {
-    // React 中沒有這個 log
+    console.log('drag', data.node, data.nodes);
   }
 
   onNodeDragStop(data: {
@@ -191,15 +196,15 @@ export class BasicExampleComponent {
     event: MouseEvent;
     nodes: AngularNode[];
   }): void {
-    // React 中沒有這個 log
+    console.log('selection drag start', data.nodes);
   }
 
   onSelectionDrag(data: { event: MouseEvent; nodes: AngularNode[] }): void {
-    // React 中沒有這個 log
+    console.log('selection drag', data.nodes);
   }
 
   onSelectionDragStop(data: { event: MouseEvent; nodes: AngularNode[] }): void {
-    // React 中沒有這個 log
+    console.log('selection drag stop', data.nodes);
   }
 
   // Panel 按鈕方法
@@ -265,6 +270,7 @@ export class BasicExampleComponent {
       id: `${Math.random()}`,
       data: { label: 'Node' },
       position: { x: Math.random() * 300, y: Math.random() * 300 },
+      className: 'light',
     });
     this._flow.fitView();
   }

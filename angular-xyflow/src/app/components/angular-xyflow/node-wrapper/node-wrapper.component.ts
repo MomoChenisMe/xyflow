@@ -507,9 +507,8 @@ export class NodeWrapperComponent implements OnDestroy {
     const globalSelectable = this._flowService.elementsSelectable();
 
     // 檢查是否有自定義的 tabIndex
-    const domAttributes = nodeData.data?.['domAttributes'] as any;
-    if (domAttributes && typeof domAttributes.tabIndex === 'number') {
-      return domAttributes.tabIndex;
+    if (nodeData.domAttributes && typeof nodeData.domAttributes['tabIndex'] === 'number') {
+      return nodeData.domAttributes['tabIndex'];
     }
 
     // 如果節點可選擇，設為 0 讓它可以被鍵盤聚焦
@@ -520,8 +519,8 @@ export class NodeWrapperComponent implements OnDestroy {
     const nodeData = this.node();
 
     // 檢查是否有自定義的 aria role
-    if (nodeData.data?.['ariaRole']) {
-      return nodeData.data['ariaRole'] as string;
+    if (nodeData.ariaRole) {
+      return nodeData.ariaRole;
     }
 
     // 預設使用 'button' role，因為節點是可交互的
@@ -532,14 +531,13 @@ export class NodeWrapperComponent implements OnDestroy {
     const nodeData = this.node();
 
     // 檢查是否有自定義的 aria-label
-    if (nodeData.data?.['ariaLabel']) {
-      return nodeData.data['ariaLabel'] as string;
+    if (nodeData.domAttributes?.['aria-label']) {
+      return nodeData.domAttributes['aria-label'] as string;
     }
 
     // 檢查是否有自定義的 aria-roledescription
-    const domAttributes = nodeData.data?.['domAttributes'] as any;
-    if (domAttributes && domAttributes['aria-roledescription']) {
-      return domAttributes['aria-roledescription'] as string;
+    if (nodeData.domAttributes?.['aria-roledescription']) {
+      return nodeData.domAttributes['aria-roledescription'] as string;
     }
 
     // 預設使用節點的 label 或 id

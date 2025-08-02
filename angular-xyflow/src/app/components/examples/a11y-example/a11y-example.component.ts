@@ -11,7 +11,6 @@ import {
   AngularEdge,
   BackgroundVariant,
 } from '../../angular-xyflow/types';
-import { Position } from '@xyflow/system';
 
 @Component({
   selector: 'app-a11y-example',
@@ -94,41 +93,39 @@ export class A11yExampleComponent {
     {
       id: '1',
       type: 'input',
-      data: {
-        label: 'A11y Node 1',
-        domAttributes: {
-          tabIndex: 10,
-          'aria-roledescription': 'A11y Node',
-        },
-      } as Record<string, unknown>,
+      data: { label: 'A11y Node 1' },
       position: { x: 250, y: 5 },
+      className: 'light',
+      domAttributes: {
+        tabIndex: 10,
+        'aria-roledescription': 'A11y Node',
+      },
     },
     {
       id: '2',
-      data: { label: 'Node 2' } as Record<string, unknown>,
+      data: { label: 'Node 2' },
       position: { x: 1000, y: 100 },
     },
     {
       id: '3',
-      data: {
-        label: 'Node 3',
-        ariaRole: 'button',
-      } as Record<string, unknown>,
+      data: { label: 'Node 3' },
       position: { x: 100, y: 100 },
+      className: 'light',
+      ariaRole: 'button',
     },
     {
       id: '4',
-      data: { label: 'Node 4' } as Record<string, unknown>,
+      data: { label: 'Node 4' },
       position: { x: 300, y: 100 },
     },
     {
       id: '5',
-      data: { label: 'Node 5' } as Record<string, unknown>,
+      data: { label: 'Node 5' },
       position: { x: 400, y: 200 },
     },
     {
       id: '6',
-      data: { label: 'Node 6' } as Record<string, unknown>,
+      data: { label: 'Node 6' },
       position: { x: -1000, y: 200 },
     },
   ];

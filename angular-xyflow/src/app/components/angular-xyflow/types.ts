@@ -34,6 +34,15 @@ export interface AngularNode<T extends Record<string, unknown> = Record<string, 
   style?: Record<string, any>;
   origin?: [number, number]; // 新增：節點原點屬性，用於定位計算
   measured?: { width: number; height: number }; // 新增：測量的尺寸屬性
+  /**
+   * The ARIA role attribute for the node element, used for accessibility.
+   * @default "group"
+   */
+  ariaRole?: string;
+  /**
+   * General escape hatch for adding custom attributes to the node's DOM element.
+   */
+  domAttributes?: Record<string, any>;
 }
 
 // Edge marker type
