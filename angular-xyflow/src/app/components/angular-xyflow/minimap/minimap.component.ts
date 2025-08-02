@@ -64,8 +64,8 @@ import type { MinimapNodeTemplateContext, MinimapNodeComponentProps } from '../t
             <svg:rect
               [attr.x]="getNodeVisualPosition(node).x"
               [attr.y]="getNodeVisualPosition(node).y"
-              [attr.width]="node.width || 150"
-              [attr.height]="node.height || 40"
+              [attr.width]="getNodeMeasuredWidth(node)"
+              [attr.height]="getNodeMeasuredHeight(node)"
               [attr.fill]="getNodeColor(node)"
               [attr.stroke]="getNodeStrokeColor(node)"
               [attr.stroke-width]="nodeStrokeWidth()"
@@ -250,8 +250,9 @@ export class MinimapComponent implements OnInit, OnDestroy {
     let maxY = -Infinity;
     
     nodes.forEach(node => {
-      const nodeWidth = node.width || 150;
-      const nodeHeight = node.height || 40;
+      // 使用 minimap 顯示尺寸（標準節點用固定尺寸，自定義節點用測量尺寸）
+      const nodeWidth = this.getNodeMeasuredWidth(node);
+      const nodeHeight = this.getNodeMeasuredHeight(node);
       
       // 使用統一位置計算系統獲取視覺位置（考慮 origin）
       const visualPosition = this._flowService.getNodeVisualPosition(node);
@@ -474,8 +475,22 @@ export class MinimapComponent implements OnInit, OnDestroy {
   // 獲取自定義節點模板的上下文
   getCustomNodeContext(node: any): MinimapNodeTemplateContext {
     const visualPosition = this.getNodeVisualPosition(node);
-    const width = node.width || 150;
-    const height = node.height || 40;
+    
+    // 對於標準節點類型使用固定尺寸，自定義節點使用實際測量尺寸
+    let width: number;
+    let height: number;
+    
+    if (this.isStandardNodeType(node.type)) {
+      // 標準節點類型使用固定的預設尺寸，與 React Flow 行為一致
+      width = node.width || 150;
+      height = node.height || 40;
+    } else {
+      // 自定義節點使用實際測量尺寸
+      const nodeInternals = this._flowService.getNodeInternals(node.id);
+      width = nodeInternals?.measured.width || node.width || 150;
+      height = nodeInternals?.measured.height || node.height || 40;
+    }
+    
     const selected = this.shouldShowSelected(node);
     const color = this.getNodeColor(node);
     const strokeColor = this.getNodeStrokeColor(node);
@@ -508,5 +523,35 @@ export class MinimapComponent implements OnInit, OnDestroy {
       strokeWidth,
       borderRadius,
     };
+  }
+  
+  // 判斷是否為標準節點類型
+  private isStandardNodeType(nodeType?: string): boolean {
+    const standardTypes = ['default', 'input', 'output'];
+    return !nodeType || standardTypes.includes(nodeType);
+  }
+  
+  // 獲取節點的 minimap 顯示寬度（區分標準節點和自定義節點）
+  getNodeMeasuredWidth(node: any): number {
+    if (this.isStandardNodeType(node.type)) {
+      // 標準節點類型使用固定的預設尺寸，與 React Flow 行為一致
+      return node.width || 150;
+    } else {
+      // 自定義節點使用實際測量尺寸
+      const nodeInternals = this._flowService.getNodeInternals(node.id);
+      return nodeInternals?.measured.width || node.width || 150;
+    }
+  }
+  
+  // 獲取節點的 minimap 顯示高度（區分標準節點和自定義節點）
+  getNodeMeasuredHeight(node: any): number {
+    if (this.isStandardNodeType(node.type)) {
+      // 標準節點類型使用固定的預設尺寸，與 React Flow 行為一致
+      return node.height || 40;
+    } else {
+      // 自定義節點使用實際測量尺寸
+      const nodeInternals = this._flowService.getNodeInternals(node.id);
+      return nodeInternals?.measured.height || node.height || 40;
+    }
   }
 }

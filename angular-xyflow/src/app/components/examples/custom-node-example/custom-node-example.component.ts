@@ -28,6 +28,7 @@ import {
   BackgroundVariant,
   AngularXYFlowInstance,
   NodeTemplateDirective,
+  MinimapNodeTemplateDirective,
 } from '../../angular-xyflow';
 // 自定義節點數據類型
 export interface ColorSelectorNodeData extends Record<string, unknown> {
@@ -36,155 +37,6 @@ export interface ColorSelectorNodeData extends Record<string, unknown> {
 }
 // import { CustomViewportComponent } from './custom-viewport.component'; // 不再需要，因為我們修改了現有的 NodeWrapperComponent
 
-// 自定義 MiniMap 組件，支援顏色變更
-@Component({
-  selector: 'app-custom-color-minimap',
-  standalone: true,
-  imports: [CommonModule, PanelComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  encapsulation: ViewEncapsulation.None,
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  template: `
-    <angular-xyflow-panel
-      [position]="position()"
-      [style]="computedStyle()"
-      [className]="'xy-flow__minimap ' + (className() || '')"
-      [attr.data-testid]="'rf__minimap'"
-    >
-      <svg:svg
-        #svg
-        [attr.width]="elementWidth()"
-        [attr.height]="elementHeight()"
-        [attr.viewBox]="viewBox()"
-        class="xy-flow__minimap-svg"
-        role="img"
-        [attr.aria-labelledby]="labelledBy"
-        (click)="onSvgClick($event)"
-      >
-        @if (ariaLabel()) {
-        <svg:title [id]="labelledBy">{{ ariaLabel() }}</svg:title>
-        }
-
-        <!-- 自定義節點渲染：根據節點類型和顏色渲染 -->
-        @for (node of visibleNodes(); track node.id) {
-        <svg:rect
-          [attr.x]="getNodePosition(node).x"
-          [attr.y]="getNodePosition(node).y"
-          [attr.width]="getNodeWidth(node)"
-          [attr.height]="getNodeHeight(node)"
-          [attr.fill]="getNodeColor(node)"
-          [attr.stroke]="getNodeStrokeColor(node)"
-          [attr.stroke-width]="nodeStrokeWidth()"
-          [class]="
-            'xy-flow__minimap-node ' +
-            (shouldShowSelected(node) ? 'selected' : '') +
-            ' ' +
-            (nodeClassName() || '')
-          "
-          [attr.shape-rendering]="shapeRendering"
-          (click)="onSvgNodeClick($event, node.id)"
-        />
-        }
-
-        <!-- 視口遮罩 -->
-        <svg:path
-          class="xy-flow__minimap-mask"
-          [attr.d]="maskPath()"
-          [attr.fill-rule]="'evenodd'"
-          [style.pointer-events]="'none'"
-        />
-      </svg:svg>
-    </angular-xyflow-panel>
-  `,
-  styles: [
-    `
-      .xy-flow__minimap {
-        background: var(
-          --xy-minimap-background-color-props,
-          var(
-            --xy-minimap-background-color,
-            var(--xy-minimap-background-color-default)
-          )
-        );
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        overflow: hidden;
-        position: relative;
-      }
-
-      .xy-flow.dark .xy-flow__minimap {
-        border-color: #555;
-      }
-
-      .xy-flow__minimap-svg {
-        display: block;
-      }
-
-      .xy-flow__minimap-mask {
-        fill: var(
-          --xy-minimap-mask-background-color-props,
-          var(
-            --xy-minimap-mask-background-color,
-            var(--xy-minimap-mask-background-color-default)
-          )
-        );
-        stroke: var(
-          --xy-minimap-mask-stroke-color-props,
-          var(
-            --xy-minimap-mask-stroke-color,
-            var(--xy-minimap-mask-stroke-color-default)
-          )
-        );
-        stroke-width: var(
-          --xy-minimap-mask-stroke-width-props,
-          var(
-            --xy-minimap-mask-stroke-width,
-            var(--xy-minimap-mask-stroke-width-default)
-          )
-        );
-      }
-    `,
-  ],
-})
-export class CustomColorMinimapComponent extends MinimapComponent {
-  currentBgColor = signal('#1A192B');
-
-  // 獲取節點位置
-  getNodePosition(node: any): { x: number; y: number } {
-    const pos = this.getNodeVisualPosition(node);
-    return { x: pos.x, y: pos.y };
-  }
-
-  // 獲取節點寬度
-  getNodeWidth(node: any): number {
-    return node.width || 150;
-  }
-
-  // 獲取節點高度
-  getNodeHeight(node: any): number {
-    return node.height || 40;
-  }
-
-  // 根據節點類型獲取顏色
-  override getNodeColor(node: any): string {
-    if (node.type === 'selectorNode') {
-      const nodeData = node.data as ColorSelectorNodeData;
-      return nodeData?.color || this.currentBgColor();
-    }
-    return '#fff';
-  }
-
-  // 獲取節點邊框顏色
-  override getNodeStrokeColor(node: any): string {
-    if (node.type === 'input') return '#0041d0';
-    if (node.type === 'selectorNode') {
-      const nodeData = node.data as ColorSelectorNodeData;
-      return nodeData?.color || this.currentBgColor();
-    }
-    if (node.type === 'output') return '#ff0072';
-    return '#eee';
-  }
-}
 
 @Component({
   selector: 'app-custom-node-example',
@@ -194,10 +46,10 @@ export class CustomColorMinimapComponent extends MinimapComponent {
     AngularXYFlowComponent,
     BackgroundComponent,
     ControlsComponent,
-    CustomColorMinimapComponent,
+    MinimapComponent,
     NodeTemplateDirective,
+    MinimapNodeTemplateDirective,
     HandleComponent,
-    // CustomViewportComponent, // 不再需要
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -223,7 +75,29 @@ export class CustomColorMinimapComponent extends MinimapComponent {
       />
 
       <!-- 自定義 MiniMap，支援節點顏色變更 -->
-      <app-custom-color-minimap #minimap [pannable]="true" [zoomable]="true" />
+      <angular-xyflow-minimap [pannable]="true" [zoomable]="true">
+        <!-- 自定義 minimap 節點模板 - 根據節點類型顯示不同顏色 -->
+        <ng-template
+          angularXyFlowMinimapNode
+          let-node="node"
+          let-x="x"
+          let-y="y"
+          let-width="width"
+          let-height="height"
+          let-selected="selected"
+        >
+          <svg:rect
+            [attr.x]="x"
+            [attr.y]="y"
+            [attr.width]="width"
+            [attr.height]="height"
+            [attr.fill]="getMinimapNodeColor(node)"
+            [attr.stroke]="getMinimapNodeStrokeColor(node)"
+            [attr.stroke-width]="selected ? 2 : 1"
+            class="custom-color-node"
+          />
+        </ng-template>
+      </angular-xyflow-minimap>
 
       <angular-xyflow-controls />
 
@@ -377,7 +251,6 @@ export class CustomColorMinimapComponent extends MinimapComponent {
 export class CustomNodeExampleComponent {
   // 視圖子元素引用
   readonly angularFlow = viewChild.required(AngularXYFlowComponent);
-  readonly minimapRef = viewChild<CustomColorMinimapComponent>('minimap');
 
   // 背景變體枚舉
   readonly backgroundVariant = BackgroundVariant;
@@ -404,15 +277,6 @@ export class CustomNodeExampleComponent {
     // 初始化節點和邊（與 React 版本相似）
     effect(() => {
       this.initializeFlow();
-    });
-
-    // 監聽背景顏色變化，同步更新 MiniMap
-    effect(() => {
-      const currentBgColor = this.bgColor();
-      const minimap = this.minimapRef();
-      if (minimap) {
-        minimap.currentBgColor.set(currentBgColor);
-      }
     });
   }
 
@@ -544,5 +408,25 @@ export class CustomNodeExampleComponent {
     nodes: AngularNode[];
   }): void {
     console.log('drag stop', data.node);
+  }
+
+  // Minimap 節點顏色邏輯 - 根據節點類型獲取顏色
+  getMinimapNodeColor(node: any): string {
+    if (node.type === 'selectorNode') {
+      const nodeData = node.data as ColorSelectorNodeData;
+      return nodeData?.color || this.bgColor();
+    }
+    return '#fff';
+  }
+
+  // Minimap 節點邊框顏色邏輯 - 根據節點類型獲取邊框顏色
+  getMinimapNodeStrokeColor(node: any): string {
+    if (node.type === 'input') return '#0041d0';
+    if (node.type === 'selectorNode') {
+      const nodeData = node.data as ColorSelectorNodeData;
+      return nodeData?.color || this.bgColor();
+    }
+    if (node.type === 'output') return '#ff0072';
+    return '#eee';
   }
 }
