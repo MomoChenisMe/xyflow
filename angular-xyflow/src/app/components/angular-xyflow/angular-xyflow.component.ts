@@ -492,18 +492,9 @@ export class AngularXYFlowComponent<
       const controlledNodes = this.nodes();
       const controlledEdges = this.edges();
 
-      console.log('Setting mode flags:');
-      console.log('defaultNodes.length:', defaultNodes.length);
-      console.log('defaultEdges.length:', defaultEdges.length);
-      console.log('controlledNodes defined:', !!controlledNodes);
-      console.log('controlledEdges defined:', !!controlledEdges);
-
       // 設置模式標誌：只有當沒有 controlled 模式且有 default 數據時才設為 true
       const hasDefaultNodes = !controlledNodes && defaultNodes.length > 0;
       const hasDefaultEdges = !controlledEdges && defaultEdges.length > 0;
-      
-      console.log('Setting hasDefaultNodes:', hasDefaultNodes);
-      console.log('Setting hasDefaultEdges:', hasDefaultEdges);
 
       this._flowService.setHasDefaultNodes(hasDefaultNodes);
       this._flowService.setHasDefaultEdges(hasDefaultEdges);
@@ -544,28 +535,18 @@ export class AngularXYFlowComponent<
     // 使用 afterRenderEffect 同步 controlled nodes，確保在渲染週期後執行
     afterRenderEffect(() => {
       const controlledNodes = this.nodes();
-      const currentLength = controlledNodes?.length || 0;
-      console.log('🔄 SYNC: nodes afterRenderEffect triggered, length:', currentLength);
-      console.log('🔄 SYNC: nodes content:', controlledNodes);
       
       if (controlledNodes !== undefined && !this._flowService.hasDefaultNodes()) {
-        console.log('Syncing controlled nodes:', controlledNodes);
         this._flowService.syncNodesFromControlled(controlledNodes);
-        console.log('✅ SYNC: nodes synced to service');
       }
     });
 
     // 使用 afterRenderEffect 同步 controlled edges，確保在渲染週期後執行
     afterRenderEffect(() => {
       const controlledEdges = this.edges();
-      const currentLength = controlledEdges?.length || 0;
-      console.log('🔄 SYNC: edges afterRenderEffect triggered, length:', currentLength);
-      console.log('🔄 SYNC: edges content:', controlledEdges);
       
       if (controlledEdges !== undefined && !this._flowService.hasDefaultEdges()) {
-        console.log('Syncing controlled edges:', controlledEdges);
         this._flowService.syncEdgesFromControlled(controlledEdges);
-        console.log('✅ SYNC: edges synced to service');
       }
     });
 
@@ -1006,16 +987,11 @@ export class AngularXYFlowComponent<
   }
 
   handleConnectEnd(eventData: { connection?: Connection; event: MouseEvent }) {
-    console.log('🔗 handleConnectEnd called with:', eventData);
-    
     // 發出連接結束事件 - 無論是否有連接都要發出（這是關鍵！）
-    console.log('🚀 Emitting onConnectEnd event to parent:', eventData);
     this.onConnectEnd.emit(eventData);
 
     // 如果有連接，處理連接邏輯
     if (eventData.connection) {
-      console.log('✅ Processing connection:', eventData.connection);
-      
       // 先發出 onConnect 事件給父組件，讓父組件有機會處理
       this.onConnect.emit(eventData.connection);
       
@@ -1028,20 +1004,13 @@ export class AngularXYFlowComponent<
         
         // 如果父組件沒有添加新的 edge，則使用默認邏輯創建
         if (newEdgeCount === currentEdgeCount) {
-          console.log('父組件未處理連接，使用默認邏輯創建 edge');
           this._flowService.onConnect(eventData.connection!);
-          console.log('After Flow Service onConnect, edges:', this._flowService.edges());
-        } else {
-          console.log('父組件已處理連接，跳過默認邏輯');
         }
         
         // 觸發 onEdgesChange（無論父組件是否處理）
         const updatedEdges = this._flowService.edges();
-        console.log('Emitting onEdgesChange with edges:', updatedEdges);
         this.onEdgesChange.emit(updatedEdges);
       }, 0);
-    } else {
-      console.log('❌ No connection in eventData - but still emitting onConnectEnd');
     }
   }
 

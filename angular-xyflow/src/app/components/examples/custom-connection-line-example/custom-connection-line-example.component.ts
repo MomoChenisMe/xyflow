@@ -124,7 +124,6 @@ export class CustomConnectionLineExampleComponent {
   }
 
   onConnect(connection: Connection): void {
-    console.log('建立連接:', connection);
 
     // 更新邊資料
     this.initialEdges.update(edges => addEdge(connection, edges));

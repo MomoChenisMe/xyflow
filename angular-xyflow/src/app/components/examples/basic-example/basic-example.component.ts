@@ -152,11 +152,10 @@ export class BasicExampleComponent {
 
   // 事件處理方法
   onNodesChange(nodes: AngularNode[]): void {
-    console.log('nodes change', nodes);
+    // React 中沒有這個 log
   }
 
   onConnect(connection: Connection): void {
-    console.log('onConnect', connection);
     this._flow.setEdges((edges: AngularEdge[]) => addEdge(connection, edges));
   }
 
@@ -169,7 +168,7 @@ export class BasicExampleComponent {
     node: AngularNode;
     nodes: AngularNode[];
   }): void {
-    console.log('drag start', data.node, data.nodes);
+    // React 中沒有這個 log
   }
 
   onNodeDrag(data: {
@@ -177,7 +176,7 @@ export class BasicExampleComponent {
     node: AngularNode;
     nodes: AngularNode[];
   }): void {
-    console.log('drag', data.node, data.nodes);
+    // React 中沒有這個 log
   }
 
   onNodeDragStop(data: {
@@ -185,22 +184,22 @@ export class BasicExampleComponent {
     node: AngularNode;
     nodes: AngularNode[];
   }): void {
-    console.log('drag stop', data.node, data.nodes);
+    console.log('drag stop', data.node);
   }
 
   onSelectionDragStart(data: {
     event: MouseEvent;
     nodes: AngularNode[];
   }): void {
-    console.log('selection drag start', data.nodes);
+    // React 中沒有這個 log
   }
 
   onSelectionDrag(data: { event: MouseEvent; nodes: AngularNode[] }): void {
-    console.log('selection drag', data.nodes);
+    // React 中沒有這個 log
   }
 
   onSelectionDragStop(data: { event: MouseEvent; nodes: AngularNode[] }): void {
-    console.log('selection drag stop', data.nodes);
+    // React 中沒有這個 log
   }
 
   // Panel 按鈕方法

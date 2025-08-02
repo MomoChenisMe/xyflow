@@ -253,18 +253,15 @@ export class CustomMinimapNodeExampleComponent {
 
   // 節點變化回調
   onNodesChange(nodes: AngularNode[]): void {
-    console.log('nodes change', nodes);
     this.nodes.set(nodes);
   }
 
   onEdgesChange(edges: AngularEdge[]): void {
-    console.log('edges change', edges);
     this.edges.set(edges);
   }
 
   // 連接回調
   onConnect(connection: Connection): void {
-    console.log('onConnect', connection);
     this._flow.setEdges((edges: AngularEdge[]) => addEdge(connection, edges));
   }
 

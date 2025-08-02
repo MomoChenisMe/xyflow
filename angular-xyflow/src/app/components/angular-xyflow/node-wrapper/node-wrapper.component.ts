@@ -476,8 +476,6 @@ export class NodeWrapperComponent implements OnDestroy {
     const target = event.target as HTMLInputElement;
     const nodeData = this.node().data;
     
-    console.log('Color changed:', target.value);
-    
     // 調用節點數據中的 onChange 函數（如果存在）
     if (nodeData && typeof nodeData['onChange'] === 'function') {
       nodeData['onChange'](event);
@@ -609,7 +607,6 @@ export class NodeWrapperComponent implements OnDestroy {
   private handleKeyboardMove(key: string): void {
     // 這個功能可以讓用戶使用鍵盤移動節點
     // 目前先留空，可以根據需要實現
-    console.log('Keyboard move:', key, 'for node:', this.node().id);
   }
 
   // 檢查焦點是否來自鍵盤（類似 React 版本的 :focus-visible 檢查）

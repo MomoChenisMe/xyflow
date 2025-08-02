@@ -82,16 +82,11 @@ export class AddNodeOnEdgeDropComponent {
 
   onConnectStart(event: { event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }): void {
     // 記錄開始連接的節點ID
-    console.log('📝 ADD-NODE: onConnectStart received:', event.nodeId);
     this.connectingNodeId = event.nodeId;
   }
 
   onConnectEnd(eventData: { connection?: Connection; event: MouseEvent }): void {
-    console.log('📝 ADD-NODE: onConnectEnd received:', eventData);
-    console.log('📝 ADD-NODE: connectingNodeId:', this.connectingNodeId);
-    
     if (!this.connectingNodeId) {
-      console.log('❌ ADD-NODE: No connecting node ID');
       return;
     }
 
@@ -99,41 +94,23 @@ export class AddNodeOnEdgeDropComponent {
     const target = eventData.event.target as Partial<Element> | null;
     const targetIsPane = target?.classList?.contains('angular-xyflow__pane');
     
-    console.log('📝 ADD-NODE: targetIsPane:', targetIsPane);
-
     if (targetIsPane && 'clientX' in eventData.event && 'clientY' in eventData.event) {
-      console.log('✅ ADD-NODE: Creating node at position');
       // 在空白區域結束連接，創建新節點
       this.createNodeAtPosition(eventData.event);
-    } else {
-      console.log('❌ ADD-NODE: Not creating node - conditions not met');
     }
   }
 
   private createNodeAtPosition(event: MouseEvent): void {
-    console.log('🏗️ CREATE-NODE: Starting node creation');
-    
     if (!this.connectingNodeId || !this.flowComponent) {
-      console.log('❌ CREATE-NODE: Missing requirements', { 
-        connectingNodeId: this.connectingNodeId, 
-        flowComponent: !!this.flowComponent 
-      });
       return;
     }
 
     // 獲取新節點ID
     const id = this.getId();
-    console.log('🆔 CREATE-NODE: Generated ID:', id);
 
     // 使用screenToFlowPosition轉換座標
     const screenPosition = { x: event.clientX, y: event.clientY };
     const position = this.flowComponent.screenToFlowPosition(screenPosition);
-    console.log('📍 CREATE-NODE: Screen position:', screenPosition);
-    console.log('📍 CREATE-NODE: Calculated flow position:', position);
-    
-    // 比較：計算帶origin的位置
-    const viewport = this.flowComponent.getViewport();
-    console.log('📍 CREATE-NODE: Current viewport:', viewport);
 
     // 創建新節點 - 與 React 版本一致，並添加 measured 屬性
     const newNode: AngularNode = {
@@ -147,8 +124,6 @@ export class AddNodeOnEdgeDropComponent {
       }
     };
     
-    console.log('🏗️ CREATE-NODE: Created node with origin [0.5, 0.0]:', newNode);
-
     // 創建新邊 - 與 React 版本一致
     const newEdge: AngularEdge = {
       id,
@@ -156,38 +131,23 @@ export class AddNodeOnEdgeDropComponent {
       target: id,
     };
 
-    console.log('🏗️ CREATE-NODE: Created objects:', { newNode, newEdge });
-    console.log('🏗️ CREATE-NODE: Current state before update:', {
-      nodes: this.nodes().length,
-      edges: this.edges().length
-    });
-
     // 在controlled模式下，我們需要更新signals而不是直接調用flow方法
     // 但確保新節點有正確的屬性（如measured）
     this.nodes.update(nodes => {
       const updated = nodes.concat(newNode);
-      console.log('🔄 CREATE-NODE: Updated nodes:', updated);
       return updated;
     });
     
     this.edges.update(edges => {
       const updated = edges.concat(newEdge);
-      console.log('🔄 CREATE-NODE: Updated edges:', updated);
       return updated;
     });
 
-    console.log('✅ CREATE-NODE: Final state after update:', {
-      nodes: this.nodes().length,
-      edges: this.edges().length
-    });
-
     // 手動觸發變更檢測，確保 Angular XYFlow 組件能檢測到 input signals 的變化
-    console.log('🔄 MANUAL: Triggering change detection');
     this.cdr.detectChanges();
 
     // 重置連接節點ID
     this.connectingNodeId = null;
-    console.log('🔄 CREATE-NODE: Reset connectingNodeId');
   }
 
 }

@@ -103,17 +103,14 @@ export class ClickDistanceExampleComponent {
   onDistanceChange(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.paneClickDistance.set(Number(target.value));
-    console.log('Click distance changed to:', target.value);
   }
 
   // 處理連接事件 - 使用 controlled mode
   onConnect(params: Connection): void {
-    console.log('Connection created:', params);
     this.edges.update(edges => addEdge(params, edges));
   }
 
   // 處理面板點擊
   onPaneClick(data: { event: MouseEvent }): void {
-    console.log('pane click', data.event);
   }
 }

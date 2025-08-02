@@ -423,8 +423,6 @@ export class CustomNodeExampleComponent {
       const target = event.target as HTMLInputElement;
       const color = target.value;
 
-      console.log('Color changed to:', color);
-
       // 更新背景顏色
       this.bgColor.set(color);
 
@@ -514,21 +512,14 @@ export class CustomNodeExampleComponent {
 
   // 事件處理方法
   onNodesChange(nodes: AngularNode[]): void {
-    console.log('nodes change', nodes);
     this.nodes.set(nodes);
   }
 
   onEdgesChange(edges: AngularEdge[]): void {
-    console.log('edges change', edges);
-    console.log('Setting edges signal to:', edges);
     this.edges.set(edges);
-    console.log('After setting, edges signal value:', this.edges());
   }
 
   onConnect(connection: Connection): void {
-    console.log('custom-node-example onConnect called with:', connection);
-    console.log('Current edges before addEdge:', this.edges());
-
     // 使用與 React Flow 相同的模式：addEdge with spread operator
     this._flow.setEdges((edges: AngularEdge[]) => {
       const newEdges = addEdge(
@@ -539,11 +530,8 @@ export class CustomNodeExampleComponent {
         },
         edges
       );
-      console.log('addEdge result:', newEdges);
       return newEdges;
     });
-
-    console.log('Edges after setEdges:', this.edges());
   }
 
   onNodeClick(data: { event: MouseEvent; node: AngularNode }): void {

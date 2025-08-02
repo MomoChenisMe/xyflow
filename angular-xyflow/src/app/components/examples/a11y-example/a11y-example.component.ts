@@ -148,6 +148,5 @@ export class A11yExampleComponent {
     this.autoPanOnNodeFocus.set(target.checked);
 
     // Angular Flow 組件會自動響應 autoPanOnNodeFocus 信號的變化
-    console.log('autoPanOnNodeFocus changed to:', target.checked);
   }
 }
