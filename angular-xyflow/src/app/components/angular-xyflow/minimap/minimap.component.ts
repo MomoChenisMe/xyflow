@@ -10,13 +10,16 @@ import {
   OnInit,
   OnDestroy,
   effect,
-  ViewEncapsulation
+  ViewEncapsulation,
+  contentChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AngularXYFlowService } from '../services/angular-xyflow.service';
 import { PanelComponent, type PanelPosition } from '../panel/panel.component';
 import { XYMinimap, type XYMinimapInstance, type Rect } from '@xyflow/system';
 import type { XYPosition } from '@xyflow/system';
+import { MinimapNodeTemplateDirective } from '../minimap-node-template.directive';
+import type { MinimapNodeTemplateContext, MinimapNodeComponentProps } from '../types';
 
 @Component({
   selector: 'angular-xyflow-minimap',
@@ -48,20 +51,31 @@ import type { XYPosition } from '@xyflow/system';
         
         <!-- 節點渲染 -->
         @for (node of visibleNodes(); track node.id) {
-          <svg:rect
-            [attr.x]="getNodeVisualPosition(node).x"
-            [attr.y]="getNodeVisualPosition(node).y"
-            [attr.width]="node.width || 150"
-            [attr.height]="node.height || 40"
-            [attr.fill]="getNodeColor(node)"
-            [attr.stroke]="getNodeStrokeColor(node)"
-            [attr.stroke-width]="nodeStrokeWidth()"
-            [attr.rx]="nodeBorderRadius()"
-            [attr.ry]="nodeBorderRadius()"
-            [class]="'xy-flow__minimap-node ' + (shouldShowSelected(node) ? 'selected' : '') + ' ' + (nodeClassName() || '')"
-            [attr.shape-rendering]="shapeRendering"
-            (click)="onSvgNodeClick($event, node.id)"
-          />
+          @if (customNodeTemplate(); as template) {
+            <!-- 使用自定義節點模板 -->
+            <svg:g [attr.class]="'xy-flow__minimap-node ' + (shouldShowSelected(node) ? 'selected' : '') + ' ' + (nodeClassName() || '')" (click)="onSvgNodeClick($event, node.id)">
+              <ng-container 
+                [ngTemplateOutlet]="template.templateRef"
+                [ngTemplateOutletContext]="getCustomNodeContext(node)"
+              />
+            </svg:g>
+          } @else {
+            <!-- 預設節點渲染 -->
+            <svg:rect
+              [attr.x]="getNodeVisualPosition(node).x"
+              [attr.y]="getNodeVisualPosition(node).y"
+              [attr.width]="node.width || 150"
+              [attr.height]="node.height || 40"
+              [attr.fill]="getNodeColor(node)"
+              [attr.stroke]="getNodeStrokeColor(node)"
+              [attr.stroke-width]="nodeStrokeWidth()"
+              [attr.rx]="nodeBorderRadius()"
+              [attr.ry]="nodeBorderRadius()"
+              [class]="'xy-flow__minimap-node ' + (shouldShowSelected(node) ? 'selected' : '') + ' ' + (nodeClassName() || '')"
+              [attr.shape-rendering]="shapeRendering"
+              (click)="onSvgNodeClick($event, node.id)"
+            />
+          }
         }
         
         <!-- 視口遮罩 -->
@@ -169,6 +183,9 @@ export class MinimapComponent implements OnInit, OnDestroy {
   
   // 視圖子元素引用
   readonly svg = viewChild<ElementRef<SVGSVGElement>>('svg');
+  
+  // 自定義 minimap 節點模板
+  readonly customNodeTemplate = contentChild(MinimapNodeTemplateDirective);
   
   // 輸入屬性 - 基本配置
   readonly customStyle = input<Record<string, any>>({});
@@ -452,5 +469,44 @@ export class MinimapComponent implements OnInit, OnDestroy {
     }
     // 如果沒有設置顏色，返回透明讓 CSS 變數處理
     return colorFunc || 'transparent';
+  }
+  
+  // 獲取自定義節點模板的上下文
+  getCustomNodeContext(node: any): MinimapNodeTemplateContext {
+    const visualPosition = this.getNodeVisualPosition(node);
+    const width = node.width || 150;
+    const height = node.height || 40;
+    const selected = this.shouldShowSelected(node);
+    const color = this.getNodeColor(node);
+    const strokeColor = this.getNodeStrokeColor(node);
+    const strokeWidth = this.nodeStrokeWidth();
+    const borderRadius = this.nodeBorderRadius();
+    
+    const componentProps: MinimapNodeComponentProps = {
+      node,
+      x: visualPosition.x,
+      y: visualPosition.y,
+      width,
+      height,
+      selected,
+      color,
+      strokeColor,
+      strokeWidth,
+      borderRadius,
+    };
+    
+    return {
+      $implicit: componentProps,
+      node,
+      x: visualPosition.x,
+      y: visualPosition.y,
+      width,
+      height,
+      selected,
+      color,
+      strokeColor,
+      strokeWidth,
+      borderRadius,
+    };
   }
 }

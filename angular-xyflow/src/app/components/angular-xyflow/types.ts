@@ -252,3 +252,32 @@ export interface NodeTemplateContext<NodeType extends AngularNode = AngularNode>
   onNodeClick?: (event: MouseEvent) => void;
   onColorChange?: (event: Event) => void;
 }
+
+// Minimap node component props - 匹配 React MiniMapNodeProps
+export interface MinimapNodeComponentProps<NodeType extends AngularNode = AngularNode> {
+  node: NodeType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  selected: boolean;
+  color?: string;
+  strokeColor?: string;
+  strokeWidth?: number;
+  borderRadius?: number;
+}
+
+// Template context for custom minimap nodes
+export interface MinimapNodeTemplateContext<NodeType extends AngularNode = AngularNode> {
+  $implicit: MinimapNodeComponentProps<NodeType>;
+  node: NodeType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  selected: boolean;
+  color?: string;
+  strokeColor?: string;
+  strokeWidth?: number;
+  borderRadius?: number;
+}

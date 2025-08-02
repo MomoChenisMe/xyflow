@@ -14,6 +14,7 @@ export { ViewportComponent } from './viewport/viewport.component';
 // Directives
 export { ConnectionLineTemplateDirective } from './connection-line-template.directive';
 export { NodeTemplateDirective } from './node-template.directive';
+export { MinimapNodeTemplateDirective } from './minimap-node-template.directive';
 
 // Additional components
 export { BackgroundComponent } from './background/background.component';
