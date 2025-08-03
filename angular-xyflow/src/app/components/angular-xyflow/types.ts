@@ -73,6 +73,7 @@ export interface AngularEdge<T extends Record<string, unknown> = Record<string, 
   hidden?: boolean;
   deletable?: boolean;
   selectable?: boolean;
+  focusable?: boolean;
   selected?: boolean;
   data?: T;
   className?: string;

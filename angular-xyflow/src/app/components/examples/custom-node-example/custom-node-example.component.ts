@@ -37,7 +37,6 @@ export interface ColorSelectorNodeData extends Record<string, unknown> {
 }
 // import { CustomViewportComponent } from './custom-viewport.component'; // 不再需要，因為我們修改了現有的 NodeWrapperComponent
 
-
 @Component({
   selector: 'app-custom-node-example',
   standalone: true,
@@ -396,7 +395,8 @@ export class CustomNodeExampleComponent {
           style: { stroke: '#fff' },
         },
         edges
-      );
+      ) as AngularEdge[];
+
       return newEdges;
     });
   }

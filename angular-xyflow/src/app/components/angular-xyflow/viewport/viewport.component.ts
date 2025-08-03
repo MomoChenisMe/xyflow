@@ -6,6 +6,8 @@ import {
   ElementRef,
   ChangeDetectionStrategy,
   TemplateRef,
+  inject,
+  computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Position } from '@xyflow/system';
@@ -20,6 +22,7 @@ import { NodeTemplateDirective } from '../node-template.directive';
 import { NodeWrapperComponent } from '../node-wrapper/node-wrapper.component';
 import { EdgeComponent } from '../edge/edge.component';
 import { ConnectionLineComponent } from '../connection-line/connection-line.component';
+import { AngularXYFlowService } from '../services/angular-xyflow.service';
 
 // 連接狀態類型定義
 export interface ConnectionState {
@@ -111,14 +114,15 @@ export interface EdgeConnectionPoints {
           @let targetNode = getNodeById()(edge.target);
           @if (sourceNode && targetNode) {
             @let connectionPoints = getEdgeConnectionPoints()(sourceNode, targetNode, edge);
+            @let edgeFocusable = isEdgeFocusable()(edge);
             <svg:g
               class="angular-xyflow__edge xy-flow__edge"
               [class.selected]="edge.selected"
               [class.animated]="edge.animated"
               [class.selectable]="edge.selectable !== false"
-              [attr.tabindex]="edge.selectable !== false ? 0 : null"
-              (focus)="edgeFocus.emit({ event: $event, edge })"
-              (keydown)="edgeKeyDown.emit({ event: $event, edge })"
+              [attr.tabindex]="edgeFocusable ? 0 : null"
+              (focus)="edgeFocusable ? edgeFocus.emit({ event: $event, edge }) : null"
+              (keydown)="edgeFocusable ? edgeKeyDown.emit({ event: $event, edge }) : null"
               angular-xyflow-edge
               [edge]="edge"
               [sourceX]="connectionPoints.sourceX"
@@ -259,6 +263,18 @@ export class ViewportComponent<
 
   // 視圖子元素
   viewportElement = viewChild.required<ElementRef<HTMLDivElement>>('viewport');
+
+  // 注入服務
+  private _flowService = inject(AngularXYFlowService);
+
+  // 計算信號 - 判斷邊是否可聚焦（類似 React 版本的邏輯）
+  isEdgeFocusable = computed(() => {
+    return (edge: EdgeType) => {
+      // React 版本邏輯：edge.focusable || (edgesFocusable && typeof edge.focusable === 'undefined')
+      const edgesFocusable = this._flowService.edgesFocusable();
+      return !!(edge.focusable || (edgesFocusable && typeof edge.focusable === 'undefined'));
+    };
+  });
 
   // 常數
   markerType = MarkerType;

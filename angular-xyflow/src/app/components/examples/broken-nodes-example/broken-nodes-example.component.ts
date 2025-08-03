@@ -1,4 +1,4 @@
-import { Component, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
@@ -9,7 +9,6 @@ import {
   AngularXYFlowComponent,
   AngularNode,
   AngularEdge,
-  AngularXYFlowInstance,
 } from '../../angular-xyflow';
 
 @Component({
@@ -22,9 +21,8 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <angular-xyflow
-      #angularFlow
-      [defaultNodes]="initialNodes()"
-      [defaultEdges]="initialEdges()"
+      [nodes]="nodes()"
+      [edges]="edges()"
       [selectNodesOnDrag]="false"
       [elevateEdgesOnSelect]="true"
       [elevateNodesOnSelect]="false"
@@ -55,57 +53,56 @@ import {
   ],
 })
 export class BrokenNodesExampleComponent {
-  // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
-
-  // 初始節點數據 - 直接設置 NaN 值，與 React 版本一致
-  readonly initialNodes = signal<AngularNode[]>([
+  // Controlled 模式：節點和邊的狀態管理 - 與 React 版本一致
+  readonly nodes = signal<AngularNode[]>([
     {
       id: '1a',
       type: 'input',
       data: { label: 'Node 1' },
       position: { x: 250, y: 5 },
+      className: 'light',
+      ariaLabel: 'Input Node 1',
     },
     {
       id: '2a',
       data: { label: 'Node 2' },
       position: { x: 100, y: 100 },
+      className: 'light',
+      ariaLabel: 'Default Node 2',
     },
     {
       id: '3a',
       data: { label: 'Node 3' },
       position: { x: 400, y: 100 },
+      className: 'light',
     },
     {
       id: '4a',
       data: { label: 'Node 4' },
-      position: { x: NaN, y: 200 }, // 直接使用 NaN，與 React 版本一致
+      position: { x: 400, y: 200 },
+      className: 'light',
     },
   ]);
 
-  // 初始邊數據 - 從 React 範例轉換
-  readonly initialEdges = signal<AngularEdge[]>([
-    { id: 'e1-2', source: '1a', target: '2a' },
+  readonly edges = signal<AngularEdge[]>([
+    { id: 'e1-2', source: '1a', target: '2a', ariaLabel: undefined },
     { id: 'e1-3', source: '1a', target: '3a' },
   ]);
 
-  // 獲取流程實例
-  private get _flow(): AngularXYFlowInstance<AngularNode, AngularEdge> {
-    return this.angularFlow().getFlow();
+  // Controlled 模式事件處理方法 - 與 React 版本一致
+  onNodesChange(newNodes: AngularNode[]): void {
+    // 在 controlled 模式下更新 nodes signal
+    this.nodes.set(newNodes);
   }
 
-  // 事件處理方法 - 空的 onNodesChange 和 onEdgesChange 如 React 範例
-  onNodesChange(_nodes: AngularNode[]): void {
-    // 空的處理函數，如 React 範例中的空函數
-  }
-
-  onEdgesChange(_edges: AngularEdge[]): void {
-    // 空的處理函數，如 React 範例中的空函數
+  onEdgesChange(newEdges: AngularEdge[]): void {
+    // 在 controlled 模式下更新 edges signal
+    this.edges.set(newEdges);
   }
 
   // onConnect 處理函數 - 添加新邊
   onConnect(connection: Connection): void {
-    this._flow.setEdges((edges: AngularEdge[]) => addEdge(connection, edges));
+    this.edges.set(addEdge(connection, this.edges()));
   }
 
   // onNodeDrag 處理函數 - 檢查 NaN 值並更新節點位置
@@ -121,9 +118,9 @@ export class BrokenNodesExampleComponent {
       console.log('received NaN', node.position);
     }
 
-    // 更新節點位置
-    this._flow.setNodes((nodes: AngularNode[]) => {
-      return nodes.map((item: AngularNode) => {
+    // 在 controlled 模式下更新 nodes signal
+    this.nodes.set(
+      this.nodes().map((item: AngularNode) => {
         if (item.id === node.id) {
           return {
             ...item,
@@ -134,7 +131,7 @@ export class BrokenNodesExampleComponent {
           };
         }
         return item;
-      });
-    });
+      })
+    );
   }
 }

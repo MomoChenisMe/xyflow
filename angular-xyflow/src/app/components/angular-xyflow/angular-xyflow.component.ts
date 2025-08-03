@@ -260,6 +260,7 @@ export class AngularXYFlowComponent<
   colorMode = input<ColorMode>('light');
   paneClickDistance = input<number>(0);
   connectionLineStyle = input<Record<string, any>>();
+  edgesFocusable = input<boolean>(true);
 
   // 生成唯一的容器 ID
   flowContainerId = computed(() => {
@@ -560,6 +561,12 @@ export class AngularXYFlowComponent<
     effect(() => {
       const colorMode = this.colorMode();
       this._flowService.setColorMode(colorMode);
+    });
+
+    // 同步 edgesFocusable 到服務
+    effect(() => {
+      const edgesFocusable = this.edgesFocusable();
+      this._flowService.setEdgesFocusable(edgesFocusable);
     });
 
     // 渲染後副作用
