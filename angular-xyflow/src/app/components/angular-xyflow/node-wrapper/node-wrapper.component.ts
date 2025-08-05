@@ -209,22 +209,45 @@ export class NodeWrapperComponent implements OnDestroy {
   // 存儲當前節點 ID 用於清理 - 避免在 ngOnDestroy 時訪問 signal
   private currentNodeId?: string;
 
+  // 獲取解析後的節點類型（與 React Flow 邏輯一致）
+  private getResolvedNodeType(): string {
+    const node = this.node();
+    let nodeType = node.type || 'default';
+    const userNodeTypes = this.nodeTypes();
+    
+    // React Flow 邏輯：
+    // 1. 首先查找用戶定義的 nodeTypes
+    // 2. 如果沒有找到，查找內建類型
+    // 3. 如果類型不存在，回退到 default
+    let NodeComponent = userNodeTypes?.[nodeType] || builtinNodeTypes[nodeType];
+    
+    if (NodeComponent === undefined) {
+      // 錯誤處理：類型未找到，回退到 default
+      nodeType = 'default';
+    }
+    
+    return nodeType;
+  }
+
   // 計算屬性
   readonly nodeClasses = computed(() => {
     const classes = ['xy-flow__node', 'angular-xyflow__node'];
     const nodeData = this.node();
-    const nodeType = nodeData.type || 'default';
-
-    // React Flow 行為：直接使用原始節點類型，不進行 CSS 類別回退
-    // 未註冊的類型由開發者自己處理 CSS 樣式
-    classes.push(`xy-flow__node-${nodeType}`);
+    
+    // 獲取解析後的節點類型（與 nodeComponent 計算邏輯保持一致）
+    const resolvedNodeType = this.getResolvedNodeType();
+    
+    // React Flow 行為：使用解析後的節點類型（如果未註冊則回退到 default）
+    classes.push(`xy-flow__node-${resolvedNodeType}`);
 
     // 添加 selectable 類以啟用 hover 和 focus 樣式
     if (this._flowService.elementsSelectable()) {
       classes.push('selectable');
     }
 
-    if (nodeData.type) {
+    // 注意：React Flow 不會為回退到 default 的節點添加 type- 類
+    // 只有當原始類型存在且未回退時才添加 type- 類
+    if (nodeData.type && resolvedNodeType === nodeData.type) {
       classes.push(`type-${nodeData.type}`);
     }
 
@@ -276,10 +299,11 @@ export class NodeWrapperComponent implements OnDestroy {
   // 準備傳遞給動態元件的輸入屬性
   readonly nodeInputs = computed(() => {
     const node = this.node();
+    const resolvedNodeType = this.getResolvedNodeType();
     const inputs: Record<string, unknown> = {
       id: node.id,
       data: node.data,
-      type: node.type,
+      type: resolvedNodeType,  // 傳遞解析後的節點類型（與 React Flow 一致）
       selected: this.selected(),
       dragging: this.dragging(),
       isConnectable: node.connectable !== false,
