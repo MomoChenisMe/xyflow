@@ -173,7 +173,6 @@ export class ColorModeExampleComponent {
 
   // 連接事件處理 - 使用 controlled mode
   onConnect(connection: Connection): void {
-    console.log('Connecting:', connection);
     this.edges.update(edges => addEdge(connection, edges));
   }
 
