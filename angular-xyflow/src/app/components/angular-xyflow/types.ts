@@ -8,8 +8,35 @@ import {
   FitViewOptionsBase as SystemFitViewOptions,
   ConnectionLineType,
   PanOnScrollMode,
-  SelectionMode
+  SelectionMode,
+  Dimensions
 } from '@xyflow/system';
+import { Type } from '@angular/core';
+
+// NodeProps - 與 React Flow 的 NodeProps 對應，用於傳遞給節點元件的屬性
+export interface NodeProps<NodeType extends AngularNode = AngularNode> {
+  id: string;
+  data: NodeType['data'];
+  type?: string;
+  selected: boolean;
+  dragging: boolean;
+  isConnectable: boolean;
+  sourcePosition?: Position;
+  targetPosition?: Position;
+  width?: number;
+  height?: number;
+  parentId?: string;
+  zIndex: number;
+  draggable: boolean;
+  selectable: boolean;
+  deletable: boolean;
+  positionAbsoluteX: number;
+  positionAbsoluteY: number;
+  dragHandle?: string;
+}
+
+// NodeTypes - 節點類型對應表，映射節點類型字串到對應的 Angular 元件
+export type NodeTypes = Record<string, Type<any>>;
 
 // Angular-specific Node type extending system NodeBase
 export interface AngularNode<T extends Record<string, unknown> = Record<string, unknown>> extends NodeBase<T> {
@@ -89,8 +116,9 @@ export interface AngularXYFlowProps<NodeType extends AngularNode = AngularNode, 
   edges?: EdgeType[];
   defaultNodes?: NodeType[];
   defaultEdges?: EdgeType[];
-  onNodesChange?: (nodes: NodeType[]) => void;
-  onEdgesChange?: (edges: EdgeType[]) => void;
+  nodeTypes?: NodeTypes;
+  onNodesChange?: (changes: NodeChange<NodeType>[]) => void;
+  onEdgesChange?: (changes: EdgeChange<EdgeType>[]) => void;
   onConnect?: (connection: Connection) => void;
   onNodeClick?: (event: MouseEvent, node: NodeType) => void;
   onNodeDragStart?: (event: MouseEvent, node: NodeType, nodes: NodeType[]) => void;
@@ -282,3 +310,72 @@ export interface MinimapNodeTemplateContext<NodeType extends AngularNode = Angul
   strokeWidth?: number;
   borderRadius?: number;
 }
+
+// Change types - 與 React Flow 的 changes 系統對應
+export type NodeDimensionChange = {
+  id: string;
+  type: 'dimensions';
+  dimensions?: Dimensions;
+  resizing?: boolean;
+  setAttributes?: boolean | 'width' | 'height';
+};
+
+export type NodePositionChange = {
+  id: string;
+  type: 'position';
+  position?: XYPosition;
+  positionAbsolute?: XYPosition;
+  dragging?: boolean;
+};
+
+export type NodeSelectionChange = {
+  id: string;
+  type: 'select';
+  selected: boolean;
+};
+
+export type NodeRemoveChange = {
+  id: string;
+  type: 'remove';
+};
+
+export type NodeAddChange<NodeType extends AngularNode = AngularNode> = {
+  item: NodeType;
+  type: 'add';
+  index?: number;
+};
+
+export type NodeReplaceChange<NodeType extends AngularNode = AngularNode> = {
+  id: string;
+  item: NodeType;
+  type: 'replace';
+};
+
+export type NodeChange<NodeType extends AngularNode = AngularNode> =
+  | NodeDimensionChange
+  | NodePositionChange
+  | NodeSelectionChange
+  | NodeRemoveChange
+  | NodeAddChange<NodeType>
+  | NodeReplaceChange<NodeType>;
+
+export type EdgeSelectionChange = NodeSelectionChange;
+export type EdgeRemoveChange = NodeRemoveChange;
+
+export type EdgeAddChange<EdgeType extends AngularEdge = AngularEdge> = {
+  item: EdgeType;
+  type: 'add';
+  index?: number;
+};
+
+export type EdgeReplaceChange<EdgeType extends AngularEdge = AngularEdge> = {
+  id: string;
+  item: EdgeType;
+  type: 'replace';
+};
+
+export type EdgeChange<EdgeType extends AngularEdge = AngularEdge> =
+  | EdgeSelectionChange
+  | EdgeRemoveChange
+  | EdgeAddChange<EdgeType>
+  | EdgeReplaceChange<EdgeType>;

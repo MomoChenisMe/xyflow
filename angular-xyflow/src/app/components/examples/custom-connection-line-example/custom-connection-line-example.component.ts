@@ -12,7 +12,10 @@ import {
   AngularEdge,
   BackgroundVariant,
   ConnectionLineTemplateDirective,
+  NodeChange,
+  EdgeChange,
 } from '../../angular-xyflow';
+import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
 
 @Component({
   selector: 'app-custom-connection-line-example',
@@ -117,12 +120,12 @@ export class CustomConnectionLineExampleComponent {
 
   // 連接事件處理
   // Controlled mode event handlers
-  onNodesChange(newNodes: AngularNode[]): void {
-    this.initialNodes.set(newNodes);
+  onNodesChange(changes: NodeChange<AngularNode>[]): void {
+    this.initialNodes.update(nodes => applyNodeChanges(changes, nodes));
   }
 
-  onEdgesChange(newEdges: AngularEdge[]): void {
-    this.initialEdges.set(newEdges);
+  onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
+    this.initialEdges.update(edges => applyEdgeChanges(changes, edges));
   }
 
   onConnect(connection: Connection): void {

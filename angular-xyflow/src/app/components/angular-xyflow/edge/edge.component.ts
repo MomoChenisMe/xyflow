@@ -36,6 +36,8 @@ import { EdgeMarker, MarkerType } from '../types';
       [ngStyle]="interactionStyles()"
       style="pointer-events: stroke; cursor: pointer;"
       (click)="handleClick($event)"
+      (dblclick)="handleDoubleClick($event)"
+      (contextmenu)="handleContextMenu($event)"
     />
 
     <!-- Edge label -->
@@ -67,6 +69,8 @@ export class EdgeComponent {
 
   // 輸出事件
   edgeClick = output<{ event: MouseEvent; edge: any }>();
+  edgeDoubleClick = output<{ event: MouseEvent; edge: any }>();
+  edgeContextMenu = output<{ event: MouseEvent; edge: any }>();
 
   // 計算信號
   edgePath = computed(() => {
@@ -232,5 +236,16 @@ export class EdgeComponent {
   handleClick(event: MouseEvent): void {
     event.stopPropagation();
     this.edgeClick.emit({ event, edge: this.edge() });
+  }
+
+  handleDoubleClick(event: MouseEvent): void {
+    event.stopPropagation();
+    this.edgeDoubleClick.emit({ event, edge: this.edge() });
+  }
+
+  handleContextMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    event.preventDefault(); // 阻止瀏覽器預設的右鍵菜單
+    this.edgeContextMenu.emit({ event, edge: this.edge() });
   }
 }

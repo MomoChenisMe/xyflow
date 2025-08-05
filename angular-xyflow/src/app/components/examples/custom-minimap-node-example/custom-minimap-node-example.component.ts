@@ -25,7 +25,10 @@ import {
   BackgroundVariant,
   AngularXYFlowInstance,
   MinimapNodeTemplateDirective,
+  NodeChange,
+  EdgeChange,
 } from '../../angular-xyflow';
+import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
 
 
 @Component({
@@ -162,12 +165,12 @@ export class CustomMinimapNodeExampleComponent {
   }
 
   // 節點變化回調
-  onNodesChange(nodes: AngularNode[]): void {
-    this.nodes.set(nodes);
+  onNodesChange(changes: NodeChange<AngularNode>[]): void {
+    this.nodes.update(nodes => applyNodeChanges(changes, nodes));
   }
 
-  onEdgesChange(edges: AngularEdge[]): void {
-    this.edges.set(edges);
+  onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
+    this.edges.update(edges => applyEdgeChanges(changes, edges));
   }
 
   // 連接回調

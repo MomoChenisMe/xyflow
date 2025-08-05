@@ -237,20 +237,21 @@ export class AngularXYFlowDragService implements OnDestroy {
           // 在 controlled 模式下，創建帶有新位置和拖拽狀態的節點陣列
           // 但不直接更新內部狀態，而是透過事件讓父組件處理
           const currentNodes = this._flowService.nodes();
-          const updatedNodes = currentNodes.map(node => {
-            const dragItem = dragItems.get(node.id);
-            if (dragItem) {
-              return {
-                ...node,
-                position: dragItem.position, // 在 controlled 模式下透過事件傳遞新位置
-                dragging: dragging || false
-              };
-            }
-            return node;
-          });
+          // 在 controlled 模式下，創建 position changes
+          const nodeChanges: any[] = [];
+          for (const [nodeId, dragItem] of dragItems) {
+            nodeChanges.push({
+              type: 'position',
+              id: nodeId,
+              position: dragItem.position,
+              dragging: dragging || false
+            });
+          }
           
           // 觸發事件讓父組件處理位置更新
-          this._flowService.triggerNodesChange(updatedNodes);
+          if (nodeChanges.length > 0) {
+            this._flowService.triggerNodeChanges(nodeChanges);
+          }
           return;
         }
         

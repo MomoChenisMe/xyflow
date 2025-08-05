@@ -2,8 +2,9 @@ import { Component, signal, effect, ViewChild, ElementRef, ChangeDetectorRef, in
 import { CommonModule } from '@angular/common';
 import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
 import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyflow.service';
-import { AngularNode, AngularEdge } from '../../angular-xyflow/types';
+import { AngularNode, AngularEdge, NodeChange, EdgeChange } from '../../angular-xyflow/types';
 import { Connection, addEdge } from '@xyflow/system';
+import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
 
 @Component({
   selector: 'app-add-node-on-edge-drop',
@@ -64,18 +65,18 @@ export class AddNodeOnEdgeDropComponent {
   }
 
   // Controlled mode event handlers
-  onNodesChange(newNodes: AngularNode[]): void {
-    this.nodes.set(newNodes);
+  onNodesChange(changes: NodeChange<AngularNode>[]): void {
+    this.nodes.update(nodes => applyNodeChanges(changes, nodes));
   }
 
-  onEdgesChange(newEdges: AngularEdge[]): void {
-    this.edges.set(newEdges);
+  onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
+    this.edges.update(edges => applyEdgeChanges(changes, edges));
   }
 
   onConnect(params: Connection): void {
     // 重置連接節點ID - 與 React 版本邏輯一致
     this.connectingNodeId = null;
-    
+
     // 添加新的邊
     this.edges.update(edges => addEdge(params, edges));
   }
@@ -93,7 +94,7 @@ export class AddNodeOnEdgeDropComponent {
     // 與 React 版本邏輯完全一致：檢查 target 是否包含 pane 類別
     const target = eventData.event.target as Partial<Element> | null;
     const targetIsPane = target?.classList?.contains('angular-xyflow__pane');
-    
+
     if (targetIsPane && 'clientX' in eventData.event && 'clientY' in eventData.event) {
       // 在空白區域結束連接，創建新節點
       this.createNodeAtPosition(eventData.event);
@@ -123,7 +124,7 @@ export class AddNodeOnEdgeDropComponent {
         height: 40   // 默認高度
       }
     };
-    
+
     // 創建新邊 - 與 React 版本一致
     const newEdge: AngularEdge = {
       id,
@@ -137,7 +138,7 @@ export class AddNodeOnEdgeDropComponent {
       const updated = nodes.concat(newNode);
       return updated;
     });
-    
+
     this.edges.update(edges => {
       const updated = edges.concat(newEdge);
       return updated;

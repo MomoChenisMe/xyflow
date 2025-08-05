@@ -7,6 +7,9 @@ import { XYPanZoom, type PanZoomInstance, type Viewport, type Transform, PanOnSc
 // 專案內部模組
 import { AngularXYFlowService } from './angular-xyflow.service';
 
+// 事件回調類型定義
+type MoveEventCallback = (data: { event?: MouseEvent | TouchEvent | null; viewport: Viewport }) => void;
+
 interface PanZoomConfig {
   domNode: HTMLElement;
   minZoom?: number;
@@ -29,6 +32,11 @@ export class AngularXYFlowPanZoomService implements OnDestroy {
   private panZoomInstance?: PanZoomInstance;
   private readonly _isDragging = signal(false);
   private doubleClickHandler?: (event: MouseEvent) => void;
+  
+  // 事件回調
+  private _onMoveStart: MoveEventCallback | null = null;
+  private _onMove: MoveEventCallback | null = null;
+  private _onMoveEnd: MoveEventCallback | null = null;
 
   // 公開狀態
   readonly isDragging = computed(() => this._isDragging());
@@ -39,6 +47,19 @@ export class AngularXYFlowPanZoomService implements OnDestroy {
   }
 
   constructor(private _flowService: AngularXYFlowService) {}
+
+  // 設置事件回調
+  setOnMoveStart(callback: MoveEventCallback | null) {
+    this._onMoveStart = callback;
+  }
+
+  setOnMove(callback: MoveEventCallback | null) {
+    this._onMove = callback;
+  }
+
+  setOnMoveEnd(callback: MoveEventCallback | null) {
+    this._onMoveEnd = callback;
+  }
 
 
   // 初始化 PanZoom 功能
@@ -77,14 +98,23 @@ export class AngularXYFlowPanZoomService implements OnDestroy {
         this._isDragging.set(isDragging);
       },
       onPanZoomStart: (event, viewport) => {
-        // 可以在這裡發送事件
+        if (this._onMoveStart) {
+          this._onMoveStart({ event, viewport });
+        }
       },
       onPanZoom: (event, viewport) => {
         // 更新 flowService 的 viewport
         this.updateFlowViewport(viewport);
+        
+        // 觸發 onMove 事件
+        if (this._onMove) {
+          this._onMove({ event, viewport });
+        }
       },
       onPanZoomEnd: (event, viewport) => {
-        // 可以在這裡發送事件
+        if (this._onMoveEnd) {
+          this._onMoveEnd({ event, viewport });
+        }
       },
     });
 

@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
 import { PanelComponent } from '../../angular-xyflow/panel/panel.component';
-import { AngularNode, AngularEdge } from '../../angular-xyflow/types';
+import { AngularNode, AngularEdge, NodeChange, EdgeChange } from '../../angular-xyflow/types';
+import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
 import { Connection, addEdge } from '@xyflow/system';
 
 @Component({
@@ -91,12 +92,12 @@ export class ClickDistanceExampleComponent {
   ]);
 
   // Controlled mode event handlers
-  onNodesChange(newNodes: AngularNode[]): void {
-    this.nodes.set(newNodes);
+  onNodesChange(changes: NodeChange<AngularNode>[]): void {
+    this.nodes.update(nodes => applyNodeChanges(changes, nodes));
   }
 
-  onEdgesChange(newEdges: AngularEdge[]): void {
-    this.edges.set(newEdges);
+  onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
+    this.edges.update(edges => applyEdgeChanges(changes, edges));
   }
 
   // 處理距離變更

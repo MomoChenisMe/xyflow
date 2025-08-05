@@ -17,6 +17,7 @@ import {
   EdgeMarker,
   MarkerType,
   ConnectionLineTemplateContext,
+  NodeTypes,
 } from '../types';
 import { NodeTemplateDirective } from '../node-template.directive';
 import { NodeWrapperComponent } from '../node-wrapper/node-wrapper.component';
@@ -134,6 +135,8 @@ export interface EdgeConnectionPoints {
               [isDarkMode]="isDarkMode()"
               [getMarkerId]="getMarkerId()"
               (edgeClick)="edgeClick.emit($event)"
+              (edgeDoubleClick)="edgeDoubleClick.emit($event)"
+              (edgeContextMenu)="edgeContextMenu.emit($event)"
             />
           }
         }
@@ -174,7 +177,10 @@ export interface EdgeConnectionPoints {
           [selected]="node.selected || false"
           [dragging]="node.dragging || false"
           [customNodeTemplates]="customNodeTemplates()"
+          [nodeTypes]="nodeTypes()"
           (nodeClick)="nodeClick.emit({ event: $event, node })"
+          (nodeDoubleClick)="nodeDoubleClick.emit({ event: $event, node })"
+          (nodeContextMenu)="nodeContextMenu.emit({ event: $event, node })"
           (nodeFocus)="nodeFocus.emit({ event: $event, node })"
           (nodeDragStart)="nodeDragStart.emit({ event: $event, node })"
           (nodeDrag)="nodeDrag.emit({ event: $event.event, position: $event.position, node })"
@@ -241,6 +247,7 @@ export class ViewportComponent<
   customConnectionLineTemplate = input<TemplateRef<ConnectionLineTemplateContext> | undefined>();
   connectionLineStyle = input<Record<string, any>>();
   customNodeTemplates = input<readonly any[]>([]);
+  nodeTypes = input<NodeTypes>();
   isDarkMode = input<boolean>(false);
   
   // 函數輸入
@@ -250,6 +257,8 @@ export class ViewportComponent<
   
   // 輸出事件
   nodeClick = output<{ event: MouseEvent; node: NodeType }>();
+  nodeDoubleClick = output<{ event: MouseEvent; node: NodeType }>();
+  nodeContextMenu = output<{ event: MouseEvent; node: NodeType }>();
   nodeFocus = output<{ event: FocusEvent; node: NodeType }>();
   nodeDragStart = output<{ event: MouseEvent; node: NodeType }>();
   nodeDrag = output<{ event: MouseEvent; position: { x: number; y: number }; node: NodeType }>();
@@ -258,6 +267,8 @@ export class ViewportComponent<
   connectEnd = output<{ connection?: any; event: MouseEvent }>();
   handleClick = output<{ event: MouseEvent; nodeId: string; handleId?: string; handleType: string }>();
   edgeClick = output<{ event: MouseEvent; edge: EdgeType }>();
+  edgeDoubleClick = output<{ event: MouseEvent; edge: EdgeType }>();
+  edgeContextMenu = output<{ event: MouseEvent; edge: EdgeType }>();
   edgeFocus = output<{ event: FocusEvent; edge: EdgeType }>();
   edgeKeyDown = output<{ event: KeyboardEvent; edge: EdgeType }>();
 

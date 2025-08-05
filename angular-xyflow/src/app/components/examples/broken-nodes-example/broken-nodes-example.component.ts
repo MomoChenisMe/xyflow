@@ -9,7 +9,10 @@ import {
   AngularXYFlowComponent,
   AngularNode,
   AngularEdge,
+  NodeChange,
+  EdgeChange,
 } from '../../angular-xyflow';
+import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
 
 @Component({
   selector: 'app-broken-nodes-example',
@@ -90,14 +93,14 @@ export class BrokenNodesExampleComponent {
   ]);
 
   // Controlled 模式事件處理方法 - 與 React 版本一致
-  onNodesChange(newNodes: AngularNode[]): void {
+  onNodesChange(changes: NodeChange<AngularNode>[]): void {
     // 在 controlled 模式下更新 nodes signal
-    this.nodes.set(newNodes);
+    this.nodes.update(nodes => applyNodeChanges(changes, nodes));
   }
 
-  onEdgesChange(newEdges: AngularEdge[]): void {
+  onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
     // 在 controlled 模式下更新 edges signal
-    this.edges.set(newEdges);
+    this.edges.update(edges => applyEdgeChanges(changes, edges));
   }
 
   // onConnect 處理函數 - 添加新邊

@@ -13,24 +13,27 @@ import {
   OnDestroy,
   inject,
   CUSTOM_ELEMENTS_SCHEMA,
-  TemplateRef
+  TemplateRef,
+  Type,
+  Injector
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgComponentOutlet } from '@angular/common';
 
 // XyFlow 系統模組
 import { type Connection, Position, getNodePositionWithOrigin, elementSelectionKeys } from '@xyflow/system';
 
 // 專案內部模組
-import { AngularNode, NodeTemplateContext } from '../types';
+import { AngularNode, NodeTemplateContext, NodeTypes, NodeProps } from '../types';
 import { HandleComponent } from '../handle/handle.component';
 import { AngularXYFlowDragService } from '../services/drag.service';
 import { AngularXYFlowService } from '../services/angular-xyflow.service';
 import { NodeTemplateDirective } from '../node-template.directive';
+import { builtinNodeTypes } from '../default-nodes';
 
 @Component({
   selector: 'angular-xyflow-node',
   standalone: true,
-  imports: [CommonModule, HandleComponent],
+  imports: [CommonModule, NgComponentOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -46,37 +49,33 @@ import { NodeTemplateDirective } from '../node-template.directive';
       [style.transform]="nodeTransform()"
       [style.z-index]="node().zIndex || 1"
       [style.width]="getNodeWidth()"
-      [style.height]="node().height ? node().height + 'px' : 'auto'"
+      [style.height]="node().height ? node().height + 'px' : null"
       [style.user-select]="'none'"
       [style.pointer-events]="'auto'"
       [style.opacity]="node().hidden ? 0 : 1"
       [style.cursor]="getCursor()"
+      [style]="getNodeStyles()"
       (click)="onNodeClick($event)"
+      (dblclick)="onNodeDoubleClick($event)"
+      (contextmenu)="onNodeContextMenu($event)"
       (mousedown)="onNodeMouseDown($event)"
       (focus)="onNodeFocus($event)"
       (keydown)="onNodeKeyDown($event)"
     >
-      <!-- Target handle (左側) - 只在沒有自定義模板時顯示 -->
-      @if (shouldShowHandles() && hasTargetHandle() && !customTemplate()) {
-        <angular-xyflow-handle
-          type="target"
-          [position]="getTargetPosition()"
-          [nodeId]="node().id"
-          [isConnectable]="node().connectable !== false"
-          [selected]="isHandleSelected('target')"
-          [style]="{}"
-          (connectStart)="connectStart.emit($event)"
-          (connectEnd)="connectEnd.emit($event)"
-          (handleClick)="handleClick.emit($event)"
-        />
-      }
-
       <!-- Node content -->
-      <div class="angular-xyflow__node-content">
-        @if (customTemplate(); as template) {
-          <!-- 使用自定義模板 -->
+      @if (nodeComponent()) {
+        <!-- 使用動態元件載入 - 直接渲染，不包裹 -->
+        <ng-container 
+          [ngComponentOutlet]="nodeComponent()"
+          [ngComponentOutletInputs]="nodeInputs()"
+          [ngComponentOutletInjector]="nodeInjector"
+        />
+      } @else {
+        <div class="angular-xyflow__node-content">
+          @if (customTemplate()) {
+          <!-- 使用自定義模板（向後兼容） -->
           <ng-container
-            [ngTemplateOutlet]="template.templateRef"
+            [ngTemplateOutlet]="customTemplate().templateRef"
             [ngTemplateOutletContext]="{
               $implicit: {
                 node: node(),
@@ -98,25 +97,11 @@ import { NodeTemplateDirective } from '../node-template.directive';
               onHandleClick: onHandleClick.bind(this)
             }"
           />
-        } @else {
-          <!-- 默認節點內容 -->
-          <div class="angular-xyflow__node-label">{{ node().data['label'] || node().id }}</div>
-        }
-      </div>
-
-      <!-- Source handles (右側) - 只在沒有自定義模板時顯示 -->
-      @if (shouldShowHandles() && hasSourceHandle() && !customTemplate()) {
-        <!-- 默認單個 source handle -->
-        <angular-xyflow-handle
-          type="source"
-          [position]="getSourcePosition()"
-          [nodeId]="node().id"
-          [isConnectable]="node().connectable !== false"
-          [selected]="isHandleSelected('source')"
-          (connectStart)="connectStart.emit($event)"
-          (connectEnd)="connectEnd.emit($event)"
-          (handleClick)="handleClick.emit($event)"
-        />
+          } @else {
+            <!-- 後備：簡單的標籤顯示 -->
+            <div class="angular-xyflow__node-label">{{ node().data['label'] || node().id }}</div>
+          }
+        </div>
       }
     </div>
   `,
@@ -134,7 +119,7 @@ import { NodeTemplateDirective } from '../node-template.directive';
     }
 
     .angular-xyflow__node-content {
-      /* 繼承父容器的 padding，與系統樣式保持一致 */
+      /* 僅用於後備內容的包裹，保持與系統樣式一致 */
       height: 100%;
       width: 100%;
       display: flex;
@@ -195,9 +180,12 @@ export class NodeWrapperComponent implements OnDestroy {
   readonly selected = input<boolean>(false);
   readonly dragging = input<boolean>(false);
   readonly customNodeTemplates = input<readonly any[]>([]);
+  readonly nodeTypes = input<NodeTypes>();
 
   // 輸出事件
   readonly nodeClick = output<MouseEvent>();
+  readonly nodeDoubleClick = output<MouseEvent>();
+  readonly nodeContextMenu = output<MouseEvent>();
   readonly nodeFocus = output<FocusEvent>();
   readonly nodeDragStart = output<MouseEvent>();
   readonly nodeDrag = output<{ event: MouseEvent; position: { x: number; y: number } }>();
@@ -214,6 +202,12 @@ export class NodeWrapperComponent implements OnDestroy {
   private resizeObserver?: ResizeObserver;
   private _dragService = inject(AngularXYFlowDragService);
   private _flowService = inject(AngularXYFlowService);
+  
+  // 動態元件載入所需的 Injector
+  protected readonly nodeInjector = inject(Injector);
+  
+  // 存儲當前節點 ID 用於清理 - 避免在 ngOnDestroy 時訪問 signal
+  private currentNodeId?: string;
 
   // 計算屬性
   readonly nodeClasses = computed(() => {
@@ -221,7 +215,8 @@ export class NodeWrapperComponent implements OnDestroy {
     const nodeData = this.node();
     const nodeType = nodeData.type || 'default';
 
-    // 添加正確的節點類型類，匹配系統樣式
+    // React Flow 行為：直接使用原始節點類型，不進行 CSS 類別回退
+    // 未註冊的類型由開發者自己處理 CSS 樣式
     classes.push(`xy-flow__node-${nodeType}`);
 
     // 添加 selectable 類以啟用 hover 和 focus 樣式
@@ -255,32 +250,67 @@ export class NodeWrapperComponent implements OnDestroy {
     const pos = this._flowService.getNodeVisualPosition(node);
     return `translate(${pos.x}px, ${pos.y}px)`;
   });
-
-  readonly shouldShowHandles = computed(() => {
-    // 顯示連接點的邏輯
-    return true;
-  });
-
-  readonly hasSourceHandle = computed(() => {
-    const nodeType = this.node().type;
-    // Input 和 default 節點有 source handle，output 節點沒有
-    return !nodeType || nodeType === 'default' || nodeType === 'input';
-  });
-
-  readonly hasTargetHandle = computed(() => {
-    const nodeType = this.node().type;
-    // Default 和 output 節點有 target handle，input 節點沒有
-    return !nodeType || nodeType === 'default' || nodeType === 'output';
-  });
-
-  // 查找當前節點類型的自定義模板
-  readonly customTemplate = computed(() => {
-    const nodeType = this.node().type;
-    const templates = this.customNodeTemplates();
+  
+  // 動態元件載入 - 根據節點類型解析對應的元件（模擬 React Flow 的 nodeTypes 邏輯）
+  readonly nodeComponent = computed(() => {
+    const node = this.node();
+    let nodeType = node.type || 'default';
+    const userNodeTypes = this.nodeTypes();
     
-    // 只有 selectorNode 類型才使用自定義模板，其他類型使用默認模板
-    if (nodeType === 'selectorNode' && templates.length > 0) {
-      return templates[0] || null;
+    // React Flow 邏輯：
+    // 1. 首先查找用戶定義的 nodeTypes
+    // 2. 如果沒有找到，查找內建類型
+    // 3. 如果類型不存在，回退到 default
+    let NodeComponent = userNodeTypes?.[nodeType] || builtinNodeTypes[nodeType];
+    
+    if (NodeComponent === undefined) {
+      // 錯誤處理：類型未找到，回退到 default
+      console.warn(`Node type "${nodeType}" not found. Using fallback type "default".`);
+      nodeType = 'default';
+      NodeComponent = userNodeTypes?.['default'] || builtinNodeTypes['default'];
+    }
+    
+    return NodeComponent;
+  });
+  
+  // 準備傳遞給動態元件的輸入屬性
+  readonly nodeInputs = computed(() => {
+    const node = this.node();
+    const inputs: Record<string, unknown> = {
+      id: node.id,
+      data: node.data,
+      type: node.type,
+      selected: this.selected(),
+      dragging: this.dragging(),
+      isConnectable: node.connectable !== false,
+      sourcePosition: node.sourcePosition || Position.Bottom,
+      targetPosition: node.targetPosition || Position.Top,
+      width: node.width,
+      height: node.height,
+      parentId: node.parentId,
+      zIndex: node.zIndex || 0,
+      draggable: node.draggable !== false,
+      selectable: node.selectable !== false,
+      deletable: node.deletable !== false,
+      positionAbsoluteX: 0, // TODO: 計算絕對位置
+      positionAbsoluteY: 0, // TODO: 計算絕對位置
+      dragHandle: node.dragHandle
+    };
+    return inputs;
+  });
+
+  // 查找自定義模板（舊版向後兼容）
+  // 只在沒有使用 nodeTypes 時才使用模板方式
+  readonly customTemplate = computed(() => {
+    // 如果已經使用 nodeTypes，則不使用模板方式
+    if (this.nodeComponent()) {
+      return null;
+    }
+    
+    const templates = this.customNodeTemplates();
+    if (templates.length > 0) {
+      // 使用第一個模板（舊版行為）
+      return templates[0];
     }
     
     return null;
@@ -301,6 +331,8 @@ export class NodeWrapperComponent implements OnDestroy {
       const isDragging = this.isDragging() || this._dragService.dragging(); // 檢查是否正在拖動
 
       if (nodeData && !isDragging) {
+        // 存儲節點 ID 用於清理
+        this.currentNodeId = nodeData.id;
         // 只在不拖動時重新設置拖拽，確保 DOM 元素已準備好
         setTimeout(() => this.setupDragForNode(), 0);
       }
@@ -315,10 +347,10 @@ export class NodeWrapperComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
-    // 清理此節點的拖拽實例
-    const nodeData = this.node();
-    if (nodeData) {
-      this._dragService.destroyNodeDrag(nodeData.id);
+    // 清理此節點的拖拽實例 - 使用存儲的 nodeId 避免在銷毀階段訪問 signal
+    const currentNodeId = this.currentNodeId;
+    if (currentNodeId) {
+      this._dragService.destroyNodeDrag(currentNodeId);
     }
   }
 
@@ -374,6 +406,11 @@ export class NodeWrapperComponent implements OnDestroy {
 
 
   onNodeClick(event: MouseEvent) {
+    // 檢查點擊是否來自 Handle - 如果是，不處理節點點擊
+    if (this.isClickFromHandle(event)) {
+      return;
+    }
+    
     // 避免在拖動後觸發點擊
     if (!this.isDragging()) {
       const isSelectable = this._flowService.elementsSelectable();
@@ -409,8 +446,63 @@ export class NodeWrapperComponent implements OnDestroy {
     }
   }
 
+  onNodeDoubleClick(event: MouseEvent) {
+    // 檢查點擊是否來自 Handle - 如果是，不處理節點雙擊
+    if (this.isClickFromHandle(event)) {
+      return;
+    }
+
+    // 避免在拖動後觸發雙擊
+    if (!this.isDragging()) {
+      const isSelectable = this._flowService.elementsSelectable();
+      
+      // 根據 React Flow 邏輯：當交互被禁用時，完全阻止雙擊事件
+      if (!isSelectable) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      this.nodeDoubleClick.emit(event);
+    }
+  }
+
+  onNodeContextMenu(event: MouseEvent) {
+    // 檢查點擊是否來自 Handle - 如果是，不處理節點右鍵菜單
+    if (this.isClickFromHandle(event)) {
+      return;
+    }
+
+    const isSelectable = this._flowService.elementsSelectable();
+    
+    // 根據 React Flow 邏輯：當交互被禁用時，完全阻止右鍵菜單事件
+    if (!isSelectable) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    // 阻止瀏覽器預設的右鍵菜單
+    event.preventDefault();
+    this.nodeContextMenu.emit(event);
+  }
+
+  // 檢查點擊是否來自 Handle
+  private isClickFromHandle(event: MouseEvent): boolean {
+    const target = event.target as HTMLElement;
+    if (!target) return false;
+    
+    // 檢查點擊的元素或其父元素是否是 Handle
+    return target.closest('.xy-flow__handle') !== null || 
+           target.classList.contains('xy-flow__handle');
+  }
+
   // 處理 mousedown 事件 - 確保在 selectNodesOnDrag=false 時節點能立即被選中
   onNodeMouseDown(event: MouseEvent) {
+    // 檢查點擊是否來自 Handle - 如果是，不處理節點 mousedown
+    if (this.isClickFromHandle(event)) {
+      return;
+    }
     // 檢查是否需要在 mousedown 時選中節點
     const isSelectable = this._flowService.elementsSelectable();
     const globalDraggable = this._flowService.nodesDraggable();
@@ -434,19 +526,16 @@ export class NodeWrapperComponent implements OnDestroy {
   }
 
   // 輔助方法
-  getNodeWidth(): string {
+  getNodeWidth(): string | undefined {
     const nodeData = this.node();
     if (nodeData.width) {
       return nodeData.width + 'px';
     }
     
-    // 使用自定義模板的節點使用 auto 寬度，讓內容自然撐開
-    if (this.customTemplate()) {
-      return 'auto';
-    }
-    
-    // 默認寬度
-    return '150px';
+    // 讓 CSS 後備樣式處理預設寬度
+    // 當節點沒有明確指定寬度時，不設置內聯樣式
+    // 這樣 CSS 中的 150px 預設寬度會生效
+    return undefined;
   }
 
   getSourcePosition(): Position {
@@ -469,6 +558,12 @@ export class NodeWrapperComponent implements OnDestroy {
       return 'default';
     }
     return this.isDragging() ? 'grabbing' : 'grab';
+  }
+
+  getNodeStyles(): any {
+    const node = this.node();
+    // 返回節點的自定義樣式（如果有的話）
+    return node.style || null;
   }
 
   // 顏色改變處理（用於 selectorNode）

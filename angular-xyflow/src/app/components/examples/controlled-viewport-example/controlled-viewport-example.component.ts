@@ -10,7 +10,10 @@ import {
   AngularEdge,
   BackgroundVariant,
   Viewport,
+  NodeChange,
+  EdgeChange,
 } from '../../angular-xyflow/types';
+import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
 import { Connection, addEdge } from '@xyflow/system';
 
 @Component({
@@ -121,12 +124,12 @@ export class ControlledViewportExampleComponent {
   ]);
 
   // Controlled mode event handlers
-  onNodesChange(newNodes: AngularNode[]): void {
-    this.nodes.set(newNodes);
+  onNodesChange(changes: NodeChange<AngularNode>[]): void {
+    this.nodes.update(nodes => applyNodeChanges(changes, nodes));
   }
 
-  onEdgesChange(newEdges: AngularEdge[]): void {
-    this.edges.set(newEdges);
+  onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
+    this.edges.update(edges => applyEdgeChanges(changes, edges));
   }
 
   onConnect(connection: Connection): void {

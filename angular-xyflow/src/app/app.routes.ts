@@ -12,6 +12,7 @@ import { ControlledViewportExampleComponent } from './components/examples/contro
 import { CustomConnectionLineExampleComponent } from './components/examples/custom-connection-line-example/custom-connection-line-example.component';
 import { CustomMinimapNodeExampleComponent } from './components/examples/custom-minimap-node-example/custom-minimap-node-example.component';
 import { CustomNodeExampleComponent } from './components/examples/custom-node-example/custom-node-example.component';
+import { DefaultNodeOverwriteExampleComponent } from './components/examples/default-node-overwrite-example/default-node-overwrite-example.component';
 
 export interface IRoute {
   name: string;
@@ -85,6 +86,11 @@ export const routeList: IRoute[] = [
     path: 'custom-node',
     component: CustomNodeExampleComponent,
   },
+  {
+    name: 'Default Node Overwrite',
+    path: 'default-node-overwrite',
+    component: DefaultNodeOverwriteExampleComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -102,4 +108,5 @@ export const routes: Routes = [
   { path: 'custom-connection-line', component: CustomConnectionLineExampleComponent },
   { path: 'custom-minimap-node', component: CustomMinimapNodeExampleComponent },
   { path: 'custom-node', component: CustomNodeExampleComponent },
+  { path: 'default-node-overwrite', component: DefaultNodeOverwriteExampleComponent },
 ];

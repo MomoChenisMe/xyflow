@@ -22,6 +22,15 @@ export { ControlsComponent } from './controls/controls.component';
 export { PanelComponent } from './panel/panel.component';
 export { MinimapComponent } from './minimap/minimap.component';
 
+// Default node components
+export {
+  DefaultNodeComponent,
+  InputNodeComponent,
+  OutputNodeComponent,
+  GroupNodeComponent,
+  builtinNodeTypes
+} from './default-nodes';
+
 // Types and interfaces
 export * from './types';
 

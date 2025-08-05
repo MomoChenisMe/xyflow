@@ -72,6 +72,7 @@
 .xy-flow__node-default,
 .xy-flow__node-output,
 .xy-flow__node-group {
+  position: relative; /* 為 Handle 定位提供參考點 */
   padding: 10px;
   border-radius: var(--xy-node-border-radius, var(--xy-node-border-radius-default));
   width: 150px;
@@ -94,6 +95,7 @@
   }
 }
 
+
 .xy-flow__node-group {
   background-color: var(--xy-node-group-background-color, var(--xy-node-group-background-color-default));
 }
@@ -110,11 +112,57 @@
 }
 
 .xy-flow__handle {
+  position: absolute;
+  pointer-events: none; /* 默認不允許點擊，只有在特定狀態下才能點擊 */
+  min-width: 5px;
+  min-height: 5px;
   width: 6px;
   height: 6px;
+  box-sizing: content-box; /* 明確設定為 content-box，與 React Flow 保持一致 */
   background-color: var(--xy-handle-background-color, var(--xy-handle-background-color-default));
   border: 1px solid var(--xy-handle-border-color, var(--xy-handle-border-color-default));
   border-radius: 100%;
+  z-index: 10; /* 確保 Handle 顯示在節點內容之上 */
+}
+
+.xy-flow__handle.connectingfrom {
+  pointer-events: all;
+}
+
+.xy-flow__handle.connectionindicator {
+  pointer-events: all;
+  cursor: crosshair;
+}
+
+/* Handle 在可連接狀態下應該能夠點擊 */
+.xy-flow__handle.connectable {
+  pointer-events: all;
+  cursor: crosshair;
+}
+
+.xy-flow__handle-bottom {
+  top: auto;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 50%);
+}
+
+.xy-flow__handle-top {
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.xy-flow__handle-left {
+  top: var(--handle-offset-y, 50%);
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+
+.xy-flow__handle-right {
+  top: var(--handle-offset-y, 50%);
+  right: 0;
+  transform: translate(50%, -50%);
 }
 
 .xy-flow__controls {

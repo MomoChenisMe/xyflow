@@ -22,20 +22,19 @@ import {
   ControlsComponent,
   PanelComponent,
   MinimapComponent,
-  HandleComponent,
   AngularNode,
   AngularEdge,
   BackgroundVariant,
   AngularXYFlowInstance,
-  NodeTemplateDirective,
   MinimapNodeTemplateDirective,
+  NodeTypes,
+  builtinNodeTypes,
+  NodeChange,
+  EdgeChange,
 } from '../../angular-xyflow';
-// 自定義節點數據類型
-export interface ColorSelectorNodeData extends Record<string, unknown> {
-  color: string;
-  onChange: (event: Event) => void;
-}
-// import { CustomViewportComponent } from './custom-viewport.component'; // 不再需要，因為我們修改了現有的 NodeWrapperComponent
+import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
+// 自定義節點組件和數據類型
+import { ColorSelectorNodeComponent, ColorSelectorNodeData } from './color-selector-node.component';
 
 @Component({
   selector: 'app-custom-node-example',
@@ -46,9 +45,7 @@ export interface ColorSelectorNodeData extends Record<string, unknown> {
     BackgroundComponent,
     ControlsComponent,
     MinimapComponent,
-    NodeTemplateDirective,
     MinimapNodeTemplateDirective,
-    HandleComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -56,6 +53,7 @@ export interface ColorSelectorNodeData extends Record<string, unknown> {
       #angularFlow
       [nodes]="nodes()"
       [edges]="edges()"
+      [nodeTypes]="nodeTypes"
       [minZoom]="0.3"
       [maxZoom]="2"
       [fitView]="true"
@@ -99,68 +97,6 @@ export interface ColorSelectorNodeData extends Record<string, unknown> {
       </angular-xyflow-minimap>
 
       <angular-xyflow-controls />
-
-      <!-- 自定義節點模板 - 顏色選擇器節點 -->
-      <ng-template
-        angularXyFlowNodeTemplate
-        let-node="node"
-        let-selected="selected"
-        let-dragging="dragging"
-        let-onColorChange="onColorChange"
-        let-onConnectStart="onConnectStart"
-        let-onConnectEnd="onConnectEnd"
-        let-onHandleClick="onHandleClick"
-      >
-        <!-- Target handle (左側) -->
-        <angular-xyflow-handle
-          type="target"
-          [position]="Position.Left"
-          [nodeId]="node.id"
-          [isConnectable]="node.connectable !== false"
-          [style]="{ background: '#555' }"
-          (connectStart)="onConnectStart && onConnectStart($event)"
-          (connectEnd)="onConnectEnd && onConnectEnd($event)"
-          (handleClick)="onHandleClick && onHandleClick($event)"
-        />
-
-        <!-- 節點內容 -->
-        <div class="color-selector-content">
-          <div>
-            Custom Color Picker Node:
-            <strong>{{ node.data['color'] || '#1A192B' }}</strong>
-          </div>
-          <input
-            class="nodrag color-picker"
-            type="color"
-            [value]="node.data['color'] || '#1A192B'"
-            (input)="onColorChange && onColorChange($event)"
-          />
-        </div>
-
-        <!-- Source handles (右側) -->
-        <angular-xyflow-handle
-          type="source"
-          [position]="Position.Right"
-          [nodeId]="node.id"
-          [handleId]="'a'"
-          [isConnectable]="node.connectable !== false"
-          [style]="{ background: '#555', top: '10px' }"
-          (connectStart)="onConnectStart && onConnectStart($event)"
-          (connectEnd)="onConnectEnd && onConnectEnd($event)"
-          (handleClick)="onHandleClick && onHandleClick($event)"
-        />
-        <angular-xyflow-handle
-          type="source"
-          [position]="Position.Right"
-          [nodeId]="node.id"
-          [handleId]="'b'"
-          [isConnectable]="node.connectable !== false"
-          [style]="{ background: '#555', bottom: '10px', top: 'auto' }"
-          (connectStart)="onConnectStart && onConnectStart($event)"
-          (connectEnd)="onConnectEnd && onConnectEnd($event)"
-          (handleClick)="onHandleClick && onHandleClick($event)"
-        />
-      </ng-template>
     </angular-xyflow>
   `,
   styles: [
@@ -175,75 +111,6 @@ export interface ColorSelectorNodeData extends Record<string, unknown> {
         width: 100%;
         height: 100%;
       }
-
-      .angular-xyflow-panel {
-        padding: 12px;
-        min-width: 240px;
-      }
-
-      .info-panel {
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 8px;
-        padding: 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-
-      .info-panel h3 {
-        margin: 0 0 12px 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: #333;
-      }
-
-      .info-panel p {
-        margin: 8px 0;
-        font-size: 14px;
-        color: #666;
-        line-height: 1.4;
-      }
-
-      .info-panel ul {
-        margin: 8px 0;
-        padding-left: 20px;
-        font-size: 14px;
-        color: #666;
-      }
-
-      .info-panel li {
-        margin: 4px 0;
-        line-height: 1.4;
-      }
-
-      .info-panel strong {
-        color: #333;
-        font-weight: 600;
-      }
-
-      /* 自定義顏色選擇器節點樣式 - 與React版本保持一致 */
-      .color-selector-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        width: auto;
-        font-size: 12px;
-        text-align: center;
-        /* 邊框和背景在節點層級設定，不在內容層級 */
-      }
-
-      .color-picker {
-        width: 50px;
-        height: 25px;
-        border: 1px solid #ccc;
-        border-radius: 3px;
-        cursor: pointer;
-        flex-shrink: 0;
-      }
-
-      /* nodrag 類防止拖拽時移動節點 */
-      .nodrag {
-        pointer-events: auto;
-      }
     `,
   ],
 })
@@ -253,9 +120,6 @@ export class CustomNodeExampleComponent {
 
   // 背景變體枚舉
   readonly backgroundVariant = BackgroundVariant;
-
-  // Position 枚舉供模板使用
-  readonly Position = Position;
 
   // 初始背景顏色（與 React 版本一致）
   private readonly initBgColor = '#1A192B';
@@ -269,6 +133,14 @@ export class CustomNodeExampleComponent {
   // 節點和邊的信號
   readonly nodes = signal<AngularNode[]>([]);
   readonly edges = signal<AngularEdge[]>([]);
+  
+  // 註冊自定義節點類型
+  readonly nodeTypes: NodeTypes = {
+    selectorNode: ColorSelectorNodeComponent,
+    // 保留內建節點類型
+    input: builtinNodeTypes['input'],
+    output: builtinNodeTypes['output'],
+  };
 
   // 獲取流程實例
   private get _flow(): AngularXYFlowInstance<AngularNode, AngularEdge> {
@@ -326,7 +198,7 @@ export class CustomNodeExampleComponent {
           onChange: onChange,
           color: this.initBgColor,
         } as ColorSelectorNodeData,
-        style: { border: '1px solid #777', padding: 10 },
+        style: { border: '1px solid #777', padding: '10px' },
         position: { x: 250, y: 50 },
       },
       {
@@ -377,12 +249,12 @@ export class CustomNodeExampleComponent {
   }
 
   // 事件處理方法
-  onNodesChange(nodes: AngularNode[]): void {
-    this.nodes.set(nodes);
+  onNodesChange(changes: NodeChange<AngularNode>[]): void {
+    this.nodes.update(nodes => applyNodeChanges(changes, nodes));
   }
 
-  onEdgesChange(edges: AngularEdge[]): void {
-    this.edges.set(edges);
+  onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
+    this.edges.update(edges => applyEdgeChanges(changes, edges));
   }
 
   onConnect(connection: Connection): void {

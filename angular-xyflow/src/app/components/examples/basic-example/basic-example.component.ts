@@ -8,7 +8,7 @@ import {
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
-import { Connection, addEdge } from '@xyflow/system';
+import { Connection, addEdge, Position } from '@xyflow/system';
 
 // 專案內部模組
 import {
@@ -51,7 +51,6 @@ import {
       [nodeDragThreshold]="0"
       [panOnDrag]="true"
       className="angular-xyflow-basic-example"
-      (onNodesChange)="onNodesChange($event)"
       (onConnect)="onConnect($event)"
       (onNodeClick)="onNodeClick($event)"
       (onNodeDragStart)="onNodeDragStart($event)"
@@ -114,24 +113,35 @@ export class BasicExampleComponent {
       data: { label: 'Node 1' },
       position: { x: 250, y: 5 },
       className: 'light',
+      // Input 節點只有 source handle（在底部）
+      sourcePosition: Position.Bottom,
     },
     {
       id: '2',
       data: { label: 'Node 2' },
       position: { x: 100, y: 100 },
       className: 'light',
+      // Default 節點有兩個 handles
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Top,
     },
     {
       id: '3',
       data: { label: 'Node 3' },
       position: { x: 400, y: 100 },
       className: 'light',
+      // Default 節點有兩個 handles
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Top,
     },
     {
       id: '4',
       data: { label: 'Node 4' },
       position: { x: 400, y: 200 },
       className: 'light',
+      // Default 節點有兩個 handles  
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Top,
     },
   ]);
 
@@ -155,10 +165,6 @@ export class BasicExampleComponent {
   }
 
   // 事件處理方法
-  onNodesChange(nodes: AngularNode[]): void {
-    console.log(nodes);
-  }
-
   onConnect(connection: Connection): void {
     console.log('onConnect', connection);
     this._flow.setEdges((edges: AngularEdge[]) => addEdge(connection, edges));

@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
 import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
 import { MinimapComponent } from '../../angular-xyflow/minimap/minimap.component';
-import { AngularNode, AngularEdge, AngularXYFlowInstance } from '../../angular-xyflow/types';
+import { AngularNode, AngularEdge, AngularXYFlowInstance, NodeChange, EdgeChange } from '../../angular-xyflow/types';
+import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
 import { Connection, addEdge } from '@xyflow/system';
 import { CountdownService } from './countdown.service';
 import { TimerComponent } from './timer.component';
@@ -107,13 +108,13 @@ export class CancelConnectionExampleComponent {
 
 
   // 節點變化事件處理 - 對應 React 的 onNodesChange
-  onNodesChange(nodes: AngularNode[]): void {
-    this._nodes.set([...nodes]);
+  onNodesChange(changes: NodeChange<AngularNode>[]): void {
+    this._nodes.update(nodes => applyNodeChanges(changes, nodes));
   }
 
   // 邊變化事件處理 - 對應 React 的 onEdgesChange
-  onEdgesChange(edges: AngularEdge[]): void {
-    this._edges.set([...edges]);
+  onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
+    this._edges.update(edges => applyEdgeChanges(changes, edges));
   }
 
   // 連接開始事件處理 - 對應 React 的 onConnectStart

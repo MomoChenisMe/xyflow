@@ -5,7 +5,8 @@ import { BackgroundComponent } from '../../angular-xyflow/background/background.
 import { ControlsComponent } from '../../angular-xyflow/controls/controls.component';
 import { MinimapComponent } from '../../angular-xyflow/minimap/minimap.component';
 import { PanelComponent } from '../../angular-xyflow/panel/panel.component';
-import { AngularNode, AngularEdge } from '../../angular-xyflow/types';
+import { AngularNode, AngularEdge, NodeChange, EdgeChange } from '../../angular-xyflow/types';
+import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
 import { Position, ColorMode, Connection, addEdge } from '@xyflow/system';
 
 const nodeDefaults = {
@@ -162,16 +163,17 @@ export class ColorModeExampleComponent {
   ]);
 
   // Controlled mode event handlers
-  onNodesChange(newNodes: AngularNode[]): void {
-    this.nodes.set(newNodes);
+  onNodesChange(changes: NodeChange<AngularNode>[]): void {
+    this.nodes.update(nodes => applyNodeChanges(changes, nodes));
   }
 
-  onEdgesChange(newEdges: AngularEdge[]): void {
-    this.edges.set(newEdges);
+  onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
+    this.edges.update(edges => applyEdgeChanges(changes, edges));
   }
 
   // 連接事件處理 - 使用 controlled mode
   onConnect(connection: Connection): void {
+    console.log('Connecting:', connection);
     this.edges.update(edges => addEdge(connection, edges));
   }
 

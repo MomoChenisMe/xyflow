@@ -41,6 +41,9 @@ import {
   AngularXYFlowInstance,
   EdgeMarker,
   MarkerType,
+  NodeTypes,
+  NodeChange,
+  EdgeChange,
 } from './types';
 import { ConnectionLineTemplateDirective } from './connection-line-template.directive';
 import { NodeTemplateDirective } from './node-template.directive';
@@ -65,6 +68,7 @@ import { ViewportComponent } from './viewport/viewport.component';
       [style.background]="'#fafafa'"
       (click)="handlePaneClick($event)"
       (dblclick)="handlePaneDoubleClick($event)"
+      (contextmenu)="handlePaneContextMenu($event)"
     >
       <!-- Viewport container -->
       <angular-xyflow-viewport
@@ -78,11 +82,14 @@ import { ViewportComponent } from './viewport/viewport.component';
         [customConnectionLineTemplate]="customConnectionLineTemplate()?.templateRef"
         [connectionLineStyle]="connectionLineStyle()"
         [customNodeTemplates]="customNodeTemplates()"
+        [nodeTypes]="nodeTypes()"
         [isDarkMode]="colorModeClass() === 'dark'"
         [getNodeById]="getNodeById.bind(this)"
         [getEdgeConnectionPoints]="getEdgeConnectionPoints.bind(this)"
         [getMarkerId]="getMarkerId.bind(this)"
         (nodeClick)="handleNodeClick($event.event, $event.node)"
+        (nodeDoubleClick)="handleNodeDoubleClick($event.event, $event.node)"
+        (nodeContextMenu)="handleNodeContextMenu($event.event, $event.node)"
         (nodeFocus)="handleNodeFocus($event.event, $event.node)"
         (nodeDragStart)="handleNodeDragStart($event.event, $event.node)"
         (nodeDrag)="handleNodeDrag($event, $event.node)"
@@ -91,6 +98,8 @@ import { ViewportComponent } from './viewport/viewport.component';
         (connectEnd)="handleConnectEnd($event)"
         (handleClick)="handleViewportHandleClick($event)"
         (edgeClick)="handleEdgeClick($event.event, $event.edge)"
+        (edgeDoubleClick)="handleEdgeDoubleClick($event.event, $event.edge)"
+        (edgeContextMenu)="handleEdgeContextMenu($event.event, $event.edge)"
         (edgeFocus)="handleEdgeFocus($event.event, $event.edge)"
         (edgeKeyDown)="handleEdgeKeyDown($event.event, $event.edge)"
       />
@@ -244,6 +253,7 @@ export class AngularXYFlowComponent<
   defaultEdges = input<EdgeType[]>([]);
   nodes = input<NodeType[]>();
   edges = input<EdgeType[]>();
+  nodeTypes = input<NodeTypes>();
   className = input<string>('');
   minZoom = input<number>(0.5);
   maxZoom = input<number>(2);
@@ -288,8 +298,8 @@ export class AngularXYFlowComponent<
   });
 
   // 輸出事件
-  onNodesChange = output<NodeType[]>();
-  onEdgesChange = output<EdgeType[]>();
+  onNodesChange = output<NodeChange<NodeType>[]>();
+  onEdgesChange = output<EdgeChange<EdgeType>[]>();
   onConnect = output<Connection>();
   onConnectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }>();
   onConnectEnd = output<{ connection?: Connection; event: MouseEvent }>();
@@ -320,6 +330,28 @@ export class AngularXYFlowComponent<
     nodes: NodeType[];
   }>();
   onPaneClick = output<{ event: MouseEvent }>();
+  
+  // 視窗移動事件
+  onMove = output<{ event?: MouseEvent | TouchEvent | null; viewport: Viewport }>();
+  onMoveStart = output<{ event?: MouseEvent | TouchEvent | null; viewport: Viewport }>();
+  onMoveEnd = output<{ event?: MouseEvent | TouchEvent | null; viewport: Viewport }>();
+  
+  // 選擇變化事件
+  onSelectionChange = output<{ nodes: NodeType[]; edges: EdgeType[] }>();
+  
+  // 節點鼠標事件
+  onNodeDoubleClick = output<{ event: MouseEvent; node: NodeType }>();
+  onNodeContextMenu = output<{ event: MouseEvent; node: NodeType }>();
+  
+  // 邊線鼠標事件
+  onEdgeDoubleClick = output<{ event: MouseEvent; edge: EdgeType }>();
+  onEdgeContextMenu = output<{ event: MouseEvent; edge: EdgeType }>();
+  
+  // 背景事件
+  onPaneContextMenu = output<{ event: MouseEvent }>();
+  
+  // 初始化事件
+  onInit = output<{ nodes: NodeType[]; edges: EdgeType[]; viewport: Viewport }>();
 
   // 視圖子元素
   flowContainer =
@@ -510,6 +542,35 @@ export class AngularXYFlowComponent<
       this.onEdgesChange.emit(edges);
     });
 
+    this._flowService.setOnConnect((connection) => {
+      this.onConnect.emit(connection);
+    });
+
+    this._flowService.setOnConnectStart((data) => {
+      this.onConnectStart.emit(data);
+    });
+
+    this._flowService.setOnConnectEnd((data) => {
+      this.onConnectEnd.emit(data);
+    });
+
+    this._flowService.setOnSelectionChange((data) => {
+      this.onSelectionChange.emit(data);
+    });
+
+    // 設置視窗移動事件回調
+    this._panZoomService.setOnMoveStart((data) => {
+      this.onMoveStart.emit(data);
+    });
+
+    this._panZoomService.setOnMove((data) => {
+      this.onMove.emit(data);
+    });
+
+    this._panZoomService.setOnMoveEnd((data) => {
+      this.onMoveEnd.emit(data);
+    });
+
     // 監聽輸入變化的副作用
     effect(() => {
       const defaultNodes = this.defaultNodes();
@@ -517,37 +578,54 @@ export class AngularXYFlowComponent<
       const controlledNodes = this.nodes();
       const controlledEdges = this.edges();
 
-      // 優先使用 controlled，然後使用 default
-      const nodes = (controlledNodes && controlledNodes.length > 0) ? controlledNodes : defaultNodes;
-      const edges = (controlledEdges && controlledEdges.length > 0) ? controlledEdges : defaultEdges;
+      // 優先使用 controlled（即使是空數組），只有在 undefined 時才使用 default
+      // 與 React Flow 的邏輯一致：controlled 模式下即使是空數組也要使用
+      const nodes = controlledNodes !== undefined ? controlledNodes : defaultNodes;
+      const edges = controlledEdges !== undefined ? controlledEdges : defaultEdges;
 
-      if (nodes.length > 0 || edges.length > 0) {
-        this._flowService.initialize(this.flowContainer().nativeElement, {
-          nodes: nodes,
-          edges: edges,
-          minZoom: this.minZoom(),
-          maxZoom: this.maxZoom(),
-          selectNodesOnDrag: this.selectNodesOnDrag(),
-          autoPanOnNodeFocus: this.autoPanOnNodeFocus(),
-        });
+      // 在 controlled 模式下，即使是空數組也要同步
+      const isControlled = controlledNodes !== undefined || controlledEdges !== undefined;
+      
+      // 確保容器已初始化
+      if (this.flowContainer()) {
+        if (!this._flowService.containerElement) {
+          // 首次初始化
+          this._flowService.initialize(this.flowContainer().nativeElement, {
+            nodes: nodes,
+            edges: edges,
+            minZoom: this.minZoom(),
+            maxZoom: this.maxZoom(),
+            selectNodesOnDrag: this.selectNodesOnDrag(),
+            autoPanOnNodeFocus: this.autoPanOnNodeFocus(),
+          });
+        } else if (isControlled) {
+          // Controlled 模式：同步狀態
+          if (controlledNodes !== undefined) {
+            this._flowService.syncNodesFromControlled(controlledNodes);
+          }
+          if (controlledEdges !== undefined) {
+            this._flowService.syncEdgesFromControlled(controlledEdges);
+          }
+        }
       }
     });
 
-    // 使用 afterRenderEffect 同步 controlled nodes，確保在渲染週期後執行
-    afterRenderEffect(() => {
-      const controlledNodes = this.nodes();
+    // 監聽初始化完成並觸發 onInit 事件
+    let hasEmittedInit = false;
+    effect(() => {
+      const initialized = this._flowService.initialized();
       
-      if (controlledNodes !== undefined && !this._flowService.hasDefaultNodes()) {
-        this._flowService.syncNodesFromControlled(controlledNodes);
-      }
-    });
-
-    // 使用 afterRenderEffect 同步 controlled edges，確保在渲染週期後執行
-    afterRenderEffect(() => {
-      const controlledEdges = this.edges();
-      
-      if (controlledEdges !== undefined && !this._flowService.hasDefaultEdges()) {
-        this._flowService.syncEdgesFromControlled(controlledEdges);
+      // 只在第一次初始化完成時觸發 onInit 事件
+      if (initialized && !hasEmittedInit) {
+        hasEmittedInit = true;
+        
+        // 獲取當前狀態
+        const nodes = this.visibleNodes();
+        const edges = this.visibleEdges();
+        const viewport = this._flowService.viewport();
+        
+        // 觸發 onInit 事件
+        this.onInit.emit({ nodes, edges, viewport });
       }
     });
 
@@ -812,11 +890,21 @@ export class AngularXYFlowComponent<
     // 選擇節點
     this._flowService.selectNode(node.id, multiSelect);
 
-    // 觸發狀態變化事件（controlled 模式需要）
-    this._flowService.triggerNodesChange();
-    this._flowService.triggerEdgesChange();
-
     this.onNodeClick.emit({ event, node });
+  }
+
+  handleNodeDoubleClick(event: MouseEvent, node: NodeType) {
+    // 阻止事件冒泡，避免觸發背景雙擊
+    event.stopPropagation();
+
+    this.onNodeDoubleClick.emit({ event, node });
+  }
+
+  handleNodeContextMenu(event: MouseEvent, node: NodeType) {
+    // 阻止事件冒泡，避免觸發背景右鍵菜單
+    event.stopPropagation();
+
+    this.onNodeContextMenu.emit({ event, node });
   }
 
   handleNodeFocus(_event: FocusEvent, node: NodeType) {
@@ -832,10 +920,6 @@ export class AngularXYFlowComponent<
 
     // 選擇節點（focus時不進行多選）
     this._flowService.selectNode(node.id, false);
-
-    // 觸發狀態變化事件（controlled 模式需要）
-    this._flowService.triggerNodesChange();
-    this._flowService.triggerEdgesChange();
   }
 
   handleEdgeClick(event: MouseEvent, edge: EdgeType) {
@@ -853,11 +937,22 @@ export class AngularXYFlowComponent<
     // 選擇邊線
     this._flowService.selectEdge(edge.id, multiSelect);
 
-    // 觸發狀態變化事件（controlled 模式需要）
-    this._flowService.triggerEdgesChange();
-
     // 觸發 edge 點擊事件
     this.onEdgeClick.emit({ event, edge });
+  }
+
+  handleEdgeDoubleClick(event: MouseEvent, edge: EdgeType) {
+    // 阻止事件冒泡，避免觸發背景雙擊
+    event.stopPropagation();
+
+    this.onEdgeDoubleClick.emit({ event, edge });
+  }
+
+  handleEdgeContextMenu(event: MouseEvent, edge: EdgeType) {
+    // 阻止事件冒泡，避免觸發背景右鍵菜單
+    event.stopPropagation();
+
+    this.onEdgeContextMenu.emit({ event, edge });
   }
 
   handleEdgeFocus(_event: FocusEvent, edge: EdgeType) {
@@ -868,9 +963,6 @@ export class AngularXYFlowComponent<
 
     // Focus時自動選擇edge（類似React版本的行為）
     this._flowService.selectEdge(edge.id, false);
-
-    // 觸發狀態變化事件
-    this._flowService.triggerEdgesChange();
   }
 
   handleEdgeKeyDown(event: KeyboardEvent, edge: EdgeType) {
@@ -885,9 +977,6 @@ export class AngularXYFlowComponent<
       const multiSelect = event.ctrlKey || event.metaKey;
 
       this._flowService.selectEdge(edge.id, multiSelect);
-
-      // 觸發狀態變化事件
-      this._flowService.triggerEdgesChange();
 
       // 觸發點擊事件（為了一致性）
       this.onEdgeClick.emit({ event: event as any, edge });
@@ -907,12 +996,27 @@ export class AngularXYFlowComponent<
     ) {
       this._flowService.clearSelection();
 
-      // 觸發狀態變化事件（controlled 模式需要）
-      this._flowService.triggerNodesChange();
-      this._flowService.triggerEdgesChange();
-
       // 發出 pane 點擊事件
       this.onPaneClick.emit({ event });
+    }
+  }
+
+  handlePaneContextMenu(event: MouseEvent) {
+    // 只有當右鍵點擊的是背景元素時才觸發右鍵菜單事件
+    const target = event.target as HTMLElement;
+
+    // 檢查點擊的是否是背景元素
+    if (
+      target.classList.contains('angular-xyflow') ||
+      target.classList.contains('xy-flow') ||
+      target.classList.contains('angular-xyflow__viewport') ||
+      target.classList.contains('xy-flow__viewport')
+    ) {
+      // 阻止瀏覽器預設的右鍵菜單
+      event.preventDefault();
+      
+      // 發出 pane 右鍵菜單事件
+      this.onPaneContextMenu.emit({ event });
     }
   }
 
@@ -1017,9 +1121,6 @@ export class AngularXYFlowComponent<
         if (newEdgeCount === currentEdgeCount) {
           this._flowService.onConnect(eventData.connection!);
         }
-        
-        // 觸發狀態變化事件（無論父組件是否處理）
-        this._flowService.triggerEdgesChange();
       }, 0);
     }
   }
@@ -1122,10 +1223,6 @@ export class AngularXYFlowComponent<
         }
 
         this._flowService.clearSelection();
-
-        // 觸發狀態變化事件（controlled 模式需要）
-        this._flowService.triggerNodesChange();
-        this._flowService.triggerEdgesChange();
       }
     }
   }

@@ -16,7 +16,10 @@ import {
   AngularEdge,
   BackgroundVariant,
   AngularXYFlowInstance,
+  NodeChange,
+  EdgeChange,
 } from '../../angular-xyflow';
+import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
 
 @Component({
   selector: 'app-controlled-uncontrolled-example',
@@ -154,12 +157,12 @@ export class ControlledUncontrolledExampleComponent {
   // 事件處理方法
   // 注意：這些方法故意實作得很簡單，不處理 controlled/uncontrolled 衝突
   // 這會導致狀態不一致，新建的 edge 點擊後可能消失
-  onNodesChange(nodes: AngularNode[]): void {
+  onNodesChange(changes: NodeChange<AngularNode>[]): void {
     // 直接更新受控狀態，不考慮與 defaultNodes 的衝突
-    this.nodes.set(nodes);
+    this.nodes.update(nodes => applyNodeChanges(changes, nodes));
   }
 
-  onEdgesChange(edges: AngularEdge[]): void {
+  onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
     // 直接更新受控狀態，不保留任何樣式或做智能合併
     // 這會導致與 defaultEdges 的狀態衝突，造成意外行為
     
@@ -168,9 +171,12 @@ export class ControlledUncontrolledExampleComponent {
       return;
     }
     
+    // 應用變更以獲取新的 edges 狀態
+    const newEdges = applyEdgeChanges(changes, this.edges());
+    
     // 檢測controlled/uncontrolled衝突場景
-    const hasSelectedEdges = edges.some(edge => edge.selected);
-    const hasMoreThanDefault = edges.length > this.defaultEdges.length;
+    const hasSelectedEdges = newEdges.some(edge => edge.selected);
+    const hasMoreThanDefault = newEdges.length > this.defaultEdges.length;
     
     if (hasSelectedEdges && hasMoreThanDefault && !this._isProcessingBug) {
       // 觸發bug：當選中edge且有新edge時，強制回退到defaultEdges
@@ -212,7 +218,7 @@ export class ControlledUncontrolledExampleComponent {
         this._isProcessingBug = false;
       }, 100);
     } else {
-      this.edges.set(edges);
+      this.edges.set(newEdges);
     }
   }
 
