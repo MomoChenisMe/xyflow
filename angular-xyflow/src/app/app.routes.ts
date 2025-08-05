@@ -12,8 +12,10 @@ import { ControlledViewportExampleComponent } from './components/examples/contro
 import { CustomConnectionLineExampleComponent } from './components/examples/custom-connection-line-example/custom-connection-line-example.component';
 import { CustomMinimapNodeExampleComponent } from './components/examples/custom-minimap-node-example/custom-minimap-node-example.component';
 import { CustomNodeExampleComponent } from './components/examples/custom-node-example/custom-node-example.component';
+import { DefaultNodesExampleComponent } from './components/examples/default-nodes-example/default-nodes-example.component';
 import { DefaultNodeOverwriteExampleComponent } from './components/examples/default-node-overwrite-example/default-node-overwrite-example.component';
 import { DefaultEdgeOverwriteExampleComponent } from './components/examples/default-edge-overwrite-example/default-edge-overwrite-example.component';
+import { DevToolsExampleComponent } from './components/examples/devtools-example/devtools-example.component';
 
 export interface IRoute {
   name: string;
@@ -88,6 +90,11 @@ export const routeList: IRoute[] = [
     component: CustomNodeExampleComponent,
   },
   {
+    name: 'Default Nodes',
+    path: 'default-nodes',
+    component: DefaultNodesExampleComponent,
+  },
+  {
     name: 'Default Node Overwrite',
     path: 'default-node-overwrite',
     component: DefaultNodeOverwriteExampleComponent,
@@ -96,6 +103,11 @@ export const routeList: IRoute[] = [
     name: 'Default Edge Overwrite',
     path: 'default-edge-overwrite',
     component: DefaultEdgeOverwriteExampleComponent,
+  },
+  {
+    name: 'DevTools',
+    path: 'devtools',
+    component: DevToolsExampleComponent,
   },
 ];
 
@@ -114,6 +126,8 @@ export const routes: Routes = [
   { path: 'custom-connection-line', component: CustomConnectionLineExampleComponent },
   { path: 'custom-minimap-node', component: CustomMinimapNodeExampleComponent },
   { path: 'custom-node', component: CustomNodeExampleComponent },
+  { path: 'default-nodes', component: DefaultNodesExampleComponent },
   { path: 'default-node-overwrite', component: DefaultNodeOverwriteExampleComponent },
   { path: 'default-edge-overwrite', component: DefaultEdgeOverwriteExampleComponent },
+  { path: 'devtools', component: DevToolsExampleComponent },
 ];

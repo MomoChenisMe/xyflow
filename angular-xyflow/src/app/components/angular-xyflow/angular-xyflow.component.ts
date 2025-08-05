@@ -105,6 +105,10 @@ import { ViewportComponent } from './viewport/viewport.component';
         (edgeFocus)="handleEdgeFocus($event.event, $event.edge)"
         (edgeKeyDown)="handleEdgeKeyDown($event.event, $event.edge)"
       />
+      <!-- Viewport portal content projection - rendered as overlay -->
+      <div class="angular-xyflow__viewport-portal" [style.transform]="viewportTransform()">
+        <ng-content select="[viewportPortal]"></ng-content>
+      </div>
       <!-- Content projection for background, controls, etc. -->
       <ng-content />
     </div>
@@ -134,6 +138,21 @@ import { ViewportComponent } from './viewport/viewport.component';
 
       .angular-xyflow__pane--selection {
         cursor: pointer;
+      }
+      
+      .angular-xyflow__viewport-portal {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        transform-origin: 0 0;
+        z-index: 10;
+      }
+      
+      .angular-xyflow__viewport-portal > * {
+        pointer-events: none;
       }
 
       .angular-xyflow__viewport {
