@@ -197,6 +197,9 @@ export class HandleComponent implements OnDestroy {
     // 檢查是否允許連接
     if (!this.canConnect()) return;
 
+    // React Flow 邏輯：只有左鍵點擊（button === 0）才觸發連接功能
+    if (event.button !== 0) return;
+
     event.preventDefault();
     event.stopPropagation();
 

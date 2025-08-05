@@ -266,7 +266,7 @@ export class AngularXYFlowComponent<
   defaultEdgeOptions = input<Partial<EdgeType>>();
   nodeDragThreshold = input<number>(0);
   autoPanOnNodeFocus = input<boolean>(true);
-  panOnDrag = input<boolean>(true);
+  panOnDrag = input<boolean | number[]>(true);
   colorMode = input<ColorMode>('light');
   paneClickDistance = input<number>(0);
   connectionLineStyle = input<Record<string, any>>();
@@ -1012,10 +1012,15 @@ export class AngularXYFlowComponent<
       target.classList.contains('angular-xyflow__viewport') ||
       target.classList.contains('xy-flow__viewport')
     ) {
-      // 阻止瀏覽器預設的右鍵菜單
-      event.preventDefault();
+      const panOnDragConfig = this.panOnDrag();
       
-      // 發出 pane 右鍵菜單事件
+      // React Flow 邏輯：只有當 panOnDrag 包含右鍵（2）時才阻止預設右鍵菜單
+      if (Array.isArray(panOnDragConfig) && panOnDragConfig.includes(2)) {
+        event.preventDefault();
+        return;
+      }
+      
+      // 發出 pane 右鍵菜單事件（不阻止預設行為，除非明確配置）
       this.onPaneContextMenu.emit({ event });
     }
   }

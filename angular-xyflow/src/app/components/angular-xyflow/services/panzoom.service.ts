@@ -20,7 +20,7 @@ interface PanZoomConfig {
   panOnScrollSpeed?: number;
   panOnScrollMode?: PanOnScrollMode;
   zoomOnDoubleClick?: boolean;
-  panOnDrag?: boolean;
+  panOnDrag?: boolean | number[];
   preventScrolling?: boolean;
   paneClickDistance?: number;
   translateExtent?: [[number, number], [number, number]];

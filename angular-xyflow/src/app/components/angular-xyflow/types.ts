@@ -141,7 +141,7 @@ export interface AngularXYFlowProps<NodeType extends AngularNode = AngularNode, 
   connectionLineType?: ConnectionLineType;
   zoomOnScroll?: boolean;
   zoomOnPinch?: boolean;
-  panOnDrag?: boolean;
+  panOnDrag?: boolean | number[];
   panOnScroll?: boolean;
   panOnScrollSpeed?: number;
   panOnScrollMode?: PanOnScrollMode;

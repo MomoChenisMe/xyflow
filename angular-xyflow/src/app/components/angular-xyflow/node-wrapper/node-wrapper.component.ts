@@ -506,8 +506,7 @@ export class NodeWrapperComponent implements OnDestroy {
       return;
     }
 
-    // 阻止瀏覽器預設的右鍵菜單
-    event.preventDefault();
+    // React Flow 邏輯：不阻止瀏覽器預設的右鍵菜單，讓開發者自行決定
     this.nodeContextMenu.emit(event);
   }
 
