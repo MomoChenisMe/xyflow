@@ -408,3 +408,12 @@ export type EdgeChange<EdgeType extends AngularEdge = AngularEdge> =
   | EdgeRemoveChange
   | EdgeAddChange<EdgeType>
   | EdgeReplaceChange<EdgeType>;
+
+// 錯誤處理相關類型 - 與 React Flow 保持一致
+export type ErrorCode = '003' | '011'; // 擴展其他錯誤代碼時在此添加
+
+/**
+ * 錯誤處理函數類型
+ * 與 React Flow 的 onError 事件保持一致
+ */
+export type OnErrorHandler = (code: ErrorCode, message: string) => void;

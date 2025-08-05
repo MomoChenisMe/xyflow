@@ -23,7 +23,8 @@ import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { type Connection, Position, getNodePositionWithOrigin, elementSelectionKeys } from '@xyflow/system';
 
 // 專案內部模組
-import { AngularNode, NodeTemplateContext, NodeTypes, NodeProps } from '../types';
+import { AngularNode, NodeTemplateContext, NodeTypes, NodeProps, OnErrorHandler } from '../types';
+import { errorMessages, defaultErrorHandler, ErrorCode } from '../constants';
 import { HandleComponent } from '../handle/handle.component';
 import { AngularXYFlowDragService } from '../services/drag.service';
 import { AngularXYFlowService } from '../services/angular-xyflow.service';
@@ -193,6 +194,9 @@ export class NodeWrapperComponent implements OnDestroy {
   readonly connectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target' }>();
   readonly connectEnd = output<{ connection?: Connection; event: MouseEvent }>();
   readonly handleClick = output<{ event: MouseEvent; nodeId: string; handleId?: string; handleType: 'source' | 'target' }>();
+  
+  // 錯誤處理事件（與 React Flow 保持一致）
+  readonly onError = output<{ code: string; message: string }>();
 
   // 視圖子元素
   readonly nodeElement = viewChild.required<ElementRef<HTMLDivElement>>('nodeElement');
@@ -205,6 +209,14 @@ export class NodeWrapperComponent implements OnDestroy {
   
   // 動態元件載入所需的 Injector
   protected readonly nodeInjector = inject(Injector);
+  
+  // 錯誤處理器
+  private readonly errorHandler = (code: ErrorCode, message: string) => {
+    // 發出錯誤事件
+    this.onError.emit({ code, message });
+    // 同時使用預設處理器輸出到 console
+    defaultErrorHandler(code, message);
+  };
   
   // 存儲當前節點 ID 用於清理 - 避免在 ngOnDestroy 時訪問 signal
   private currentNodeId?: string;
@@ -287,8 +299,8 @@ export class NodeWrapperComponent implements OnDestroy {
     let NodeComponent = userNodeTypes?.[nodeType] || builtinNodeTypes[nodeType];
     
     if (NodeComponent === undefined) {
-      // 錯誤處理：類型未找到，回退到 default
-      console.warn(`Node type "${nodeType}" not found. Using fallback type "default".`);
+      // 錯誤處理：類型未找到，回退到 default（使用統一錯誤處理機制）
+      this.errorHandler('error003', errorMessages.error003(nodeType));
       nodeType = 'default';
       NodeComponent = userNodeTypes?.['default'] || builtinNodeTypes['default'];
     }

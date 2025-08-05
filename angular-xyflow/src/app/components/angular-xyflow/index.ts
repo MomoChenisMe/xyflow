@@ -34,6 +34,10 @@ export {
 // Types and interfaces
 export * from './types';
 
+// Error handling constants and utilities
+export { errorMessages, defaultErrorHandler } from './constants';
+export type { ErrorCode, OnErrorHandler } from './constants';
+
 // Re-export system types that are commonly used
 export type {
   NodeBase,

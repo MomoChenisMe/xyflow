@@ -25,6 +25,7 @@ import {
   EdgeProps,
   EdgeMarker,
 } from '../types';
+import { errorMessages, defaultErrorHandler, ErrorCode } from '../constants';
 import { EdgeComponent } from '../edge/edge.component';
 import { BezierEdgeComponent } from '../components/edges/bezier-edge/bezier-edge.component';
 import { StraightEdgeComponent } from '../components/edges/straight-edge/straight-edge.component';
@@ -335,11 +336,22 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
   edgeContextMenu = output<{ event: MouseEvent; edge: EdgeType }>();
   edgeFocus = output<{ event: FocusEvent; edge: EdgeType }>();
   edgeKeyDown = output<{ event: KeyboardEvent; edge: EdgeType }>();
+  
+  // 錯誤處理事件（與 React Flow 保持一致）
+  onError = output<{ code: string; message: string }>();
 
   // 動態組件載入所需的依賴
   protected readonly edgeInjector = inject(Injector);
   private readonly renderer = inject(Renderer2);
   private readonly viewContainerRef = inject(ViewContainerRef);
+  
+  // 錯誤處理器
+  private readonly errorHandler = (code: ErrorCode, message: string) => {
+    // 發出錯誤事件
+    this.onError.emit({ code, message });
+    // 同時使用預設處理器輸出到 console
+    defaultErrorHandler(code, message);
+  };
   
   // ViewChild 引用動態組件容器
   @ViewChild('dynamicEdgeContainer', { read: ElementRef, static: false })
@@ -373,13 +385,14 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
     simplebezier: SimpleBezierEdgeComponent, // 簡單貝茲曲線
   };
 
-  // 獲取解析後的邊類型（與 React Flow 邏輯一致）
+  // 獲取解析後的邊類型（利用 Angular 響應式系統優勢）
+  // Angular 優勢：computed 記憶化確保相同輸入只計算一次，提供更優的性能
   readonly resolvedEdgeType = computed(() => {
     const edge = this.edge();
     let edgeType = edge.type || 'default';
     const userEdgeTypes = this.edgeTypes();
     
-    // React Flow 邏輯：
+    // 類型檢查邏輯：
     // 1. 首先查找用戶定義的 edgeTypes
     // 2. 如果沒有找到，查找內建類型
     // 3. 如果類型不存在，回退到 default
@@ -387,7 +400,8 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
     
     if (EdgeComponent === undefined) {
       // 錯誤處理：類型未找到，回退到 default
-      console.warn(`Edge type "${edgeType}" not found. Using fallback type "default".`);
+      // Angular 優勢：只在類型真正不存在時警告一次，避免重複的控制台污染
+      this.errorHandler('error011', errorMessages.error011(edgeType));
       edgeType = 'default';
     }
     
@@ -403,23 +417,17 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
     return userEdgeTypes && userEdgeTypes[resolvedType] !== undefined;
   });
 
-  // 動態邊組件選擇
+  // 動態邊組件選擇（移除重複的警告邏輯）
   readonly edgeComponent = computed(() => {
-    const edge = this.edge();
-    let edgeType = edge.type || 'default';
+    const resolvedType = this.resolvedEdgeType(); // 使用已解析的類型，避免重複警告
     const userEdgeTypes = this.edgeTypes();
     
-    // React Flow 邏輯：
-    // 1. 首先查找用戶定義的 edgeTypes
-    // 2. 如果沒有找到，查找內建類型
-    // 3. 如果類型不存在，回退到 default
-    let EdgeComponent = userEdgeTypes?.[edgeType] || this.builtinEdgeTypes[edgeType];
+    // 使用解析後的類型獲取組件
+    let EdgeComponent = userEdgeTypes?.[resolvedType] || this.builtinEdgeTypes[resolvedType];
     
+    // 如果解析後的類型仍然找不到組件（極少見情況），使用預設的 bezier
     if (EdgeComponent === undefined) {
-      // 錯誤處理：類型未找到，回退到 default
-      console.warn(`Edge type "${edgeType}" not found. Using fallback type "default".`);
-      edgeType = 'default';
-      EdgeComponent = userEdgeTypes?.['default'] || this.builtinEdgeTypes['default'];
+      EdgeComponent = this.builtinEdgeTypes['default'];
     }
     
     return EdgeComponent;
