@@ -18,10 +18,12 @@ import {
   MarkerType,
   ConnectionLineTemplateContext,
   NodeTypes,
+  EdgeTypes,
 } from '../types';
 import { NodeTemplateDirective } from '../node-template.directive';
 import { NodeWrapperComponent } from '../node-wrapper/node-wrapper.component';
 import { EdgeComponent } from '../edge/edge.component';
+import { EdgeWrapperComponent } from '../edge-wrapper/edge-wrapper.component';
 import { ConnectionLineComponent } from '../connection-line/connection-line.component';
 import { AngularXYFlowService } from '../services/angular-xyflow.service';
 
@@ -52,6 +54,7 @@ export interface EdgeConnectionPoints {
     CommonModule,
     NodeWrapperComponent,
     EdgeComponent,
+    EdgeWrapperComponent,
     ConnectionLineComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -67,20 +70,14 @@ export interface EdgeConnectionPoints {
       [style.width]="'100%'"
       [style.height]="'100%'"
     >
-      <!-- Edges layer -->
+      <!-- Marker definitions SVG (獨立的 SVG 元素只用於定義 markers) -->
+      @if (hasEdgeMarkers()) {
       <svg:svg
-        class="xy-flow__edges angular-xyflow__edges"
         [style.position]="'absolute'"
-        [style.top]="'0'"
-        [style.left]="'0'"
-        [style.width]="'100%'"
-        [style.height]="'100%'"
-        [style.pointer-events]="'none'"
-        [style.z-index]="'1'"
+        [style.width]="'0'"
+        [style.height]="'0'"
         [style.overflow]="'visible'"
       >
-        <!-- Marker definitions -->
-        @if (hasEdgeMarkers()) {
         <svg:defs>
           @for (marker of edgeMarkers(); track marker.id) {
           <svg:marker
@@ -108,23 +105,17 @@ export interface EdgeConnectionPoints {
           </svg:marker>
           }
         </svg:defs>
-        }
-        
+      </svg:svg>
+      }
+
+      <!-- Edges layer -->
+      <div class="xy-flow__edges angular-xyflow__edges">
         @for (edge of visibleEdges(); track edge.id) {
           @let sourceNode = getNodeById()(edge.source);
           @let targetNode = getNodeById()(edge.target);
           @if (sourceNode && targetNode) {
             @let connectionPoints = getEdgeConnectionPoints()(sourceNode, targetNode, edge);
-            @let edgeFocusable = isEdgeFocusable()(edge);
-            <svg:g
-              class="angular-xyflow__edge xy-flow__edge"
-              [class.selected]="edge.selected"
-              [class.animated]="edge.animated"
-              [class.selectable]="edge.selectable !== false"
-              [attr.tabindex]="edgeFocusable ? 0 : null"
-              (focus)="edgeFocusable ? edgeFocus.emit({ event: $event, edge }) : null"
-              (keydown)="edgeFocusable ? edgeKeyDown.emit({ event: $event, edge }) : null"
-              angular-xyflow-edge
+            <angular-xyflow-edge-wrapper
               [edge]="edge"
               [sourceX]="connectionPoints.sourceX"
               [sourceY]="connectionPoints.sourceY"
@@ -133,14 +124,17 @@ export interface EdgeConnectionPoints {
               [sourcePosition]="connectionPoints.sourcePosition"
               [targetPosition]="connectionPoints.targetPosition"
               [isDarkMode]="isDarkMode()"
+              [edgeTypes]="edgeTypes()"
               [getMarkerId]="getMarkerId()"
               (edgeClick)="edgeClick.emit($event)"
               (edgeDoubleClick)="edgeDoubleClick.emit($event)"
               (edgeContextMenu)="edgeContextMenu.emit($event)"
+              (edgeFocus)="edgeFocus.emit($event)"
+              (edgeKeyDown)="edgeKeyDown.emit($event)"
             />
           }
         }
-      </svg:svg>
+      </div>
 
       <!-- Connection Line - 顯示連接進行中的線條（獨立層，高於節點） -->
       @if (connectionInProgress()) {
@@ -248,6 +242,7 @@ export class ViewportComponent<
   connectionLineStyle = input<Record<string, any>>();
   customNodeTemplates = input<readonly any[]>([]);
   nodeTypes = input<NodeTypes>();
+  edgeTypes = input<EdgeTypes>();
   isDarkMode = input<boolean>(false);
   
   // 函數輸入

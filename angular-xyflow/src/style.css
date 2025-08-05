@@ -22,6 +22,11 @@
 
   --xy-edge-label-background-color-default: #ffffff;
   --xy-edge-label-color-default: inherit;
+  
+  /* Edge styles */
+  --xy-edge-stroke-default: #b1b1b7;
+  --xy-edge-stroke-width-default: 1;
+  --xy-edge-stroke-selected-default: #555;
 }
 
 .xy-flow.dark {
@@ -47,6 +52,11 @@
 
   --xy-edge-label-background-color-default: #141414;
   --xy-edge-label-color-default: #f8f8f8;
+  
+  /* Edge styles for dark mode */
+  --xy-edge-stroke-default: #3e3e3e;
+  --xy-edge-stroke-width-default: 1;
+  --xy-edge-stroke-selected-default: #727272;
 }
 
 .xy-flow__edge {
@@ -58,6 +68,44 @@
 
   &-text {
     font-size: 10px;
+  }
+}
+
+/* Angular XYFlow edge styles */
+.angular-xyflow__edge {
+  &.selected,
+  &:focus,
+  &:focus-visible {
+    outline: none;
+  }
+
+  &.selected .angular-xyflow__edge-path,
+  &.selectable:focus .angular-xyflow__edge-path,
+  &.selectable:focus-visible .angular-xyflow__edge-path {
+    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default)) !important;
+    stroke-width: 2 !important;
+  }
+  
+  /* 確保動畫 edge 的互動區域不受動畫影響 */
+  &.animated .angular-xyflow__edge-interaction {
+    stroke-dasharray: none;
+    animation: none;
+  }
+}
+
+/* Edge path 動畫樣式 */
+.angular-xyflow__edge-path {
+  &.animated {
+    stroke-dasharray: 5;
+    animation: dashdraw 0.5s linear infinite;
+  }
+  
+  /* 動畫邊的選中狀態樣式 - 需要更高的優先級 */
+  &.animated.selected {
+    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default)) !important;
+    stroke-width: 2 !important;
+    stroke-dasharray: 5;
+    animation: dashdraw 0.5s linear infinite;
   }
 }
 

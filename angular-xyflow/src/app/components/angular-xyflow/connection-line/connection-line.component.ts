@@ -26,7 +26,7 @@ export interface ConnectionState {
   template: `
     @if (customTemplate() && templateContext()) {
       <!-- 使用自定義連接線模板 -->
-      <ng-container 
+      <ng-container
         [ngTemplateOutlet]="customTemplate()!"
         [ngTemplateOutletContext]="templateContext()!"
       />
@@ -65,18 +65,18 @@ export class ConnectionLineComponent {
       targetY: to.y,
       targetPosition: toPosition
     });
-    
+
     return path;
   });
 
   connectionStroke = computed(() => {
     const style = this.connectionLineStyle();
-    
+
     // 始終優先使用自定義樣式中的stroke
     if (style?.['stroke']) {
       return style['stroke'];
     }
-    
+
     const state = this.connectionState();
     if (!state) return '#b1b1b7';
 
@@ -90,7 +90,7 @@ export class ConnectionLineComponent {
 
   connectionStrokeWidth = computed(() => {
     const style = this.connectionLineStyle();
-    
+
     // 優先使用自定義樣式中的 stroke-width
     if (style?.['stroke-width']) {
       return style['stroke-width'];
@@ -98,7 +98,7 @@ export class ConnectionLineComponent {
     if (style?.['strokeWidth']) {
       return style['strokeWidth'];
     }
-    
+
     // React Flow 預設寬度
     return '1';
   });
@@ -111,16 +111,16 @@ export class ConnectionLineComponent {
   connectionWrapperClass = computed(() => {
     const state = this.connectionState();
     const baseClass = 'angular-xyflow__connection xy-flow__connection';
-    
+
     if (!state) return baseClass;
-    
+
     // 添加連接狀態類別 (valid/invalid)
-    const statusClass = state.isValid === null 
-      ? '' 
-      : state.isValid 
-        ? 'valid' 
+    const statusClass = state.isValid === null
+      ? ''
+      : state.isValid
+        ? 'valid'
         : 'invalid';
-    
+
     return statusClass ? `${baseClass} ${statusClass}` : baseClass;
   });
 

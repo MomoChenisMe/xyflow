@@ -38,6 +38,34 @@ export interface NodeProps<NodeType extends AngularNode = AngularNode> {
 // NodeTypes - 節點類型對應表，映射節點類型字串到對應的 Angular 元件
 export type NodeTypes = Record<string, Type<any>>;
 
+// EdgeProps - 與 React Flow 的 EdgeProps 對應，用於傳遞給邊元件的屬性
+export interface EdgeProps<EdgeType extends AngularEdge = AngularEdge> extends Record<string, any> {
+  id: string;
+  data: EdgeType['data'];
+  type?: string;
+  selected: boolean;
+  sourceX: number;
+  sourceY: number;
+  targetX: number;
+  targetY: number;
+  sourcePosition: Position;
+  targetPosition: Position;
+  sourceHandleId?: string;
+  targetHandleId?: string;
+  markerStart?: EdgeMarker | string;
+  markerEnd?: EdgeMarker | string;
+  style?: Record<string, any>;
+  animated?: boolean;
+  hidden?: boolean;
+  deletable?: boolean;
+  selectable?: boolean;
+  interactionWidth?: number;
+  pathOptions?: any;
+}
+
+// EdgeTypes - 邊類型對應表，映射邊類型字串到對應的 Angular 元件
+export type EdgeTypes = Record<string, Type<any>>;
+
 // Angular-specific Node type extending system NodeBase
 export interface AngularNode<T extends Record<string, unknown> = Record<string, unknown>> extends NodeBase<T> {
   id: string;
@@ -117,6 +145,7 @@ export interface AngularXYFlowProps<NodeType extends AngularNode = AngularNode, 
   defaultNodes?: NodeType[];
   defaultEdges?: EdgeType[];
   nodeTypes?: NodeTypes;
+  edgeTypes?: EdgeTypes;
   onNodesChange?: (changes: NodeChange<NodeType>[]) => void;
   onEdgesChange?: (changes: EdgeChange<EdgeType>[]) => void;
   onConnect?: (connection: Connection) => void;

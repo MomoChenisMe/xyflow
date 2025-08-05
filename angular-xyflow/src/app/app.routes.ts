@@ -13,6 +13,7 @@ import { CustomConnectionLineExampleComponent } from './components/examples/cust
 import { CustomMinimapNodeExampleComponent } from './components/examples/custom-minimap-node-example/custom-minimap-node-example.component';
 import { CustomNodeExampleComponent } from './components/examples/custom-node-example/custom-node-example.component';
 import { DefaultNodeOverwriteExampleComponent } from './components/examples/default-node-overwrite-example/default-node-overwrite-example.component';
+import { DefaultEdgeOverwriteExampleComponent } from './components/examples/default-edge-overwrite-example/default-edge-overwrite-example.component';
 
 export interface IRoute {
   name: string;
@@ -91,6 +92,11 @@ export const routeList: IRoute[] = [
     path: 'default-node-overwrite',
     component: DefaultNodeOverwriteExampleComponent,
   },
+  {
+    name: 'Default Edge Overwrite',
+    path: 'default-edge-overwrite',
+    component: DefaultEdgeOverwriteExampleComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -109,4 +115,5 @@ export const routes: Routes = [
   { path: 'custom-minimap-node', component: CustomMinimapNodeExampleComponent },
   { path: 'custom-node', component: CustomNodeExampleComponent },
   { path: 'default-node-overwrite', component: DefaultNodeOverwriteExampleComponent },
+  { path: 'default-edge-overwrite', component: DefaultEdgeOverwriteExampleComponent },
 ];

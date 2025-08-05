@@ -42,6 +42,7 @@ import {
   EdgeMarker,
   MarkerType,
   NodeTypes,
+  EdgeTypes,
   NodeChange,
   EdgeChange,
 } from './types';
@@ -83,6 +84,7 @@ import { ViewportComponent } from './viewport/viewport.component';
         [connectionLineStyle]="connectionLineStyle()"
         [customNodeTemplates]="customNodeTemplates()"
         [nodeTypes]="nodeTypes()"
+        [edgeTypes]="edgeTypes()"
         [isDarkMode]="colorModeClass() === 'dark'"
         [getNodeById]="getNodeById.bind(this)"
         [getEdgeConnectionPoints]="getEdgeConnectionPoints.bind(this)"
@@ -254,6 +256,7 @@ export class AngularXYFlowComponent<
   nodes = input<NodeType[]>();
   edges = input<EdgeType[]>();
   nodeTypes = input<NodeTypes>();
+  edgeTypes = input<EdgeTypes>();
   className = input<string>('');
   minZoom = input<number>(0.5);
   maxZoom = input<number>(2);
