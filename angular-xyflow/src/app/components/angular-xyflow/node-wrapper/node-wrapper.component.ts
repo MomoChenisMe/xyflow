@@ -53,6 +53,7 @@ import { builtinNodeTypes } from '../default-nodes';
       [style.height]="node().height ? node().height + 'px' : null"
       [style.user-select]="'none'"
       [style.pointer-events]="'auto'"
+      [style.visibility]="nodeHasDimensions() ? 'visible' : 'hidden'"
       [style.opacity]="node().hidden ? 0 : 1"
       [style.cursor]="getCursor()"
       [style]="getNodeStyles()"
@@ -302,6 +303,29 @@ export class NodeWrapperComponent implements OnDestroy {
     return `translate(${pos.x}px, ${pos.y}px)`;
   });
   
+  // 檢查節點是否已有尺寸（與 React Flow 的 nodeHasDimensions 一致）
+  readonly nodeHasDimensions = computed(() => {
+    const node = this.node();
+    const internals = this._flowService.getNodeInternals(node.id);
+    
+    // React Flow 的邏輯：
+    // visibility 控制使用的是實際測量或明確設置的尺寸
+    // initialWidth/Height 只用於 fitView 計算，不影響節點可見性
+    
+    // 如果有測量尺寸，使用測量尺寸
+    if (internals?.measured?.width !== undefined && internals?.measured?.height !== undefined) {
+      return internals.measured.width > 0 && internals.measured.height > 0;
+    }
+    
+    // 如果有明確設置的 width/height，則節點可見
+    if (node.width !== undefined && node.height !== undefined) {
+      return node.width > 0 && node.height > 0;
+    }
+    
+    // 只有 initialWidth/Height 的節點應該被隱藏，等待測量
+    return false;
+  });
+  
   // 動態元件載入 - 根據節點類型解析對應的元件（模擬 React Flow 的 nodeTypes 邏輯）
   readonly nodeComponent = computed(() => {
     const node = this.node();
@@ -486,7 +510,12 @@ export class NodeWrapperComponent implements OnDestroy {
 
     this.resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const { width, height } = entry.contentRect;
+        // 與 React Flow 保持一致：使用 offsetWidth/offsetHeight 而非 contentRect
+        // offsetWidth/offsetHeight 包含 content + padding + border
+        const target = entry.target as HTMLElement;
+        const width = target.offsetWidth;
+        const height = target.offsetHeight;
+        
         // 更新統一位置計算系統中的測量尺寸
         this._flowService.updateNodeMeasuredDimensions(this.node().id, { width, height });
       }

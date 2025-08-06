@@ -77,6 +77,8 @@ export interface AngularNode<T extends Record<string, unknown> = Record<string, 
   selectable?: boolean;
   connectable?: boolean;
   deletable?: boolean;
+  initialWidth?: number;  // 初始寬度，用於 fitView 計算
+  initialHeight?: number; // 初始高度，用於 fitView 計算
   selected?: boolean;
   sourcePosition?: Position;
   targetPosition?: Position;

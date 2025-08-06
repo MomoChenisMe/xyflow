@@ -53,17 +53,25 @@ export class AngularXYFlowService<
       const internals = new Map();
 
       nodes.forEach(node => {
+        // 優先使用測量的尺寸，然後是節點的尺寸，最後回退到 0
+        // 與 React Flow 的 getNodeDimensions 保持一致的邏輯
+        const measuredFromObserver = measuredDimensions.get(node.id);
+        const measured = measuredFromObserver || node.measured || {
+          width: node.width || 0,
+          height: node.height || 0
+        };
+
+        // 創建一個包含測量尺寸的節點副本，供 getNodePositionWithOrigin 使用
+        const nodeWithMeasured = {
+          ...node,
+          measured,
+          width: measured.width,
+          height: measured.height
+        };
+
         // 計算絕對位置（考慮節點特定的 origin 或全局 origin）
         const nodeOrigin = node.origin || this._nodeOrigin();
-        const positionAbsolute = getNodePositionWithOrigin(node, nodeOrigin);
-
-        // 優先使用測量的尺寸，然後是節點的尺寸，最後是默認值
-        const measured = measuredDimensions.get(node.id) ||
-          node.measured ||
-          {
-            width: node.width || 150,
-            height: node.height || 40
-          };
+        const positionAbsolute = getNodePositionWithOrigin(nodeWithMeasured, nodeOrigin);
 
         internals.set(node.id, {
           positionAbsolute,
@@ -300,12 +308,14 @@ export class AngularXYFlowService<
     const lookup = new Map();
 
     nodes.forEach((node) => {
-      // 使用實際測量尺寸，優先順序：實際測量 > 節點自帶 measured > 節點 width/height > 默認值
-      const measured = measuredDimensions.get(node.id) ||
+      // 使用實際測量尺寸，優先順序：實際測量 > 節點自帶 measured > 節點 width/height > initialWidth/Height > 默認值
+      // 與 React Flow 的邏輯保持一致
+      const measuredFromObserver = measuredDimensions.get(node.id);
+      const measured = measuredFromObserver ||
         node.measured ||
         {
-          width: (node as any).width || 150,
-          height: (node as any).height || 32,
+          width: (node as any).width || (node as any).initialWidth || 150,
+          height: (node as any).height || (node as any).initialHeight || 40,  // React Flow 的默認高度是 40
         };
 
       // 獲取節點內部狀態中的絕對位置
@@ -314,6 +324,10 @@ export class AngularXYFlowService<
       lookup.set(node.id, {
         ...node,
         measured,
+        width: (node as any).width,
+        height: (node as any).height,
+        initialWidth: (node as any).initialWidth || 150,
+        initialHeight: (node as any).initialHeight || 40,
         selectable: true,
         hidden: false,
         internals: {
@@ -671,6 +685,13 @@ export class AngularXYFlowService<
    */
   getNodeOrigin(): [number, number] {
     return this._nodeOrigin();
+  }
+
+  /**
+   * 設置節點原點
+   */
+  setNodeOrigin(origin: [number, number]): void {
+    this._nodeOrigin.set(origin);
   }
 
   /**

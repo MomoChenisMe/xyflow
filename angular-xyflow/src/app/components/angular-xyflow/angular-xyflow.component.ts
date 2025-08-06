@@ -66,7 +66,6 @@ import { ViewportComponent } from './viewport/viewport.component';
       [style.height]="'100%'"
       [style.position]="'relative'"
       [style.overflow]="'hidden'"
-      [style.background]="'#fafafa'"
       (click)="handlePaneClick($event)"
       (dblclick)="handlePaneDoubleClick($event)"
       (contextmenu)="handlePaneContextMenu($event)"
@@ -115,12 +114,21 @@ import { ViewportComponent } from './viewport/viewport.component';
   `,
   styles: [
     `
+      :host {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      
       .angular-xyflow {
         width: 100%;
         height: 100%;
         position: relative;
         overflow: hidden;
-        background: #fafafa;
+      }
+      
+      .xy-flow {
+        background-color: var(--xy-background-color, var(--xy-background-color-default));
       }
 
       /* Viewport cursor styles - 對應 React Flow 的邏輯 */
@@ -555,6 +563,12 @@ export class AngularXYFlowComponent<
       this._flowService.setHasDefaultEdges(hasDefaultEdges);
     });
 
+    // 設置 nodeOrigin
+    effect(() => {
+      const origin = this.nodeOrigin();
+      this._flowService.setNodeOrigin(origin);
+    });
+
     // 設置事件回調
     this._flowService.setOnNodesChange((nodes) => {
       this.onNodesChange.emit(nodes);
@@ -781,13 +795,8 @@ export class AngularXYFlowComponent<
       return; // 等待 PanZoom 初始化完成
     }
 
-    // 確保初始節點已經渲染到 DOM（檢查 visibleNodes 以確保節點已測量）
-    const visibleNodes = this.visibleNodes();
-    if (visibleNodes.length === 0) {
-      return; // 等待節點渲染完成
-    }
-
-    // 執行 fit view，傳遞選項
+    // 與 React Flow 保持一致：立即執行 fitView，使用默認尺寸
+    // 不等待節點測量完成，因為我們有合理的默認值（150x40）
     this.performFitView(this.fitViewOptions());
     this._initialFitViewExecuted.set(true);
   }

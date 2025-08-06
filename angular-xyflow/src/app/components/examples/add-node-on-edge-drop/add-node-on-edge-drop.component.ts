@@ -1,10 +1,26 @@
-import { Component, signal, effect, ViewChild, ElementRef, ChangeDetectorRef, inject } from '@angular/core';
+import {
+  Component,
+  signal,
+  effect,
+  ViewChild,
+  ElementRef,
+  ChangeDetectorRef,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
 import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyflow.service';
-import { AngularNode, AngularEdge, NodeChange, EdgeChange } from '../../angular-xyflow/types';
+import {
+  AngularNode,
+  AngularEdge,
+  NodeChange,
+  EdgeChange,
+} from '../../angular-xyflow/types';
 import { Connection, addEdge } from '@xyflow/system';
-import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
+import {
+  applyNodeChanges,
+  applyEdgeChanges,
+} from '../../angular-xyflow/utils/changes';
 
 @Component({
   selector: 'app-add-node-on-edge-drop',
@@ -27,12 +43,14 @@ import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/c
       </angular-xyflow>
     </div>
   `,
-  styles: [`
-    .wrapper {
-      height: 100vh;
-      width: 100%;
-    }
-  `]
+  styles: [
+    `
+      .wrapper {
+        height: 100vh;
+        width: 100%;
+      }
+    `,
+  ],
 })
 export class AddNodeOnEdgeDropComponent {
   @ViewChild('flow') flowComponent!: AngularXYFlowComponent;
@@ -66,11 +84,11 @@ export class AddNodeOnEdgeDropComponent {
 
   // Controlled mode event handlers
   onNodesChange(changes: NodeChange<AngularNode>[]): void {
-    this.nodes.update(nodes => applyNodeChanges(changes, nodes));
+    this.nodes.update((nodes) => applyNodeChanges(changes, nodes));
   }
 
   onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
-    this.edges.update(edges => applyEdgeChanges(changes, edges));
+    this.edges.update((edges) => applyEdgeChanges(changes, edges));
   }
 
   onConnect(params: Connection): void {
@@ -78,15 +96,23 @@ export class AddNodeOnEdgeDropComponent {
     this.connectingNodeId = null;
 
     // 添加新的邊
-    this.edges.update(edges => addEdge(params, edges));
+    this.edges.update((edges) => addEdge(params, edges));
   }
 
-  onConnectStart(event: { event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }): void {
+  onConnectStart(event: {
+    event: MouseEvent;
+    nodeId: string;
+    handleType: 'source' | 'target';
+    handleId?: string;
+  }): void {
     // 記錄開始連接的節點ID
     this.connectingNodeId = event.nodeId;
   }
 
-  onConnectEnd(eventData: { connection?: Connection; event: MouseEvent }): void {
+  onConnectEnd(eventData: {
+    connection?: Connection;
+    event: MouseEvent;
+  }): void {
     if (!this.connectingNodeId) {
       return;
     }
@@ -95,7 +121,11 @@ export class AddNodeOnEdgeDropComponent {
     const target = eventData.event.target as Partial<Element> | null;
     const targetIsPane = target?.classList?.contains('angular-xyflow__pane');
 
-    if (targetIsPane && 'clientX' in eventData.event && 'clientY' in eventData.event) {
+    if (
+      targetIsPane &&
+      'clientX' in eventData.event &&
+      'clientY' in eventData.event
+    ) {
       // 在空白區域結束連接，創建新節點
       this.createNodeAtPosition(eventData.event);
     }
@@ -113,16 +143,12 @@ export class AddNodeOnEdgeDropComponent {
     const screenPosition = { x: event.clientX, y: event.clientY };
     const position = this.flowComponent.screenToFlowPosition(screenPosition);
 
-    // 創建新節點 - 與 React 版本一致，並添加 measured 屬性
+    // 創建新節點 - 與 React 版本保持一致
     const newNode: AngularNode = {
       id,
       position,
       data: { label: `Node ${id}` },
       origin: [0.5, 0.0],
-      measured: {
-        width: 150,  // 默認寬度與 CSS 一致
-        height: 40   // 默認高度
-      }
     };
 
     // 創建新邊 - 與 React 版本一致
@@ -134,12 +160,12 @@ export class AddNodeOnEdgeDropComponent {
 
     // 在controlled模式下，我們需要更新signals而不是直接調用flow方法
     // 但確保新節點有正確的屬性（如measured）
-    this.nodes.update(nodes => {
+    this.nodes.update((nodes) => {
       const updated = nodes.concat(newNode);
       return updated;
     });
 
-    this.edges.update(edges => {
+    this.edges.update((edges) => {
       const updated = edges.concat(newEdge);
       return updated;
     });
@@ -150,5 +176,4 @@ export class AddNodeOnEdgeDropComponent {
     // 重置連接節點ID
     this.connectingNodeId = null;
   }
-
 }
