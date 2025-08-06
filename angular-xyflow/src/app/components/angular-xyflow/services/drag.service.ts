@@ -41,7 +41,7 @@ export class AngularXYFlowDragService implements OnDestroy {
 
   // 初始化拖拽功能
   initializeDrag(config: DragConfig): void {
-    const { nodeId } = config;
+    const { nodeId, handleSelector } = config;
     if (!nodeId) return;
 
     // 存儲拖曳回調
@@ -56,8 +56,9 @@ export class AngularXYFlowDragService implements OnDestroy {
       this.xyDragInstances.get(nodeId)?.destroy();
     }
 
-    // 捕獲 nodeId 用於後續的回調函式
+    // 捕獲 nodeId 和 handleSelector 用於後續的回調函式
     const currentNodeId = nodeId;
+    const currentHandleSelector = handleSelector;
 
     // 創建新的 XYDrag 實例
     const xyDragInstance = XYDrag({
@@ -98,11 +99,17 @@ export class AngularXYFlowDragService implements OnDestroy {
     });
 
 
-    // 更新拖拽配置 - noDragClassName 屬於 update 方法參數
-    xyDragInstance.update({
-      ...config,
-      noDragClassName: 'non-draggable'
-    });
+    // 更新拖拽配置 - 只傳遞 DragUpdateParams 需要的參數
+    const updateParams = {
+      domNode: config.domNode,
+      noDragClassName: 'non-draggable',
+      handleSelector: currentHandleSelector,
+      isSelectable: config.isSelectable,
+      nodeId: config.nodeId,
+      nodeClickDistance: config.nodeClickDistance
+    };
+    
+    xyDragInstance.update(updateParams);
 
     
     // 儲存實例
@@ -133,6 +140,7 @@ export class AngularXYFlowDragService implements OnDestroy {
       instance.destroy();
       this.xyDragInstances.delete(nodeId);
     }
+    
     // 清理回調
     this.dragCallbacks.delete(nodeId);
   }
@@ -143,6 +151,7 @@ export class AngularXYFlowDragService implements OnDestroy {
       instance.destroy();
     }
     this.xyDragInstances.clear();
+    
     this.dragCallbacks.clear();
     this._dragging.set(false);
   }

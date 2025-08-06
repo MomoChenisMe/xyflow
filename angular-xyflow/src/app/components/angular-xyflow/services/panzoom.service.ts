@@ -118,10 +118,12 @@ export class AngularXYFlowPanZoomService implements OnDestroy {
       },
     });
 
-    // 更新 PanZoom 設置 - 阻止 Node、Edge、Controls、MiniMap、Panel、Background 上的 PanZoom 事件
+    // 更新 PanZoom 設置
+    // noPanClassName 必須是單個類別名稱，XYPanZoom 使用 closest('.${className}') 來檢查
+    // React Flow 使用 'nopan' 作為標準類別名稱
     this.panZoomInstance.update({
-      noWheelClassName: 'angular-xyflow__node angular-xyflow__edge angular-xyflow__controls angular-xyflow__minimap angular-xyflow__panel angular-xyflow__background xy-flow__node xy-flow__edge',
-      noPanClassName: 'angular-xyflow__node angular-xyflow__edge angular-xyflow__controls angular-xyflow__minimap angular-xyflow__panel angular-xyflow__background xy-flow__node xy-flow__edge',
+      noWheelClassName: 'nowheel',
+      noPanClassName: 'nopan',
       preventScrolling,
       panOnScroll,
       panOnDrag,
@@ -198,9 +200,10 @@ export class AngularXYFlowPanZoomService implements OnDestroy {
     }
 
     // 創建完整的更新選項
+    // noPanClassName 和 noWheelClassName 必須是單個類別名稱
     const fullUpdate = {
-      noWheelClassName: 'no-wheel',
-      noPanClassName: 'no-pan',
+      noWheelClassName: 'nowheel',
+      noPanClassName: 'nopan',
       preventScrolling: true,
       panOnScroll: false,
       panOnDrag: true,

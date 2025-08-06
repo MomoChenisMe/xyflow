@@ -220,6 +220,12 @@ export class NodeWrapperComponent implements OnDestroy {
   
   // 存儲當前節點 ID 用於清理 - 避免在 ngOnDestroy 時訪問 signal
   private currentNodeId?: string;
+  
+  // 追踪拖曳是否已初始化
+  private dragInitialized = false;
+  
+  // 追踪最後的 dragHandle 值，用於檢測變化
+  private lastDragHandle?: string;
 
   // 獲取解析後的節點類型（與 React Flow 邏輯一致）
   private getResolvedNodeType(): string {
@@ -255,6 +261,16 @@ export class NodeWrapperComponent implements OnDestroy {
     // 添加 selectable 類以啟用 hover 和 focus 樣式
     if (this._flowService.elementsSelectable()) {
       classes.push('selectable');
+    }
+    
+    // 關鍵修復：為可拖曳節點添加 nopan 類別（與 React Flow 一致）
+    // 這防止了在節點上（特別是有 dragHandle 但不在 handle 上）拖曳時觸發 viewport panning
+    const globalDraggable = this._flowService.nodesDraggable();
+    const nodeDraggable = nodeData.draggable !== false;
+    const isDraggable = globalDraggable && nodeDraggable && !nodeData.hidden;
+    
+    if (isDraggable) {
+      classes.push('nopan');
     }
 
     // 注意：React Flow 不會為回退到 default 的節點添加 type- 類
@@ -353,31 +369,103 @@ export class NodeWrapperComponent implements OnDestroy {
   });
 
   constructor() {
-    // 監聽拖動狀態變化
+    // 監聽拖動狀態變化 - 對應 React 的 dragging state
     effect(() => {
       const dragging = this.dragging();
       this.isDragging.set(dragging);
     });
 
-    // 監聽節點數據和全局拖動狀態變化，重新設置拖拽
-    // 但避免在拖動過程中重新初始化
+    // 初始化階段 - 對應 React 的第一個 useEffect（創建 XYDrag 實例）
     effect(() => {
       const nodeData = this.node();
-      const globalDraggable = this._flowService.nodesDraggable(); // 監聽全局狀態
-      const isDragging = this.isDragging() || this._dragService.dragging(); // 檢查是否正在拖動
-
-      if (nodeData && !isDragging) {
+      if (nodeData) {
         // 存儲節點 ID 用於清理
         this.currentNodeId = nodeData.id;
-        // 只在不拖動時重新設置拖拽，確保 DOM 元素已準備好
-        setTimeout(() => this.setupDragForNode(), 0);
       }
     });
 
-    // 渲染後設置觀察器
+    // 關鍵：使用 afterRenderEffect 確保 DOM 渲染後再設置拖曳
+    // 對應 React 的第二個 useEffect（更新拖曳配置）
     afterRenderEffect(() => {
-      this.setupResizeObserver();
+      const nodeData = this.node();
+      const element = this.nodeElement()?.nativeElement;
+      
+      if (!element || !nodeData) {
+        return;
+      }
+      
+      // 對應 React 的 disabled 邏輯
+      const globalDraggable = this._flowService.nodesDraggable();
+      const nodeDraggable = nodeData.draggable !== false;
+      const isDraggable = globalDraggable && nodeDraggable;
+      const disabled = nodeData.hidden || !isDraggable;
+      
+      // 檢查是否需要重新初始化（配置變化）
+      const configChanged = !this.dragInitialized || 
+                          this.lastDragHandle !== nodeData.dragHandle;
+      
+      if (disabled) {
+        // 如果禁用，銷毀拖曳實例
+        if (this.dragInitialized) {
+          this._dragService.destroyNodeDrag(nodeData.id);
+          this.dragInitialized = false;
+        }
+      } else if (configChanged) {
+        // 配置變化，重新初始化
+        // 如果有 dragHandle，需要確保 handle 元素已渲染
+        if (nodeData.dragHandle) {
+          // 使用 setTimeout 0 讓動態組件完成渲染
+          setTimeout(() => {
+            this.initializeDragWithHandle(nodeData, element);
+          }, 0);
+        } else {
+          // 沒有 dragHandle，直接初始化
+          this.initializeDragWithHandle(nodeData, element);
+        }
+      }
+      
+      // 設置觀察器（只在首次）
+      if (!this.resizeObserver) {
+        this.setupResizeObserver();
+      }
     });
+  }
+  
+  // 新增輔助方法，對應 React 的 xyDrag.current?.update
+  private initializeDragWithHandle(nodeData: AngularNode, element: HTMLElement): void {
+    // 總是先銷毀舊的實例，確保乾淨的狀態
+    if (this.dragInitialized) {
+      this._dragService.destroyNodeDrag(nodeData.id);
+      // 給一點時間讓清理完成
+      setTimeout(() => {
+        this.setupNewDragInstance(nodeData, element);
+      }, 0);
+    } else {
+      this.setupNewDragInstance(nodeData, element);
+    }
+  }
+  
+  private setupNewDragInstance(nodeData: AngularNode, element: HTMLElement): void {
+    // 初始化拖曳
+    this._dragService.initializeDrag({
+      nodeId: nodeData.id,
+      domNode: element,
+      handleSelector: nodeData.dragHandle,
+      isSelectable: true,
+      nodeClickDistance: 0,
+      onDragStart: (event: MouseEvent) => {
+        this.nodeDragStart.emit(event);
+      },
+      onDrag: (event: MouseEvent, nodeId: string, position: { x: number; y: number }) => {
+        this.nodeDrag.emit({ event, position });
+      },
+      onDragStop: (event: MouseEvent) => {
+        this.nodeDragStop.emit(event);
+      }
+    });
+    
+    this.dragInitialized = true;
+    this.lastDragHandle = nodeData.dragHandle;
   }
 
 
@@ -390,39 +478,6 @@ export class NodeWrapperComponent implements OnDestroy {
     }
   }
 
-  // 為此節點設置拖拽功能
-  private setupDragForNode() {
-    const element = this.nodeElement()?.nativeElement;
-    const nodeData = this.node();
-
-    if (!element || !nodeData) {
-      return;
-    }
-
-    // 檢查節點是否可拖拽 - 需要同時滿足全局設置和節點設置
-    const globalDraggable = this._flowService.nodesDraggable();
-    const nodeDraggable = nodeData.draggable !== false;
-    const isDraggable = globalDraggable && nodeDraggable;
-
-
-    // 總是初始化拖動服務，但根據狀態啟用或禁用
-    this._dragService.initializeDrag({
-      nodeId: nodeData.id,
-      domNode: element,
-      isSelectable: true,
-      nodeClickDistance: 0,
-      onDragStart: (event: MouseEvent, nodeId: string) => {
-        this.nodeDragStart.emit(event);
-      },
-      onDrag: (event: MouseEvent, nodeId: string, position: { x: number; y: number }) => {
-        // 傳遞拖曳事件和最新位置
-        this.nodeDrag.emit({ event, position });
-      },
-      onDragStop: (event: MouseEvent, nodeId: string) => {
-        this.nodeDragStop.emit(event);
-      }
-    });
-  }
 
   // 設置大小調整觀察器
   private setupResizeObserver() {

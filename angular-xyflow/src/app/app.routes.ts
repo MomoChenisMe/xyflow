@@ -16,6 +16,7 @@ import { DefaultNodesExampleComponent } from './components/examples/default-node
 import { DefaultNodeOverwriteExampleComponent } from './components/examples/default-node-overwrite-example/default-node-overwrite-example.component';
 import { DefaultEdgeOverwriteExampleComponent } from './components/examples/default-edge-overwrite-example/default-edge-overwrite-example.component';
 import { DevToolsExampleComponent } from './components/examples/devtools-example/devtools-example.component';
+import { DragHandleExampleComponent } from './components/examples/drag-handle-example/drag-handle-example.component';
 
 export interface IRoute {
   name: string;
@@ -109,6 +110,11 @@ export const routeList: IRoute[] = [
     path: 'devtools',
     component: DevToolsExampleComponent,
   },
+  {
+    name: 'Drag Handle',
+    path: 'drag-handle',
+    component: DragHandleExampleComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -130,4 +136,5 @@ export const routes: Routes = [
   { path: 'default-node-overwrite', component: DefaultNodeOverwriteExampleComponent },
   { path: 'default-edge-overwrite', component: DefaultEdgeOverwriteExampleComponent },
   { path: 'devtools', component: DevToolsExampleComponent },
+  { path: 'drag-handle', component: DragHandleExampleComponent },
 ];

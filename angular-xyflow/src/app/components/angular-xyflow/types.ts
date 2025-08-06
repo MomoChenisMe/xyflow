@@ -90,6 +90,11 @@ export interface AngularNode<T extends Record<string, unknown> = Record<string, 
   origin?: [number, number]; // 新增：節點原點屬性，用於定位計算
   measured?: { width: number; height: number }; // 新增：測量的尺寸屬性
   /**
+   * A class name that can be applied to elements inside the node that allows those elements to act
+   * as drag handles, letting the user drag the node by clicking and dragging on those elements.
+   */
+  dragHandle?: string;
+  /**
    * The ARIA role attribute for the node element, used for accessibility.
    * @default "group"
    */
