@@ -27,7 +27,7 @@ import {
   getEdgePosition,
   ConnectionMode,
   ColorMode,
-  ColorModeClass
+  ColorModeClass,
 } from '@xyflow/system';
 
 // 專案內部模組
@@ -54,7 +54,11 @@ import { ViewportComponent } from './viewport/viewport.component';
   selector: 'angular-xyflow',
   standalone: true,
   imports: [CommonModule, ViewportComponent],
-  providers: [AngularXYFlowService, AngularXYFlowDragService, AngularXYFlowPanZoomService],
+  providers: [
+    AngularXYFlowService,
+    AngularXYFlowDragService,
+    AngularXYFlowPanZoomService,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -76,15 +80,19 @@ import { ViewportComponent } from './viewport/viewport.component';
         [viewportTransform]="viewportTransform()"
         [visibleNodes]="visibleNodes()"
         [visibleEdges]="visibleEdges()"
-        [hasEdgeMarkers]="hasEdgeMarkers()"
-        [edgeMarkers]="edgeMarkers()"
         [connectionInProgress]="connectionInProgress()"
-        [customConnectionLineTemplate]="customConnectionLineTemplate()?.templateRef"
+        [customConnectionLineTemplate]="
+          customConnectionLineTemplate()?.templateRef
+        "
         [connectionLineStyle]="connectionLineStyle()"
         [customNodeTemplates]="customNodeTemplates()"
         [nodeTypes]="nodeTypes()"
         [edgeTypes]="edgeTypes()"
         [isDarkMode]="colorModeClass() === 'dark'"
+        [defaultMarkerColor]="defaultMarkerColor()"
+        [rfId]="id()"
+        [defaultMarkerStart]="defaultEdgeOptions()?.markerStart"
+        [defaultMarkerEnd]="defaultEdgeOptions()?.markerEnd"
         [getNodeById]="getNodeById.bind(this)"
         [getEdgeConnectionPoints]="getEdgeConnectionPoints.bind(this)"
         [getMarkerId]="getMarkerId.bind(this)"
@@ -105,7 +113,10 @@ import { ViewportComponent } from './viewport/viewport.component';
         (edgeKeyDown)="handleEdgeKeyDown($event.event, $event.edge)"
       />
       <!-- Viewport portal content projection - rendered as overlay -->
-      <div class="angular-xyflow__viewport-portal" [style.transform]="viewportTransform()">
+      <div
+        class="angular-xyflow__viewport-portal"
+        [style.transform]="viewportTransform()"
+      >
         <ng-content select="[viewportPortal]"></ng-content>
       </div>
       <!-- Content projection for background, controls, etc. -->
@@ -119,16 +130,19 @@ import { ViewportComponent } from './viewport/viewport.component';
         width: 100%;
         height: 100%;
       }
-      
+
       .angular-xyflow {
         width: 100%;
         height: 100%;
         position: relative;
         overflow: hidden;
       }
-      
+
       .xy-flow {
-        background-color: var(--xy-background-color, var(--xy-background-color-default));
+        background-color: var(
+          --xy-background-color,
+          var(--xy-background-color-default)
+        );
       }
 
       /* Viewport cursor styles - 對應 React Flow 的邏輯 */
@@ -147,7 +161,7 @@ import { ViewportComponent } from './viewport/viewport.component';
       .angular-xyflow__pane--selection {
         cursor: pointer;
       }
-      
+
       .angular-xyflow__viewport-portal {
         position: absolute;
         top: 0;
@@ -158,7 +172,7 @@ import { ViewportComponent } from './viewport/viewport.component';
         transform-origin: 0 0;
         z-index: 10;
       }
-      
+
       .angular-xyflow__viewport-portal > * {
         pointer-events: none;
       }
@@ -217,7 +231,8 @@ import { ViewportComponent } from './viewport/viewport.component';
 
       .angular-xyflow__edge-path.selected,
       .angular-xyflow__edge.selectable:focus .angular-xyflow__edge-path,
-      .angular-xyflow__edge.selectable:focus-visible .angular-xyflow__edge-path {
+      .angular-xyflow__edge.selectable:focus-visible
+        .angular-xyflow__edge-path {
         stroke: #555;
         stroke-width: 2;
       }
@@ -225,7 +240,9 @@ import { ViewportComponent } from './viewport/viewport.component';
       /* Dark mode edge selected/focus color */
       .dark .angular-xyflow__edge-path.selected,
       .dark .angular-xyflow__edge.selectable:focus .angular-xyflow__edge-path,
-      .dark .angular-xyflow__edge.selectable:focus-visible .angular-xyflow__edge-path {
+      .dark
+        .angular-xyflow__edge.selectable:focus-visible
+        .angular-xyflow__edge-path {
         stroke: #727272;
         stroke-width: 2;
       }
@@ -301,6 +318,7 @@ export class AngularXYFlowComponent<
   paneClickDistance = input<number>(0);
   connectionLineStyle = input<Record<string, any>>();
   edgesFocusable = input<boolean>(true);
+  defaultMarkerColor = input<string>('#b1b1b7');
 
   // 生成唯一的容器 ID
   flowContainerId = computed(() => {
@@ -317,21 +335,35 @@ export class AngularXYFlowComponent<
     const mode = this.colorMode();
     if (mode === 'system') {
       // 檢測系統顏色模式偏好
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light';
     }
     return mode as ColorModeClass;
   });
 
   // 計算最終的類別字符串
   finalClasses = computed(() => {
-    return 'xy-flow angular-xyflow angular-xyflow__pane ' + this.className() + ' ' + this.viewportCursorClass() + ' ' + this.colorModeClass();
+    return (
+      'xy-flow angular-xyflow angular-xyflow__pane ' +
+      this.className() +
+      ' ' +
+      this.viewportCursorClass() +
+      ' ' +
+      this.colorModeClass()
+    );
   });
 
   // 輸出事件
   onNodesChange = output<NodeChange<NodeType>[]>();
   onEdgesChange = output<EdgeChange<EdgeType>[]>();
   onConnect = output<Connection>();
-  onConnectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target'; handleId?: string }>();
+  onConnectStart = output<{
+    event: MouseEvent;
+    nodeId: string;
+    handleType: 'source' | 'target';
+    handleId?: string;
+  }>();
   onConnectEnd = output<{ connection?: Connection; event: MouseEvent }>();
   onNodeClick = output<{ event: MouseEvent; node: NodeType }>();
   onEdgeClick = output<{ event: MouseEvent; edge: EdgeType }>();
@@ -360,34 +392,46 @@ export class AngularXYFlowComponent<
     nodes: NodeType[];
   }>();
   onPaneClick = output<{ event: MouseEvent }>();
-  
+
   // 視窗移動事件
-  onMove = output<{ event?: MouseEvent | TouchEvent | null; viewport: Viewport }>();
-  onMoveStart = output<{ event?: MouseEvent | TouchEvent | null; viewport: Viewport }>();
-  onMoveEnd = output<{ event?: MouseEvent | TouchEvent | null; viewport: Viewport }>();
-  
+  onMove = output<{
+    event?: MouseEvent | TouchEvent | null;
+    viewport: Viewport;
+  }>();
+  onMoveStart = output<{
+    event?: MouseEvent | TouchEvent | null;
+    viewport: Viewport;
+  }>();
+  onMoveEnd = output<{
+    event?: MouseEvent | TouchEvent | null;
+    viewport: Viewport;
+  }>();
+
   // 選擇變化事件
   onSelectionChange = output<{ nodes: NodeType[]; edges: EdgeType[] }>();
-  
+
   // 節點鼠標事件
   onNodeDoubleClick = output<{ event: MouseEvent; node: NodeType }>();
   onNodeContextMenu = output<{ event: MouseEvent; node: NodeType }>();
-  
+
   // 邊線鼠標事件
   onEdgeDoubleClick = output<{ event: MouseEvent; edge: EdgeType }>();
   onEdgeContextMenu = output<{ event: MouseEvent; edge: EdgeType }>();
-  
+
   // 背景事件
   onPaneContextMenu = output<{ event: MouseEvent }>();
-  
+
   // 初始化事件
-  onInit = output<{ nodes: NodeType[]; edges: EdgeType[]; viewport: Viewport }>();
+  onInit = output<{
+    nodes: NodeType[];
+    edges: EdgeType[];
+    viewport: Viewport;
+  }>();
 
   // 視圖子元素
   flowContainer =
     viewChild.required<ElementRef<HTMLDivElement>>('flowContainer');
-  viewportComponent =
-    viewChild.required<ViewportComponent>('viewport');
+  viewportComponent = viewChild.required<ViewportComponent>('viewport');
 
   // 獲取 viewport 元素的方法
   get viewportElement() {
@@ -415,7 +459,7 @@ export class AngularXYFlowComponent<
     if (controlledNodes !== undefined) {
       return controlledNodes;
     }
-    
+
     // 在 uncontrolled 模式下：
     // - 如果服務已初始化，使用服務內部狀態（允許動態更新）
     // - 如果服務未初始化，使用 defaultNodes 作為初始值
@@ -450,9 +494,9 @@ export class AngularXYFlowComponent<
 
     // 應用 defaultEdgeOptions 到所有邊
     if (defaultOptions) {
-      result = result.map(edge => ({
+      result = result.map((edge) => ({
         ...defaultOptions,
-        ...edge
+        ...edge,
       }));
     }
 
@@ -483,7 +527,9 @@ export class AngularXYFlowComponent<
 
     // 當拖拽功能啟用時，根據拖拽狀態顯示對應鼠標
     if (panOnDragEnabled) {
-      return isDragging ? 'angular-xyflow__pane--dragging' : 'angular-xyflow__pane--draggable';
+      return isDragging
+        ? 'angular-xyflow__pane--dragging'
+        : 'angular-xyflow__pane--draggable';
     }
 
     return '';
@@ -501,53 +547,7 @@ export class AngularXYFlowComponent<
     return state as any; // 安全的類型轉換，因為我們已經檢查了 inProgress
   });
 
-
-
-  // 邊線標記相關計算
-  hasEdgeMarkers = computed(() => {
-    const edges = this.visibleEdges();
-    return edges.some((edge) => edge.markerStart || edge.markerEnd);
-  });
-
-  edgeMarkers = computed(() => {
-    const edges = this.visibleEdges();
-    const markers: Array<{
-      id: string;
-      type: MarkerType;
-      color?: string;
-      width?: number;
-      height?: number;
-      orient?: string;
-      markerUnits?: string;
-      strokeWidth?: number;
-    }> = [];
-
-    edges.forEach((edge) => {
-      if (edge.markerStart) {
-        const markerData =
-          typeof edge.markerStart === 'string'
-            ? { type: MarkerType.ArrowClosed }
-            : edge.markerStart;
-        const markerId = this.getMarkerId(edge, 'start', markerData);
-        if (!markers.find((m) => m.id === markerId)) {
-          markers.push({ id: markerId, ...markerData });
-        }
-      }
-
-      if (edge.markerEnd) {
-        const markerData =
-          typeof edge.markerEnd === 'string'
-            ? { type: MarkerType.ArrowClosed }
-            : edge.markerEnd;
-        const markerId = this.getMarkerId(edge, 'end', markerData);
-        if (!markers.find((m) => m.id === markerId)) {
-          markers.push({ id: markerId, ...markerData });
-        }
-      }
-    });
-
-    return markers;
-  });
+  // 邊線標記相關計算 - 現在由 MarkerDefinitions 組件內部處理
 
   constructor() {
     // 設置 controlled/uncontrolled 模式標誌（與 React Flow 邏輯一致）
@@ -596,15 +596,24 @@ export class AngularXYFlowComponent<
 
     // 設置視窗移動事件回調
     this._panZoomService.setOnMoveStart((data) => {
-      this.onMoveStart.emit(data);
+      this.onMoveStart.emit({
+        event: data.event,
+        viewport: this._flowService.viewport(),
+      });
     });
 
     this._panZoomService.setOnMove((data) => {
-      this.onMove.emit(data);
+      this.onMove.emit({
+        event: data.event,
+        viewport: this._flowService.viewport(),
+      });
     });
 
     this._panZoomService.setOnMoveEnd((data) => {
-      this.onMoveEnd.emit(data);
+      this.onMoveEnd.emit({
+        event: data.event,
+        viewport: this._flowService.viewport(),
+      });
     });
 
     // 監聽輸入變化的副作用
@@ -616,12 +625,15 @@ export class AngularXYFlowComponent<
 
       // 優先使用 controlled（即使是空數組），只有在 undefined 時才使用 default
       // 與 React Flow 的邏輯一致：controlled 模式下即使是空數組也要使用
-      const nodes = controlledNodes !== undefined ? controlledNodes : defaultNodes;
-      const edges = controlledEdges !== undefined ? controlledEdges : defaultEdges;
+      const nodes =
+        controlledNodes !== undefined ? controlledNodes : defaultNodes;
+      const edges =
+        controlledEdges !== undefined ? controlledEdges : defaultEdges;
 
       // 在 controlled 模式下，即使是空數組也要同步
-      const isControlled = controlledNodes !== undefined || controlledEdges !== undefined;
-      
+      const isControlled =
+        controlledNodes !== undefined || controlledEdges !== undefined;
+
       // 確保容器已初始化
       if (this.flowContainer()) {
         if (!this._flowService.containerElement) {
@@ -650,16 +662,16 @@ export class AngularXYFlowComponent<
     let hasEmittedInit = false;
     effect(() => {
       const initialized = this._flowService.initialized();
-      
+
       // 只在第一次初始化完成時觸發 onInit 事件
       if (initialized && !hasEmittedInit) {
         hasEmittedInit = true;
-        
+
         // 獲取當前狀態
         const nodes = this.visibleNodes();
         const edges = this.visibleEdges();
         const viewport = this._flowService.viewport();
-        
+
         // 觸發 onInit 事件
         this.onInit.emit({ nodes, edges, viewport });
       }
@@ -694,14 +706,16 @@ export class AngularXYFlowComponent<
 
   // 生成唯一 ID 的私有方法
   private generateUniqueId(): string {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    return (
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15)
+    );
   }
-
 
   ngOnDestroy() {
     // 清理 ResizeObserver 和 window resize listener
     this.cleanupResizeObserver();
-    
+
     this._panZoomService.destroy();
     this._dragService.destroy();
     this._flowService.destroy();
@@ -721,10 +735,12 @@ export class AngularXYFlowComponent<
       Math.abs(rect.height - currentSize.height) > 1
     ) {
       this._containerSize.set({ width: rect.width, height: rect.height });
-      this._flowService.setDimensions({ width: rect.width, height: rect.height });
+      this._flowService.setDimensions({
+        width: rect.width,
+        height: rect.height,
+      });
     }
   }
-
 
   // 安全設置 PanZoom 功能 - 只初始化一次
   private safeSetupPanZoom() {
@@ -737,7 +753,6 @@ export class AngularXYFlowComponent<
     if (!container) {
       return;
     }
-
 
     this._panZoomService.initializePanZoom({
       domNode: container,
@@ -763,7 +778,6 @@ export class AngularXYFlowComponent<
     this._panZoomInitialized.set(true);
   }
 
-
   // 安全處理初始 fit view - 只執行一次，僅基於初始提供的節點
   private safeHandleInitialFitView() {
     // 如果已經執行過初始 fit view，則跳過
@@ -781,8 +795,11 @@ export class AngularXYFlowComponent<
     // 在 controlled 模式下使用 nodes()，在 uncontrolled 模式下使用 defaultNodes()
     const controlledNodes = this.nodes();
     const defaultNodes = this.defaultNodes();
-    const initialNodes = controlledNodes && controlledNodes.length > 0 ? controlledNodes : defaultNodes;
-    
+    const initialNodes =
+      controlledNodes && controlledNodes.length > 0
+        ? controlledNodes
+        : defaultNodes;
+
     if (initialNodes.length === 0) {
       // 如果沒有初始節點但設置了 fitView，標記為已處理以避免後續自動觸發
       // 這樣保持與 React Flow 的行為一致：fitView 只基於初始節點，不會因動態添加節點而觸發
@@ -795,19 +812,23 @@ export class AngularXYFlowComponent<
       return; // 等待 PanZoom 初始化完成
     }
 
-    // 與 React Flow 保持一致：立即執行 fitView，使用默認尺寸
-    // 不等待節點測量完成，因為我們有合理的默認值（150x40）
-    this.performFitView(this.fitViewOptions());
-    this._initialFitViewExecuted.set(true);
+    // 延遲執行 fitView 以確保節點已完全測量
+    // 使用 requestAnimationFrame 來確保在下一個渲染週期執行
+    requestAnimationFrame(() => {
+      // 再次檢查以避免重複執行
+      if (!this._initialFitViewExecuted()) {
+        console.log('📐 Executing initial fitView');
+        this.performFitView(this.fitViewOptions());
+        this._initialFitViewExecuted.set(true);
+      }
+    });
   }
-
 
   // 根據ID獲取節點
   getNodeById(id: string): NodeType | undefined {
     const node = this.visibleNodes().find((node) => node.id === id);
     return node;
   }
-
 
   // 獲取邊的連接點（使用實際測量的 handle 位置）
   getEdgeConnectionPoints(
@@ -825,18 +846,46 @@ export class AngularXYFlowComponent<
     // 創建與系統包兼容的內部節點結構，使用實際測量的 handle bounds
     const createInternalNode = (node: NodeType) => {
       const internals = this._flowService.getNodeInternals(node.id);
-      const handleBounds = this._flowService.measureNodeHandleBounds(node.id);
+      
+      // 模仿 React Flow 的邏輯：
+      // 1. 優先使用 internals 中的 handleBounds（來自 DOM 測量）
+      // 2. 如果沒有，嘗試從 DOM 測量
+      // 3. 如果 DOM 不存在，使用快取的值
+      
+      let handleBounds = internals?.handleBounds;
+      
+      if (!handleBounds) {
+        // 嘗試從 DOM 測量
+        const measuredBounds = this._flowService.measureNodeHandleBounds(node.id);
+        
+        // 如果測量成功且有內容，更新快取
+        if (measuredBounds && (measuredBounds.source?.length > 0 || measuredBounds.target?.length > 0)) {
+          this._flowService.setNodeHandleBounds(node.id, measuredBounds);
+          handleBounds = measuredBounds;
+        } else {
+          // 測量失敗，使用快取
+          const cachedBounds = this._flowService.getNodeHandleBounds(node.id);
+          if (cachedBounds) {
+            handleBounds = cachedBounds;
+          } else {
+            handleBounds = undefined;
+          }
+        }
+      }
 
       return {
         ...node,
         internals: {
-          positionAbsolute: internals?.positionAbsolute || { x: node.position.x, y: node.position.y },
+          positionAbsolute: internals?.positionAbsolute || {
+            x: node.position.x,
+            y: node.position.y,
+          },
           handleBounds,
         },
         measured: internals?.measured || {
           width: node.width || 150,
-          height: node.height || 40
-        }
+          height: node.height || 40,
+        },
       };
     };
 
@@ -851,7 +900,8 @@ export class AngularXYFlowComponent<
       sourceHandle: edge.sourceHandle || null,
       targetHandle: edge.targetHandle || null,
       connectionMode: ConnectionMode.Strict,
-      onError: (id, message) => console.warn(`Edge position error ${id}:`, message)
+      onError: (id, message) =>
+        console.warn(`Edge position error ${id}:`, message),
     });
 
     // 如果 getEdgePosition 返回 null，則使用備用計算
@@ -876,18 +926,30 @@ export class AngularXYFlowComponent<
 
     const getSimpleHandlePosition = (node: NodeType, position: Position) => {
       const internals = this._flowService.getNodeInternals(node.id);
-      const nodePos = internals?.positionAbsolute || { x: node.position.x, y: node.position.y };
-      const measured = internals?.measured || { width: node.width || 150, height: node.height || 40 };
+      const nodePos = internals?.positionAbsolute || {
+        x: node.position.x,
+        y: node.position.y,
+      };
+      const measured = internals?.measured || {
+        width: node.width || 150,
+        height: node.height || 40,
+      };
 
       switch (position) {
         case Position.Top:
           return { x: nodePos.x + measured.width / 2, y: nodePos.y };
         case Position.Bottom:
-          return { x: nodePos.x + measured.width / 2, y: nodePos.y + measured.height };
+          return {
+            x: nodePos.x + measured.width / 2,
+            y: nodePos.y + measured.height,
+          };
         case Position.Left:
           return { x: nodePos.x, y: nodePos.y + measured.height / 2 };
         case Position.Right:
-          return { x: nodePos.x + measured.width, y: nodePos.y + measured.height / 2 };
+          return {
+            x: nodePos.x + measured.width,
+            y: nodePos.y + measured.height / 2,
+          };
         default:
           return { x: nodePos.x, y: nodePos.y };
       }
@@ -907,8 +969,6 @@ export class AngularXYFlowComponent<
   }
 
   // 已移除不再需要的方法，現在直接計算實際 CSS handle 位置
-
-
 
   // 事件處理方法
   handleNodeClick(event: MouseEvent, node: NodeType) {
@@ -1044,13 +1104,13 @@ export class AngularXYFlowComponent<
       target.classList.contains('xy-flow__viewport')
     ) {
       const panOnDragConfig = this.panOnDrag();
-      
+
       // React Flow 邏輯：只有當 panOnDrag 包含右鍵（2）時才阻止預設右鍵菜單
       if (Array.isArray(panOnDragConfig) && panOnDragConfig.includes(2)) {
         event.preventDefault();
         return;
       }
-      
+
       // 發出 pane 右鍵菜單事件（不阻止預設行為，除非明確配置）
       this.onPaneContextMenu.emit({ event });
     }
@@ -1070,7 +1130,6 @@ export class AngularXYFlowComponent<
 
     // 選擇 Handle
     this._flowService.selectHandle(nodeId, handleId, type, multiSelect);
-
   }
 
   handleNodeDragStart(event: MouseEvent, node: NodeType) {
@@ -1078,12 +1137,15 @@ export class AngularXYFlowComponent<
     this.onNodeDragStart.emit({ event, node, nodes });
   }
 
-  handleNodeDrag(dragData: { event: MouseEvent; position: { x: number; y: number } }, node: NodeType) {
+  handleNodeDrag(
+    dragData: { event: MouseEvent; position: { x: number; y: number } },
+    node: NodeType
+  ) {
     const nodes = this.visibleNodes();
     // 創建一個包含最新位置的節點副本
     const updatedNode = {
       ...node,
-      position: dragData.position
+      position: dragData.position,
     };
     this.onNodeDrag.emit({ event: dragData.event, node: updatedNode, nodes });
   }
@@ -1104,7 +1166,9 @@ export class AngularXYFlowComponent<
     }
 
     // 在當前Flow容器範圍內查找controls
-    const controlsElement = flowContainer.querySelector('.angular-xyflow__controls');
+    const controlsElement = flowContainer.querySelector(
+      '.angular-xyflow__controls'
+    );
     const isFromControls = controlsElement && controlsElement.contains(target);
 
     if (isFromControls) {
@@ -1124,7 +1188,7 @@ export class AngularXYFlowComponent<
       event,
       nodeId: node.id,
       handleType: 'source', // 默認為source，實際可能需要從事件中獲取
-      handleId: undefined // 實際可能需要從事件中獲取
+      handleId: undefined, // 實際可能需要從事件中獲取
     });
   }
 
@@ -1136,23 +1200,25 @@ export class AngularXYFlowComponent<
     if (eventData.connection) {
       // 先發出 onConnect 事件給父組件，讓父組件有機會處理
       this.onConnect.emit(eventData.connection);
-      
+
       // 檢查是否在 controlled 模式 - 與 React Flow 邏輯一致
-      const isControlled = !this._flowService.hasDefaultNodes() && !this._flowService.hasDefaultEdges();
-      
+      const isControlled =
+        !this._flowService.hasDefaultNodes() &&
+        !this._flowService.hasDefaultEdges();
+
       if (isControlled) {
         // 在 controlled 模式下，只發出事件，不自動創建連接
         // 完全依賴父組件處理 onConnect 事件
         return;
       }
-      
+
       // 在 uncontrolled 模式下，檢查父組件是否已經處理了 edges
       const currentEdgeCount = this._flowService.edges().length;
-      
+
       // 使用 setTimeout 確保父組件的事件處理完成後再檢查
       setTimeout(() => {
         const newEdgeCount = this._flowService.edges().length;
-        
+
         // 如果父組件沒有添加新的 edge，則使用默認邏輯創建
         if (newEdgeCount === currentEdgeCount) {
           this._flowService.onConnect(eventData.connection!);
@@ -1192,23 +1258,44 @@ export class AngularXYFlowComponent<
   }
 
   // 座標轉換方法
-  screenToFlowPosition(clientPosition: { x: number; y: number }): { x: number; y: number } {
+  screenToFlowPosition(clientPosition: { x: number; y: number }): {
+    x: number;
+    y: number;
+  } {
     return this._flowService.screenToFlow(clientPosition);
   }
 
-  // 獲取標記 ID - 供子元件使用
+  // 獲取標記 ID - 供子元件使用（使用與 @xyflow/system 相同的邏輯）
   getMarkerId = (
     _edge: any,
-    position: 'start' | 'end',
-    marker: EdgeMarker
+    _position: 'start' | 'end',
+    marker: EdgeMarker | string
   ): string => {
-    const type = marker.type || MarkerType.ArrowClosed;
-    const color = (marker.color || '#b1b1b7').replace('#', '');
-    return `angular-xyflow__marker-${position}-${type}-${color}`;
+    if (!marker) {
+      return '';
+    }
+
+    if (typeof marker === 'string') {
+      return marker;
+    }
+
+    // 使用與 MarkerDefinitionsComponent 相同的邏輯
+    const rfId = this.id();
+    const idPrefix = rfId ? `${rfId}__` : '';
+
+    return `${idPrefix}${Object.keys(marker)
+      .sort()
+      .map(key => `${key}=${marker[key as keyof EdgeMarker]}`)
+      .join('&')}`;
   };
 
   // handleClick 包裝方法
-  handleViewportHandleClick(event: { event: MouseEvent; nodeId: string; handleId?: string; handleType: string }) {
+  handleViewportHandleClick(event: {
+    event: MouseEvent;
+    nodeId: string;
+    handleId?: string;
+    handleType: string;
+  }) {
     this.handleHandleClick(
       event.event,
       event.nodeId,
@@ -1216,9 +1303,6 @@ export class AngularXYFlowComponent<
       event.handleType as 'source' | 'target'
     );
   }
-
-
-
 
   // 連接控制方法
   cancelConnection(): void {
@@ -1242,12 +1326,19 @@ export class AngularXYFlowComponent<
       const selectedEdgeIds = this._flowService.selectedEdges();
 
       // 檢查視圖中的選中狀態（controlled模式下更可靠）
-      const visibleSelectedNodes = this.visibleNodes().filter(n => n.selected);
-      const visibleSelectedEdges = this.visibleEdges().filter(e => e.selected);
+      const visibleSelectedNodes = this.visibleNodes().filter(
+        (n) => n.selected
+      );
+      const visibleSelectedEdges = this.visibleEdges().filter(
+        (e) => e.selected
+      );
 
       // 檢查是否有元素被選中（服務狀態 OR 視圖狀態）
-      const hasSelectedElements = selectedNodeIds.length > 0 || selectedEdgeIds.length > 0 ||
-                                  visibleSelectedNodes.length > 0 || visibleSelectedEdges.length > 0;
+      const hasSelectedElements =
+        selectedNodeIds.length > 0 ||
+        selectedEdgeIds.length > 0 ||
+        visibleSelectedNodes.length > 0 ||
+        visibleSelectedEdges.length > 0;
 
       if (hasSelectedElements) {
         event.preventDefault();
@@ -1286,21 +1377,23 @@ export class AngularXYFlowComponent<
 
       // 與 React 版本一致的錯誤處理
       if (size.height === 0 || size.width === 0) {
-        console.warn('Angular XYFlow: Container dimensions are zero, this might affect the minimap and other functionality');
+        console.warn(
+          'Angular XYFlow: Container dimensions are zero, this might affect the minimap and other functionality'
+        );
       }
 
       // 使用 untracked 避免在 resize 過程中觸發變更偵測循環
       untracked(() => {
         // 更新服務的尺寸 - 與 React store.setState({ width, height }) 等效
-        this._flowService.setDimensions({ 
-          width: size.width || 500, 
-          height: size.height || 500 
+        this._flowService.setDimensions({
+          width: size.width || 500,
+          height: size.height || 500,
         });
 
         // 同時更新本地信號
-        this._containerSize.set({ 
-          width: size.width || 500, 
-          height: size.height || 500 
+        this._containerSize.set({
+          width: size.width || 500,
+          height: size.height || 500,
         });
       });
 

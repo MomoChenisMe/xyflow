@@ -15,7 +15,6 @@ import {
   AngularNode,
   AngularEdge,
   EdgeMarker,
-  MarkerType,
   ConnectionLineTemplateContext,
   NodeTypes,
   EdgeTypes,
@@ -26,6 +25,7 @@ import { EdgeComponent } from '../edge/edge.component';
 import { EdgeWrapperComponent } from '../edge-wrapper/edge-wrapper.component';
 import { ConnectionLineComponent } from '../connection-line/connection-line.component';
 import { AngularXYFlowService } from '../services/angular-xyflow.service';
+import { MarkerDefinitionsComponent } from '../marker/marker-definitions.component';
 
 // 連接狀態類型定義
 export interface ConnectionState {
@@ -56,6 +56,7 @@ export interface EdgeConnectionPoints {
     EdgeComponent,
     EdgeWrapperComponent,
     ConnectionLineComponent,
+    MarkerDefinitionsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -70,43 +71,14 @@ export interface EdgeConnectionPoints {
       [style.width]="'100%'"
       [style.height]="'100%'"
     >
-      <!-- Marker definitions SVG (獨立的 SVG 元素只用於定義 markers) -->
-      @if (hasEdgeMarkers()) {
-      <svg:svg
-        [style.position]="'absolute'"
-        [style.width]="'0'"
-        [style.height]="'0'"
-        [style.overflow]="'visible'"
-      >
-        <svg:defs>
-          @for (marker of edgeMarkers(); track marker.id) {
-          <svg:marker
-            [id]="marker.id"
-            [attr.markerWidth]="marker.width || 10"
-            [attr.markerHeight]="marker.height || 7"
-            [attr.refX]="marker.type === markerType.Arrow ? 8 : 9"
-            [attr.refY]="marker.height ? marker.height / 2 : 3.5"
-            [attr.orient]="marker.orient || 'auto'"
-            [attr.markerUnits]="marker.markerUnits || 'strokeWidth'"
-          >
-            @if (marker.type === markerType.Arrow) {
-            <svg:polyline
-              points="0,0 8,3.5 0,7"
-              [attr.stroke]="marker.color || '#b1b1b7'"
-              [attr.stroke-width]="marker.strokeWidth || 1"
-              fill="none"
-            />
-            } @else {
-            <svg:polygon
-              points="0 0, 10 3.5, 0 7"
-              [attr.fill]="marker.color || '#b1b1b7'"
-            />
-            }
-          </svg:marker>
-          }
-        </svg:defs>
-      </svg:svg>
-      }
+      <!-- Marker definitions - 使用獨立的 MarkerDefinitions 組件 -->
+      <angular-xyflow-marker-definitions
+        [edges]="visibleEdges()"
+        [defaultColor]="defaultMarkerColor()"
+        [rfId]="rfId()"
+        [defaultMarkerStart]="defaultMarkerStart()"
+        [defaultMarkerEnd]="defaultMarkerEnd()"
+      />
 
       <!-- Edges layer -->
       <div class="xy-flow__edges angular-xyflow__edges">
@@ -226,17 +198,6 @@ export class ViewportComponent<
   viewportTransform = input.required<string>();
   visibleNodes = input.required<NodeType[]>();
   visibleEdges = input.required<EdgeType[]>();
-  hasEdgeMarkers = input.required<boolean>();
-  edgeMarkers = input.required<Array<{
-    id: string;
-    type: MarkerType;
-    color?: string;
-    width?: number;  
-    height?: number;
-    orient?: string;
-    markerUnits?: string;
-    strokeWidth?: number;
-  }>>();
   connectionInProgress = input.required<ConnectionState | null>();
   customConnectionLineTemplate = input<TemplateRef<ConnectionLineTemplateContext> | undefined>();
   connectionLineStyle = input<Record<string, any>>();
@@ -244,6 +205,10 @@ export class ViewportComponent<
   nodeTypes = input<NodeTypes>();
   edgeTypes = input<EdgeTypes>();
   isDarkMode = input<boolean>(false);
+  defaultMarkerColor = input<string>('#b1b1b7');
+  rfId = input<string>();
+  defaultMarkerStart = input<EdgeMarker | string>();
+  defaultMarkerEnd = input<EdgeMarker | string>();
   
   // 函數輸入
   getNodeById = input.required<(id: string) => NodeType | undefined>();
@@ -283,5 +248,4 @@ export class ViewportComponent<
   });
 
   // 常數
-  markerType = MarkerType;
 }

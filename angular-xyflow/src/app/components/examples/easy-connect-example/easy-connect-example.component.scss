@@ -1,0 +1,51 @@
+.customNodeBody {
+  width: 150px;
+  height: 80px;
+  border: 3px solid black;
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+
+.customNode {
+  position: relative;
+}
+
+// Drag handle (top bar) - CSS 偽元素
+.customNode::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  height: 20px;
+  width: 40px;
+  transform: translate(-50%, 0);
+  background: #d6d5e6;
+  z-index: 1000;
+  line-height: 1;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 9px;
+  border: 2px solid #222138;
+  // 注意：React 範例沒有設定 cursor
+}
+
+// Handle styles - invisible but functional
+// React 使用 div.customHandle，Angular 需要針對 component 結構調整
+:host ::ng-deep angular-xyflow-handle.customHandle div,
+:host ::ng-deep angular-xyflow-handle.customHandle .xy-flow__handle {
+  width: 100%;
+  height: 100%;
+  background: blue;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 0;
+  transform: none;
+  border: none;
+  opacity: 0;
+}

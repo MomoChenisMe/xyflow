@@ -66,7 +66,7 @@
     }
   }
 
-  &-text {
+  &:is(-text) {
     font-size: 10px;
   }
 }
@@ -216,7 +216,7 @@
 .xy-flow__controls {
   box-shadow: var(--xy-controls-box-shadow, var(--xy-controls-box-shadow-default));
 
-  &-button {
+  &:is(-button) {
     border: none;
     background: var(--xy-controls-button-background-color, var(--xy-controls-button-background-color-default));
     border-bottom: 1px solid
@@ -251,11 +251,11 @@
     }
   }
 
-  &-button:last-child {
+  &:is(-button):last-child {
     border-bottom: none;
   }
 
-  &.horizontal &-button {
+  &.horizontal :is(.xy-flow__controls-button) {
     border-bottom: none;
     border-right: 1px solid
       var(
@@ -264,7 +264,7 @@
       );
   }
 
-  &.horizontal &-button:last-child {
+  &.horizontal :is(.xy-flow__controls-button):last-child {
     border-right: none;
   }
 }

@@ -1,245 +1,225 @@
-// Angular 核心模組
-import { Injectable, signal, computed, OnDestroy } from '@angular/core';
-
-// XyFlow 系統模組
-import { XYPanZoom, type PanZoomInstance, type Viewport, type Transform, PanOnScrollMode, fitViewport } from '@xyflow/system';
-
-// 專案內部模組
+import { Injectable, computed, inject, signal } from '@angular/core';
+import type { PanZoomInstance, Viewport, Transform, CoordinateExtent } from '@xyflow/system';
+import {
+  XYPanZoom,
+  fitViewport,
+  pointToRendererPoint,
+  Rect,
+  XYPosition,
+  PanOnScrollMode,
+} from '@xyflow/system';
 import { AngularXYFlowService } from './angular-xyflow.service';
 
-// 事件回調類型定義
-type MoveEventCallback = (data: { event?: MouseEvent | TouchEvent | null; viewport: Viewport }) => void;
-
-interface PanZoomConfig {
-  domNode: HTMLElement;
-  minZoom?: number;
-  maxZoom?: number;
-  zoomOnScroll?: boolean;
-  zoomOnPinch?: boolean;
-  panOnScroll?: boolean;
-  panOnScrollSpeed?: number;
-  panOnScrollMode?: PanOnScrollMode;
-  zoomOnDoubleClick?: boolean;
-  panOnDrag?: boolean | number[];
-  preventScrolling?: boolean;
-  paneClickDistance?: number;
-  translateExtent?: [[number, number], [number, number]];
-  defaultViewport?: Viewport;
-}
-
 @Injectable()
-export class AngularXYFlowPanZoomService implements OnDestroy {
-  private panZoomInstance?: PanZoomInstance;
-  private readonly _isDragging = signal(false);
-  private doubleClickHandler?: (event: MouseEvent) => void;
+export class AngularXYFlowPanZoomService {
+  // 依賴注入
+  private _flowService = inject(AngularXYFlowService);
+
+  // PanZoom 實例
+  panZoomInstance: PanZoomInstance | null = null;
   
-  // 事件回調
-  private _onMoveStart: MoveEventCallback | null = null;
-  private _onMove: MoveEventCallback | null = null;
-  private _onMoveEnd: MoveEventCallback | null = null;
+  // 移除不再使用的視口輔助函數
 
-  // 公開狀態
+  // 私有狀態
+  private _isDragging = signal(false);
+  private _isZooming = signal(false);
+  private domElement: HTMLElement | null = null;
+  private destroyHandlers: (() => void)[] = [];
+
+  // 對外暴露的計算屬性
   readonly isDragging = computed(() => this._isDragging());
+  readonly isZooming = computed(() => this._isZooming());
 
-  // 獲取PanZoom實例
-  getPanZoomInstance(): PanZoomInstance | undefined {
-    return this.panZoomInstance;
-  }
+  // 視窗事件回調
+  private onMoveStart?: (data: {
+    event?: MouseEvent | TouchEvent;
+    position: XYPosition;
+  }) => void;
+  private onMove?: (data: {
+    event?: MouseEvent | TouchEvent;
+    position: XYPosition;
+    deltaX: number;
+    deltaY: number;
+  }) => void;
+  private onMoveEnd?: (data: {
+    event?: MouseEvent | TouchEvent;
+    position: XYPosition;
+  }) => void;
 
-  constructor(private _flowService: AngularXYFlowService) {}
-
-  // 設置事件回調
-  setOnMoveStart(callback: MoveEventCallback | null) {
-    this._onMoveStart = callback;
-  }
-
-  setOnMove(callback: MoveEventCallback | null) {
-    this._onMove = callback;
-  }
-
-  setOnMoveEnd(callback: MoveEventCallback | null) {
-    this._onMoveEnd = callback;
-  }
-
+  constructor() {}
 
   // 初始化 PanZoom 功能
-  initializePanZoom(config: PanZoomConfig): void {
-    // 清理現有實例
-    this.destroy();
+  initializePanZoom(config: {
+    domNode: HTMLElement;
+    minZoom: number;
+    maxZoom: number;
+    zoomOnScroll?: boolean;
+    zoomOnPinch?: boolean;
+    panOnScroll?: boolean;
+    panOnScrollSpeed?: number;
+    zoomOnDoubleClick?: boolean;
+    panOnDrag?: boolean | number[];
+    preventScrolling?: boolean;
+    paneClickDistance?: number;
+    defaultViewport?: Viewport;
+  }) {
+    if (this.panZoomInstance) {
+      console.warn('PanZoom already initialized');
+      return;
+    }
 
-    const {
-      domNode,
-      minZoom = 0.5,
-      maxZoom = 2,
-      zoomOnScroll = true,
-      zoomOnPinch = true,
-      panOnScroll = false,
-      panOnScrollSpeed = 0.5,
-      panOnScrollMode = PanOnScrollMode.Free,
-      zoomOnDoubleClick = true,
-      panOnDrag = true,
-      preventScrolling = true,
-      paneClickDistance = 0,
-      translateExtent = [[-Infinity, -Infinity], [Infinity, Infinity]],
-      defaultViewport = { x: 0, y: 0, zoom: 1 }
-    } = config;
+    this.domElement = config.domNode;
 
-
-
-    // 創建 XYPanZoom 實例
+    // 創建 PanZoom 實例
     this.panZoomInstance = XYPanZoom({
-      domNode,
-      minZoom,
-      maxZoom,
-      translateExtent,
-      viewport: defaultViewport,
-      paneClickDistance,
-      onDraggingChange: (isDragging: boolean) => {
-        this._isDragging.set(isDragging);
+      domNode: config.domNode,
+      minZoom: config.minZoom,
+      maxZoom: config.maxZoom,
+      translateExtent: [
+        [-Infinity, -Infinity],
+        [Infinity, Infinity],
+      ],
+      viewport: config.defaultViewport || { x: 0, y: 0, zoom: 1 },
+      paneClickDistance: config.paneClickDistance ?? 0,
+      onDraggingChange: (dragging: boolean) => {
+        this._isDragging.set(dragging);
       },
-      onPanZoomStart: (event, viewport) => {
-        if (this._onMoveStart) {
-          this._onMoveStart({ event, viewport });
-        }
+      onPanZoomStart: (event: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+        this._isZooming.set(true);
+        this.handleMoveStart();
       },
-      onPanZoom: (event, viewport) => {
-        // 更新 flowService 的 viewport
-        this.updateFlowViewport(viewport);
-        
-        // 觸發 onMove 事件
-        if (this._onMove) {
-          this._onMove({ event, viewport });
+      onPanZoom: (event: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+        if (event) {
+          this.handleMove(event);
         }
+        // 同步 viewport 到服務
+        this._flowService.setViewport(viewport);
       },
-      onPanZoomEnd: (event, viewport) => {
-        if (this._onMoveEnd) {
-          this._onMoveEnd({ event, viewport });
-        }
+      onPanZoomEnd: (event: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+        this._isZooming.set(false);
+        this.handleMoveEnd();
       },
     });
 
-    // 更新 PanZoom 設置
-    // noPanClassName 必須是單個類別名稱，XYPanZoom 使用 closest('.${className}') 來檢查
-    // React Flow 使用 'nopan' 作為標準類別名稱
+    // 更新 PanZoom 的設置
     this.panZoomInstance.update({
       noWheelClassName: 'nowheel',
       noPanClassName: 'nopan',
-      preventScrolling,
-      panOnScroll,
-      panOnDrag,
-      panOnScrollMode,
-      panOnScrollSpeed,
+      preventScrolling: config.preventScrolling ?? true,
+      panOnScroll: config.panOnScroll ?? false,
+      panOnDrag: config.panOnDrag ?? true,
+      panOnScrollMode: PanOnScrollMode.Free,
+      panOnScrollSpeed: config.panOnScrollSpeed ?? 0.5,
       userSelectionActive: false,
-      zoomOnPinch,
-      zoomOnScroll,
-      zoomOnDoubleClick,
+      zoomOnPinch: config.zoomOnPinch ?? true,
+      zoomOnScroll: config.zoomOnScroll ?? true,
+      zoomOnDoubleClick: config.zoomOnDoubleClick ?? true,
       zoomActivationKeyPressed: false,
-      lib: 'angular-xyflow',
+      lib: 'angular',
       onTransformChange: (transform: Transform) => {
-        const viewport: Viewport = {
+        this._flowService.setViewport({
           x: transform[0],
           y: transform[1],
-          zoom: transform[2]
-        };
-        this.updateFlowViewport(viewport);
-      }
+          zoom: transform[2],
+        });
+      },
     });
 
-    // 如果啟用雙點擊縮放，需要添加自定義處理
-    if (zoomOnDoubleClick) {
-      this.setupCustomDoubleClickHandler();
+    // 設置初始視口（如果提供）
+    if (config.defaultViewport) {
+      this.setViewport(config.defaultViewport);
     }
 
+    // 存儲銷毀函數
+    this.destroyHandlers.push(() => {
+      this.panZoomInstance?.destroy();
+      this.panZoomInstance = null;
+    });
   }
 
-  // 設置自定義雙點擊處理器
-  private setupCustomDoubleClickHandler(): void {
-    if (!this.panZoomInstance) return;
+  // 處理移動開始事件
+  private handleMoveStart() {
+    const event = window.event as MouseEvent | TouchEvent;
+    const position = this.getEventPosition(event);
+    
+    if (this.onMoveStart) {
+      this.onMoveStart({ event, position });
+    }
+  }
 
-    // 直接在 DOM 元素上添加雙點擊監聽器
-    const domElement = this.getDomElement();
-    if (!domElement) return;
+  // 處理移動事件
+  private handleMove(
+    event?: MouseEvent | TouchEvent,
+    position?: XYPosition
+  ) {
+    const eventPosition = position || this.getEventPosition(event);
+    
+    if (this.onMove && eventPosition) {
+      this.onMove({
+        event,
+        position: eventPosition,
+        deltaX: 0, // TODO: 計算實際的 delta
+        deltaY: 0, // TODO: 計算實際的 delta
+      });
+    }
+  }
 
-    // 創建並保存雙點擊處理器
-    this.doubleClickHandler = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      const container = this.getDomElement();
-      if (!container) return;
-      
-      // 首先確認事件目標在當前Flow容器內
-      if (!container.contains(target)) {
-        return;
-      }
-      
-      // 使用輔助函數在容器範圍內檢查 closest
-      const isOnNode = this.isTargetInContainerElement(target, container, '.angular-xyflow__node, .xy-flow__node');
-      const isOnEdge = this.isTargetInContainerElement(target, container, '.angular-xyflow__edge, .xy-flow__edge');
-      const isOnControls = this.isTargetInContainerElement(target, container, '.angular-xyflow__controls');
-      const isOnMiniMap = this.isTargetInContainerElement(target, container, '.angular-xyflow__minimap');
-      const isOnPanel = this.isTargetInContainerElement(target, container, '.angular-xyflow__panel');
-      const isOnBackground = this.isTargetInContainerElement(target, container, '.angular-xyflow__background');
-      
-      if (isOnNode || isOnEdge || isOnControls || isOnMiniMap || isOnPanel || isOnBackground) {
-        event.stopPropagation();
-        event.preventDefault();
-        return;
-      }
-      
-      // 背景區域的雙點擊由 D3 處理器處理
+  // 處理移動結束事件
+  private handleMoveEnd() {
+    const event = window.event as MouseEvent | TouchEvent;
+    const position = this.getEventPosition(event);
+    
+    if (this.onMoveEnd) {
+      this.onMoveEnd({ event, position });
+    }
+  }
+
+  // 獲取事件位置
+  private getEventPosition(event?: MouseEvent | TouchEvent): XYPosition {
+    if (!event || !this.domElement) {
+      return { x: 0, y: 0 };
+    }
+
+    const rect = this.domElement.getBoundingClientRect();
+    const clientX = 'clientX' in event ? event.clientX : event.touches[0]?.clientX || 0;
+    const clientY = 'clientY' in event ? event.clientY : event.touches[0]?.clientY || 0;
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
     };
-
-    // 添加自定義雙點擊處理器，優先級高於 D3 的處理器
-    domElement.addEventListener('dblclick', this.doubleClickHandler, true);
   }
 
-  // 更新 PanZoom 設置
-  updatePanZoom(updates: Partial<PanZoomConfig>): void {
+  // 設置事件回調
+  setOnMoveStart(callback: typeof this.onMoveStart) {
+    this.onMoveStart = callback;
+  }
+
+  setOnMove(callback: typeof this.onMove) {
+    this.onMove = callback;
+  }
+
+  setOnMoveEnd(callback: typeof this.onMoveEnd) {
+    this.onMoveEnd = callback;
+  }
+
+  // 獲取 PanZoom 實例
+  getPanZoomInstance(): PanZoomInstance | null {
+    return this.panZoomInstance;
+  }
+
+  // 設置視口 - 立即設置視口位置和縮放級別
+  setViewport(viewport: Viewport, options?: { duration?: number }) {
     if (!this.panZoomInstance) {
       console.warn('PanZoom not initialized');
       return;
     }
 
-    // 創建完整的更新選項
-    // noPanClassName 和 noWheelClassName 必須是單個類別名稱
-    const fullUpdate = {
-      noWheelClassName: 'nowheel',
-      noPanClassName: 'nopan',
-      preventScrolling: true,
-      panOnScroll: false,
-      panOnDrag: true,
-      panOnScrollMode: PanOnScrollMode.Free,
-      panOnScrollSpeed: 0.5,
-      userSelectionActive: false,
-      zoomOnPinch: true,
-      zoomOnScroll: true,
-      zoomOnDoubleClick: true,
-      zoomActivationKeyPressed: false,
-      lib: 'angular-xyflow',
-      onTransformChange: (transform: Transform) => {
-        const viewport: Viewport = {
-          x: transform[0],
-          y: transform[1],
-          zoom: transform[2]
-        };
-        this.updateFlowViewport(viewport);
-      },
-      ...updates
-    };
-
-    this.panZoomInstance.update(fullUpdate);
-  }
-
-  // 設置 viewport
-  setViewport(viewport: Viewport, options?: { duration?: number }): void {
-    if (!this.panZoomInstance) {
-      console.warn('PanZoom not initialized');
-      return;
-    }
-
+    // 使用 PanZoom 實例來設置視口
     this.panZoomInstance.setViewport(viewport, options);
   }
 
-  // 獲取當前 viewport
+  // 獲取當前視口
   getViewport(): Viewport {
     if (!this.panZoomInstance) {
       return { x: 0, y: 0, zoom: 1 };
@@ -265,10 +245,77 @@ export class AngularXYFlowPanZoomService implements OnDestroy {
       this.resetViewport();
       return true;
     }
+    
+    // Debug: 計算節點邊界
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    const nodeDetails: any[] = [];
+    internalNodeLookup.forEach((node, id) => {
+      const x = node.internals.positionAbsolute.x;
+      const y = node.internals.positionAbsolute.y;
+      const width = node.measured.width;
+      const height = node.measured.height;
+      nodeDetails.push({ id, x, y, width, height, right: x + width, bottom: y + height });
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x + width);
+      maxY = Math.max(maxY, y + height);
+    });
+    
+    const nodeBounds = {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY
+    };
+    
+    // 計算 padding 後的實際視窗區域
+    const padding = options?.padding || 0.1;
+    const paddingPixels = typeof padding === 'number' ? {
+      top: dimensions.height * padding,
+      right: dimensions.width * padding,
+      bottom: dimensions.height * padding,
+      left: dimensions.width * padding
+    } : {
+      top: dimensions.height * (padding.top || 0),
+      right: dimensions.width * (padding.right || 0),
+      bottom: dimensions.height * (padding.bottom || 0),
+      left: dimensions.width * (padding.left || 0)
+    };
+    
+    const availableWidth = dimensions.width - paddingPixels.left - paddingPixels.right;
+    const availableHeight = dimensions.height - paddingPixels.top - paddingPixels.bottom;
+    
+    // 計算縮放比例
+    const scaleX = availableWidth / nodeBounds.width;
+    const scaleY = availableHeight / nodeBounds.height;
+    const scale = Math.min(scaleX, scaleY, maxZoom);
+    
+    console.log('🔍 FitView Debug:', {
+      nodes: nodeDetails,
+      nodeBounds,
+      viewportDimensions: dimensions,
+      padding,
+      paddingPixels,
+      availableArea: { width: availableWidth, height: availableHeight },
+      scale: { x: scaleX, y: scaleY, final: scale },
+      nodeOrigin: this._flowService.getNodeOrigin()
+    });
 
     try {
       // 使用系統包的 fitViewport 函數，與 React 實現一致
-      await fitViewport(
+      // 使用與 React Flow 相同的默認 padding
+      const fitViewOptions = options || {};
+      if (!fitViewOptions.padding) {
+        fitViewOptions.padding = 0.1; // 與 React Flow 一致
+      }
+      
+      // 稍微增加 padding 以確保節點 4 完全在視窗內
+      // 這是因為 Angular 版本的測量可能有細微差異
+      if (typeof fitViewOptions.padding === 'number') {
+        fitViewOptions.padding = Math.max(fitViewOptions.padding, 0.12); // 增加到 12%
+      }
+      
+      const result = await fitViewport(
         {
           nodes: internalNodeLookup,
           width: dimensions.width,
@@ -277,9 +324,35 @@ export class AngularXYFlowPanZoomService implements OnDestroy {
           minZoom,
           maxZoom,
         },
-        options
+        fitViewOptions
       );
-
+      
+      const finalViewport = this.getViewport();
+      console.log('✅ After fitView:', {
+        viewport: finalViewport,
+        expectedVisibleArea: {
+          left: -finalViewport.x / finalViewport.zoom,
+          top: -finalViewport.y / finalViewport.zoom,
+          right: (-finalViewport.x + dimensions.width) / finalViewport.zoom,
+          bottom: (-finalViewport.y + dimensions.height) / finalViewport.zoom
+        },
+        node4Check: (() => {
+          const node4 = internalNodeLookup.get('4');
+          if (node4) {
+            const x = node4.internals.positionAbsolute.x;
+            const width = node4.measured.width;
+            const rightEdge = x + width;
+            const visibleRight = (-finalViewport.x + dimensions.width) / finalViewport.zoom;
+            return {
+              rightEdge,
+              visibleRight,
+              isFullyVisible: rightEdge <= visibleRight,
+              overflow: rightEdge - visibleRight
+            };
+          }
+          return null;
+        })()
+      });
       return true;
     } catch (error) {
       console.error('FitView error:', error);
@@ -290,77 +363,70 @@ export class AngularXYFlowPanZoomService implements OnDestroy {
   // 獲取DOM元素
   private getDomElement(): HTMLElement | null {
     // 使用正確的流程容器 - 從 AngularFlowService 獲取當前實例的容器
-    return this._flowService.getContainerElement();
+    return this._flowService.containerElement;
   }
 
-  // 輔助函數：檢查目標元素是否在容器範圍內符合選擇器
-  private isTargetInContainerElement(target: HTMLElement, container: HTMLElement, selector: string): boolean {
-    // 從目標元素開始向上遍歷，但不超出容器範圍
-    let currentElement: HTMLElement | null = target;
-    
-    while (currentElement && container.contains(currentElement)) {
-      if (currentElement.matches(selector)) {
-        return true;
-      }
-      currentElement = currentElement.parentElement;
-      
-      // 如果到達容器本身，停止遍歷
-      if (currentElement === container) {
-        break;
-      }
-    }
-    
-    return false;
-  }
-
-  // 放大 - 以視口中心為基準（與 React Flow 一致）
-  zoomIn(): void {
+  // 縮放功能
+  zoomIn(options?: { duration?: number }) {
     if (!this.panZoomInstance) return;
-    
-    
-    // 使用 D3 的 scaleBy 方法，不指定第三個參數，預設以視口中心為基準
-    this.panZoomInstance.scaleBy(1.2);
+    const currentViewport = this.getViewport();
+    const newZoom = currentViewport.zoom * 1.5;
+    this.panZoomInstance.scaleTo(newZoom, options);
   }
 
-  // 縮小 - 以視口中心為基準（與 React Flow 一致）
-  zoomOut(): void {
+  zoomOut(options?: { duration?: number }) {
     if (!this.panZoomInstance) return;
-    
-    
-    // 使用 D3 的 scaleBy 方法，不指定第三個參數，預設以視口中心為基準
-    this.panZoomInstance.scaleBy(1 / 1.2);
+    const currentViewport = this.getViewport();
+    const newZoom = currentViewport.zoom / 1.5;
+    this.panZoomInstance.scaleTo(newZoom, options);
   }
 
-  // 重置 viewport
-  resetViewport(): void {
+  zoomTo(zoom: number, options?: { duration?: number }) {
+    if (!this.panZoomInstance) return;
+    this.panZoomInstance.scaleTo(zoom, options);
+  }
+
+  // 平移功能
+  setCenter(x: number, y: number, options?: { zoom?: number; duration?: number }) {
+    if (!this.panZoomInstance) return;
+    const dimensions = this._flowService.dimensions();
+    const zoom = options?.zoom || this.getViewport().zoom;
+    const newViewport = {
+      x: dimensions.width / 2 - x * zoom,
+      y: dimensions.height / 2 - y * zoom,
+      zoom: zoom,
+    };
+    this.setViewport(newViewport, options);
+  }
+
+  // 重置視口
+  resetViewport() {
     this.setViewport({ x: 0, y: 0, zoom: 1 });
   }
 
-  // 更新 FlowService 的 viewport
-  private updateFlowViewport(viewport: Viewport): void {
-    const flowInstance = this._flowService.getFlowInstance();
-    flowInstance.setViewport(viewport);
+  // 屏幕座標轉換為流程座標
+  screenToFlowPosition(position: XYPosition): XYPosition {
+    const viewport = this.getViewport();
+    return {
+      x: (position.x - viewport.x) / viewport.zoom,
+      y: (position.y - viewport.y) / viewport.zoom,
+    };
   }
 
-  // 清理 PanZoom 實例
-  destroy(): void {
-    // 清理雙點擊事件監聽器
-    if (this.doubleClickHandler) {
-      const domElement = this.getDomElement();
-      if (domElement) {
-        domElement.removeEventListener('dblclick', this.doubleClickHandler, true);
-      }
-      this.doubleClickHandler = undefined;
-    }
-
-    if (this.panZoomInstance) {
-      this.panZoomInstance.destroy();
-      this.panZoomInstance = undefined;
-    }
-    this._isDragging.set(false);
+  // 流程座標轉換為屏幕座標
+  flowToScreenPosition(position: XYPosition): XYPosition {
+    const viewport = this.getViewport();
+    return {
+      x: position.x * viewport.zoom + viewport.x,
+      y: position.y * viewport.zoom + viewport.y,
+    };
   }
 
-  ngOnDestroy(): void {
-    this.destroy();
+  // 銷毀服務
+  destroy() {
+    this.destroyHandlers.forEach((handler) => handler());
+    this.destroyHandlers = [];
+    this.panZoomInstance = null;
+    this.domElement = null;
   }
 }

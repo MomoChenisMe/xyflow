@@ -352,6 +352,11 @@ export class NodeWrapperComponent implements OnDestroy {
   readonly nodeInputs = computed(() => {
     const node = this.node();
     const resolvedNodeType = this.getResolvedNodeType();
+    
+    // 獲取節點的絕對位置
+    const internals = this._flowService.getNodeInternals(node.id);
+    const positionAbsolute = internals?.positionAbsolute || { x: node.position.x, y: node.position.y };
+    
     const inputs: Record<string, unknown> = {
       id: node.id,
       data: node.data,
@@ -368,8 +373,8 @@ export class NodeWrapperComponent implements OnDestroy {
       draggable: node.draggable !== false,
       selectable: node.selectable !== false,
       deletable: node.deletable !== false,
-      positionAbsoluteX: 0, // TODO: 計算絕對位置
-      positionAbsoluteY: 0, // TODO: 計算絕對位置
+      positionAbsoluteX: positionAbsolute.x,
+      positionAbsoluteY: positionAbsolute.y,
       dragHandle: node.dragHandle
     };
     return inputs;
@@ -417,6 +422,9 @@ export class NodeWrapperComponent implements OnDestroy {
       if (!element || !nodeData) {
         return;
       }
+
+      // 階段1：報告組件創建完成
+      this._flowService.reportNodeComponentCreated(nodeData.id);
       
       // 對應 React 的 disabled 邏輯
       const globalDraggable = this._flowService.nodesDraggable();
@@ -452,6 +460,9 @@ export class NodeWrapperComponent implements OnDestroy {
       if (!this.resizeObserver) {
         this.setupResizeObserver();
       }
+
+      // 階段2：報告 DOM 渲染完成（在所有初始化工作完成後）
+      this._flowService.reportNodeDOMRendered(nodeData.id);
     });
   }
   
@@ -499,6 +510,8 @@ export class NodeWrapperComponent implements OnDestroy {
     const currentNodeId = this.currentNodeId;
     if (currentNodeId) {
       this._dragService.destroyNodeDrag(currentNodeId);
+      // 清理此節點的渲染階段追蹤
+      this._flowService.cleanupNodeStages(currentNodeId);
     }
   }
 
@@ -516,8 +529,8 @@ export class NodeWrapperComponent implements OnDestroy {
         const width = target.offsetWidth;
         const height = target.offsetHeight;
         
-        // 更新統一位置計算系統中的測量尺寸
-        this._flowService.updateNodeMeasuredDimensions(this.node().id, { width, height });
+        // 階段3：報告尺寸測量完成（同時更新測量尺寸）
+        this._flowService.reportNodeDimensionsMeasured(this.node().id, { width, height });
       }
     });
 

@@ -10,6 +10,7 @@ import {
   inject,
   ChangeDetectionStrategy,
   OnDestroy,
+  afterRenderEffect,
   CUSTOM_ELEMENTS_SCHEMA,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -56,6 +57,8 @@ export class HandleComponent implements OnDestroy {
   readonly nodeId = input.required<string>();
   readonly handleId = input<string>();
   readonly isConnectable = input<boolean>(true);
+  readonly isConnectableStart = input<boolean>(true); // 是否可以作為連線起點
+  readonly isConnectableEnd = input<boolean>(true);   // 是否可以作為連線終點
   readonly selected = input<boolean>(false);
   readonly style = input<Record<string, any>>({});
 
@@ -85,9 +88,6 @@ export class HandleComponent implements OnDestroy {
   private readonly isConnecting = signal(false);
   private readonly connectionValid = signal<boolean | null>(null);
   private readonly isHovered = signal(false);
-
-  // 用於追踪是否是當前 handle 開始的連線
-  private isCurrentConnectionSource = false;
 
   // 注入服務
   private _flowService = inject(AngularXYFlowService);
@@ -180,22 +180,49 @@ export class HandleComponent implements OnDestroy {
     return globalConnectable && handleConnectable;
   });
 
-  ngOnDestroy(): void {
-    // 清理連線狀態
-    if (this.isCurrentConnectionSource) {
-      this.isConnecting.set(false);
-      this.connectionValid.set(null);
-      this.isCurrentConnectionSource = false;
+  constructor() {
+    // 關鍵：模擬 React Flow Handle 組件的自動行為
+    // 在 Handle 首次渲染時，自動觸發 node internals 更新
+    // 這確保即使後來 handles 被條件渲染隱藏，系統仍知道它們的位置
+    let isFirstRender = true;
+    afterRenderEffect(() => {
+      // 延遲執行，確保 DOM 完全渲染
+      setTimeout(() => {
+        const nodeId = this.nodeId();
+        // 測量當前節點的 handle bounds
+        const bounds = this._flowService.measureNodeHandleBounds(nodeId);
+        if (bounds && (bounds.source.length > 0 || bounds.target.length > 0)) {
+          // 如果是首次渲染，強制儲存到快取
+          if (isFirstRender) {
+            this._flowService.setNodeHandleBounds(nodeId, bounds);
+            isFirstRender = false;
+          } else {
+            // 後續更新使用 updateNodeInternals
+            this._flowService.updateNodeInternals(nodeId);
+          }
+        }
+      }, 0);
+    });
+  }
 
-      // 如果組件在連線過程中被銷毀，取消連線
-      this._flowService.cancelConnection();
-    }
+  ngOnDestroy(): void {
+    // 重要：不要在組件銷毀時取消連線！
+    // 連線的生命週期應該由全局 mouse 事件管理，而不是由 Handle 組件的生命週期管理
+    // 這是為了支援條件渲染：當 Handle 因為條件渲染而被移除時，連線狀態應該保持
+    // React Flow 也是這樣處理的 - Handle 的銷毀不會影響連線狀態
+    
+    // 只清理本地狀態，不影響全局連線狀態
+    this.isConnecting.set(false);
+    this.connectionValid.set(null);
   }
 
   // 事件處理方法
   handleMouseDown(event: MouseEvent): void {
     // 檢查是否允許連接
     if (!this.canConnect()) return;
+    
+    // 檢查是否可以作為連線起點
+    if (!this.isConnectableStart()) return;
 
     // React Flow 邏輯：只有左鍵點擊（button === 0）才觸發連接功能
     if (event.button !== 0) return;
@@ -204,7 +231,6 @@ export class HandleComponent implements OnDestroy {
     event.stopPropagation();
 
     this.isConnecting.set(true);
-    this.isCurrentConnectionSource = true; // 標記這個 handle 是連線的來源
 
     // 獲取當前節點
     const node = this._flowService.nodeLookup().get(this.nodeId());
@@ -238,8 +264,9 @@ export class HandleComponent implements OnDestroy {
       x: handlePosition.x,
       y: handlePosition.y,
     };
-
+    
     // 開始連接並觸發事件（通過服務）
+    // 服務現在會管理所有的全局事件監聽器
     this._flowService.startConnection(node, handle, handlePosition, event);
 
     // 也通過組件輸出發出事件（為了向後兼容）
@@ -250,83 +277,12 @@ export class HandleComponent implements OnDestroy {
       handleId: this.handleId(),
     });
 
-    // 添加全局事件監聽器
-    const handleMouseMove = (e: MouseEvent) => {
-      if (this.isCurrentConnectionSource) {
-        this.updateConnectionLine(e);
-      }
-    };
-
-    const handleMouseUp = (e: MouseEvent) => {
-      if (this.isCurrentConnectionSource) {
-        this.handleGlobalMouseUp(e);
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      }
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // 注意：不再在這裡添加事件監聽器
+    // 所有的 mouse 事件現在都由服務管理
   }
 
-
-  private handleGlobalMouseUp(event: MouseEvent): void {
-    if (!this.isConnecting() || !this.isCurrentConnectionSource) return;
-
-    this.isConnecting.set(false);
-    this.connectionValid.set(null);
-    this.isCurrentConnectionSource = false; // 重置連線來源標記
-
-    // 獲取鼠標位置並檢查是否有磁吸的 handle
-    const mousePosition = this._flowService.screenToFlow({
-      x: event.clientX,
-      y: event.clientY,
-    });
-
-    const fromHandle = {
-      nodeId: this.nodeId(),
-      type: this.type(),
-      id: this.handleId() || null,
-    };
-
-    const closestHandle = this._flowService.findClosestHandle(
-      mousePosition,
-      fromHandle
-    );
-
-    let connection: Connection | undefined;
-
-    if (closestHandle && closestHandle.nodeId !== this.nodeId()) {
-      // 檢查連接類型是否有效
-      const isValidConnection =
-        (this.type() === 'source' && closestHandle.type === 'target') ||
-        (this.type() === 'target' && closestHandle.type === 'source');
-
-      if (isValidConnection) {
-        connection = {
-          source:
-            this.type() === 'source' ? this.nodeId() : closestHandle.nodeId,
-          sourceHandle:
-            this.type() === 'source'
-              ? this.handleId() || null
-              : closestHandle.id,
-          target:
-            this.type() === 'source' ? closestHandle.nodeId : this.nodeId(),
-          targetHandle:
-            this.type() === 'source'
-              ? closestHandle.id
-              : this.handleId() || null,
-        };
-      }
-    }
-
-    // 重要：無論連接是否有效，都要結束連接狀態
-    // 這與 React Flow 的行為一致
-    this._flowService.endConnection(connection, event);
-
-    // 也通過組件輸出發出事件（為了向後兼容）
-    this.connectEnd.emit({ connection, event });
-  }
+  // 注意：handleGlobalMouseUp 和 updateConnectionLine 方法已移除
+  // 所有的連線事件處理現在都在服務層管理
 
   handleMouseEnter(_event: MouseEvent): void {
     this.isHovered.set(true);
@@ -348,63 +304,4 @@ export class HandleComponent implements OnDestroy {
     });
   }
 
-  // 更新連接線位置和狀態
-  private updateConnectionLine(event: MouseEvent): void {
-    if (!this.isConnecting() || !this.isCurrentConnectionSource) return;
-
-    // 使用服務的座標轉換方法將螢幕座標轉換為流座標
-    const flowPosition = this._flowService.screenToFlow({
-      x: event.clientX,
-      y: event.clientY,
-    });
-
-    // 創建來源 handle 對象用於查找最近的 handle
-    const fromHandle = {
-      nodeId: this.nodeId(),
-      type: this.type(),
-      id: this.handleId() || null,
-    };
-
-    // 尋找最近的有效 handle 進行磁吸
-    const closestHandle = this._flowService.findClosestHandle(
-      flowPosition,
-      fromHandle
-    );
-
-    let finalPosition = flowPosition;
-    let toHandle: Handle | null = null;
-    let toNode = null;
-
-    if (closestHandle) {
-      // 磁吸到最近的 handle
-      finalPosition = { x: closestHandle.x, y: closestHandle.y };
-      toHandle = closestHandle;
-      toNode = this._flowService.nodeLookup().get(closestHandle.nodeId) || null;
-    }
-
-    // 更新連接狀態
-    this._flowService.updateConnection(finalPosition, toHandle, toNode);
-
-    // 更新連接有效性顯示
-    this.updateConnectionValidity(toHandle, toNode);
-  }
-
-  // 更新連接有效性
-  private updateConnectionValidity(toHandle: Handle | null, toNode: any): void {
-    if (toHandle && toNode && toNode.id !== this.nodeId()) {
-      // 檢查是否是有效的連接目標
-      const isSourceToTarget =
-        this.type() === 'source' && toHandle.type === 'target';
-      const isTargetToSource =
-        this.type() === 'target' && toHandle.type === 'source';
-
-      if (isSourceToTarget || isTargetToSource) {
-        this.connectionValid.set(true);
-      } else {
-        this.connectionValid.set(false);
-      }
-    } else {
-      this.connectionValid.set(null);
-    }
-  }
 }

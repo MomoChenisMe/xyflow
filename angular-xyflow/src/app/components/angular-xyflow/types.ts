@@ -41,6 +41,8 @@ export type NodeTypes = Record<string, Type<any>>;
 // EdgeProps - 與 React Flow 的 EdgeProps 對應，用於傳遞給邊元件的屬性
 export interface EdgeProps<EdgeType extends AngularEdge = AngularEdge> extends Record<string, any> {
   id: string;
+  source: string;  // 源節點 ID
+  target: string;  // 目標節點 ID
   data: EdgeType['data'];
   type?: string;
   selected: boolean;

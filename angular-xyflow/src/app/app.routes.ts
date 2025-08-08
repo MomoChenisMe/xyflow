@@ -18,6 +18,7 @@ import { DefaultEdgeOverwriteExampleComponent } from './components/examples/defa
 import { DevToolsExampleComponent } from './components/examples/devtools-example/devtools-example.component';
 import { DragHandleExampleComponent } from './components/examples/drag-handle-example/drag-handle-example.component';
 import { DragNDropExampleComponent } from './components/examples/drag-n-drop-example/drag-n-drop-example.component';
+import { EasyConnectExampleComponent } from './components/examples/easy-connect-example/easy-connect-example.component';
 
 export interface IRoute {
   name: string;
@@ -121,6 +122,11 @@ export const routeList: IRoute[] = [
     path: 'drag-n-drop',
     component: DragNDropExampleComponent,
   },
+  {
+    name: 'Easy Connect',
+    path: 'easy-connect',
+    component: EasyConnectExampleComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -144,4 +150,5 @@ export const routes: Routes = [
   { path: 'devtools', component: DevToolsExampleComponent },
   { path: 'drag-handle', component: DragHandleExampleComponent },
   { path: 'drag-n-drop', component: DragNDropExampleComponent },
+  { path: 'easy-connect', component: EasyConnectExampleComponent },
 ];

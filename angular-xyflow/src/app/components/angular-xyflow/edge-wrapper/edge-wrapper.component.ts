@@ -24,6 +24,7 @@ import {
   EdgeTypes,
   EdgeProps,
   EdgeMarker,
+  MarkerType,
 } from '../types';
 import { errorMessages, defaultErrorHandler, ErrorCode } from '../constants';
 import { EdgeComponent } from '../edge/edge.component';
@@ -361,16 +362,26 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
   private dynamicComponentRef?: ComponentRef<any>;
 
   constructor() {
-    // 監聽邊類型和輸入的變化，重新創建動態組件
+    // 監聽邊類型和關鍵屬性變化，當這些改變時重新創建組件
+    // 通過重新創建而不是更新來避免無限循環問題
     effect(() => {
-      // 觸發重算：監聽相關信號的變化
-      this.hasCustomEdgeType();
-      this.edgeComponent();
-      this.edgeInputs();
+      const hasCustomType = this.hasCustomEdgeType();
+      const edgeComponent = this.edgeComponent();
       
-      // 如果組件已經初始化且需要動態組件，重新創建
-      if (this.dynamicEdgeContainer && this.hasCustomEdgeType()) {
-        this.createDynamicComponent();
+      // 監聽位置變化，確保邊緣能夠更新
+      const sourceX = this.sourceX();
+      const sourceY = this.sourceY();
+      const targetX = this.targetX();
+      const targetY = this.targetY();
+      const edge = this.edge();
+      
+      if (hasCustomType && edgeComponent) {
+        // 等待 ViewChild 初始化後再創建組件
+        setTimeout(() => {
+          if (this.dynamicEdgeContainer) {
+            this.createDynamicComponent();
+          }
+        }, 0);
       }
     });
   }
@@ -439,6 +450,8 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
     const resolvedEdgeType = this.resolvedEdgeType();
     const inputs: EdgeProps = {
       id: edge.id,
+      source: edge.source,  // 添加 source ID
+      target: edge.target,  // 添加 target ID
       data: edge.data,
       type: resolvedEdgeType,
       selected: edge.selected || false,
@@ -450,8 +463,15 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
       targetPosition: this.targetPosition(),
       sourceHandleId: this.sourceHandleId(),
       targetHandleId: this.targetHandleId(),
-      markerStart: edge.markerStart,
-      markerEnd: edge.markerEnd,
+      // 將 marker 物件轉換為 ID 字串
+      markerStart: edge.markerStart ? this.getMarkerId()(edge, 'start', 
+        typeof edge.markerStart === 'string' 
+          ? { type: MarkerType.ArrowClosed } 
+          : edge.markerStart) : undefined,
+      markerEnd: edge.markerEnd ? this.getMarkerId()(edge, 'end', 
+        typeof edge.markerEnd === 'string' 
+          ? { type: MarkerType.ArrowClosed } 
+          : edge.markerEnd) : undefined,
       style: edge.style,
       animated: edge.animated,
       hidden: edge.hidden,
@@ -507,10 +527,8 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
   }
 
   ngAfterViewInit(): void {
-    // 檢查是否需要創建動態組件
-    if (this.hasCustomEdgeType() && this.dynamicEdgeContainer) {
-      this.createDynamicComponent();
-    }
+    // 動態組件創建現在由 constructor 中的 effect 處理
+    // 這裡不再需要手動創建，避免重複創建
   }
 
   ngOnDestroy(): void {
@@ -534,10 +552,19 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
       return;
     }
 
-    // 創建組件並設置屬性
+    // 創建一個分離的視圖容器來渲染組件，避免組件出現在主視圖中
+    const detachedContainer = this.renderer.createElement('div');
+    this.renderer.setStyle(detachedContainer, 'display', 'none');
+    this.renderer.appendChild(document.body, detachedContainer);
+    
+    // 創建組件到分離的容器中
     this.dynamicComponentRef = this.viewContainerRef.createComponent(edgeComponent, {
       injector: this.edgeInjector
     });
+
+    // 將組件的 DOM 移動到分離容器中
+    const componentElement = this.dynamicComponentRef.location.nativeElement;
+    this.renderer.appendChild(detachedContainer, componentElement);
 
     // 設置組件的輸入屬性 - 使用 setInput 方法來正確設置 input 信號
     Object.keys(inputs).forEach(key => {
@@ -551,17 +578,17 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
       }
     });
 
-    // 手動觸發變更檢測
+    // 手動觸發變更檢測確保組件完全渲染
     this.dynamicComponentRef.changeDetectorRef.detectChanges();
     
-    // 等待下一個微任務來確保 DOM 已更新
+    // 等待組件完全渲染後再複製內容
     setTimeout(() => {
       if (!this.dynamicComponentRef || !this.dynamicEdgeContainer) {
         return;
       }
       
-      // 獲取組件的 DOM 元素
-      const componentElement = this.dynamicComponentRef.location.nativeElement;
+      // 再次觸發變更檢測確保所有 signal 都已計算
+      this.dynamicComponentRef.changeDetectorRef.detectChanges();
       
       // 清空 SVG 容器
       while (this.dynamicEdgeContainer.nativeElement.firstChild) {
@@ -571,18 +598,23 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
         );
       }
       
-      // 如果組件有 innerHTML，使用它來創建 SVG 內容
-      if (componentElement.innerHTML) {
-        // 使用 innerHTML 來設置 SVG 內容，確保正確的命名空間
+      // 複製組件的所有子元素到 SVG 容器
+      const childNodes = Array.from(componentElement.childNodes) as Node[];
+      childNodes.forEach((child: Node) => {
+        const clonedChild = child.cloneNode(true);
+        this.renderer.appendChild(this.dynamicEdgeContainer!.nativeElement, clonedChild);
+      });
+      
+      // 如果沒有子元素但有 innerHTML，使用 innerHTML
+      if (childNodes.length === 0 && componentElement.innerHTML.trim()) {
         this.dynamicEdgeContainer.nativeElement.innerHTML = componentElement.innerHTML;
-      } else {
-        // 否則將組件的子元素複製到 SVG 容器中
-        const childNodes = Array.from(componentElement.childNodes) as Node[];
-        childNodes.forEach((child: Node) => {
-          const clonedChild = child.cloneNode(true);
-          this.renderer.appendChild(this.dynamicEdgeContainer!.nativeElement, clonedChild);
-        });
       }
-    }, 0);
+      
+      // 清理分離的容器
+      if (detachedContainer && detachedContainer.parentNode) {
+        this.renderer.removeChild(document.body, detachedContainer);
+      }
+    }, 10); // 增加延遲時間確保組件完全渲染
   }
+  
 }

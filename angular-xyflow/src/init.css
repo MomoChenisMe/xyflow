@@ -156,7 +156,7 @@
     stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default));
   }
 
-  &-textwrapper {
+  &:is(-textwrapper) {
     pointer-events: all;
   }
 
@@ -212,7 +212,7 @@ svg.xy-flow__connectionline {
   transform-origin: left top;
   pointer-events: none;
 
-  &-rect {
+  &:is(-rect) {
     position: absolute;
     pointer-events: all;
     cursor: grab;
@@ -234,26 +234,26 @@ svg.xy-flow__connectionline {
     cursor: crosshair;
   }
 
-  &-bottom {
+  &:is(-bottom) {
     top: auto;
     left: 50%;
     bottom: 0;
     transform: translate(-50%, 50%);
   }
 
-  &-top {
+  &:is(-top) {
     top: 0;
     left: 50%;
     transform: translate(-50%, -50%);
   }
 
-  &-left {
+  &:is(-left) {
     top: 50%;
     left: 0;
     transform: translate(-50%, -50%);
   }
 
-  &-right {
+  &:is(-right) {
     top: 50%;
     right: 0;
     transform: translate(50%, -50%);
@@ -350,11 +350,11 @@ svg.xy-flow__connectionline {
     var(--xy-minimap-background-color, var(--xy-minimap-background-color-default))
   );
 
-  &-svg {
+  &:is(-svg) {
     display: block;
   }
 
-  &-mask {
+  &:is(-mask) {
     fill: var(
       --xy-minimap-mask-background-color-props,
       var(--xy-minimap-mask-background-color, var(--xy-minimap-mask-background-color-default))
@@ -369,7 +369,7 @@ svg.xy-flow__connectionline {
     );
   }
 
-  &-node {
+  &:is(-node) {
     fill: var(
       --xy-minimap-node-background-color-props,
       var(--xy-minimap-node-background-color, var(--xy-minimap-node-background-color-default))
@@ -421,7 +421,7 @@ svg.xy-flow__connectionline {
     flex-direction: row;
   }
 
-  &-button {
+  &:is(-button) {
     display: flex;
     justify-content: center;
     align-items: center;
