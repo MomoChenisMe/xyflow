@@ -144,13 +144,15 @@ export class FloatingEdgeComponent {
   // 計算 marker URL（用於箭頭）
   readonly markerEndUrl = computed(() => {
     const marker = this.markerEnd();
-    // 如果有 markerEnd，返回 URL 格式
-    // markerEnd 通常是 marker 的 ID
-    return marker ? `url(#${marker})` : undefined;
+    // EdgeWrapperComponent 已經將 marker 格式化為 url(#id) 格式
+    // 直接返回，不需要再次包裝
+    return marker;
   });
 
   readonly markerStartUrl = computed(() => {
     const marker = this.markerStart();
-    return marker ? `url(#${marker})` : undefined;
+    // EdgeWrapperComponent 已經將 marker 格式化為 url(#id) 格式
+    // 直接返回，不需要再次包裝
+    return marker;
   });
 }

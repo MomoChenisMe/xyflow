@@ -1,5 +1,10 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { PanZoomInstance, Viewport, Transform, CoordinateExtent } from '@xyflow/system';
+import type {
+  PanZoomInstance,
+  Viewport,
+  Transform,
+  CoordinateExtent,
+} from '@xyflow/system';
 import {
   XYPanZoom,
   fitViewport,
@@ -17,7 +22,7 @@ export class AngularXYFlowPanZoomService {
 
   // PanZoom 實例
   panZoomInstance: PanZoomInstance | null = null;
-  
+
   // 移除不再使用的視口輔助函數
 
   // 私有狀態
@@ -84,18 +89,27 @@ export class AngularXYFlowPanZoomService {
       onDraggingChange: (dragging: boolean) => {
         this._isDragging.set(dragging);
       },
-      onPanZoomStart: (event: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+      onPanZoomStart: (
+        event: MouseEvent | TouchEvent | null,
+        viewport: Viewport
+      ) => {
         this._isZooming.set(true);
         this.handleMoveStart();
       },
-      onPanZoom: (event: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+      onPanZoom: (
+        event: MouseEvent | TouchEvent | null,
+        viewport: Viewport
+      ) => {
         if (event) {
           this.handleMove(event);
         }
         // 同步 viewport 到服務
         this._flowService.setViewport(viewport);
       },
-      onPanZoomEnd: (event: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+      onPanZoomEnd: (
+        event: MouseEvent | TouchEvent | null,
+        viewport: Viewport
+      ) => {
         this._isZooming.set(false);
         this.handleMoveEnd();
       },
@@ -141,19 +155,16 @@ export class AngularXYFlowPanZoomService {
   private handleMoveStart() {
     const event = window.event as MouseEvent | TouchEvent;
     const position = this.getEventPosition(event);
-    
+
     if (this.onMoveStart) {
       this.onMoveStart({ event, position });
     }
   }
 
   // 處理移動事件
-  private handleMove(
-    event?: MouseEvent | TouchEvent,
-    position?: XYPosition
-  ) {
+  private handleMove(event?: MouseEvent | TouchEvent, position?: XYPosition) {
     const eventPosition = position || this.getEventPosition(event);
-    
+
     if (this.onMove && eventPosition) {
       this.onMove({
         event,
@@ -168,7 +179,7 @@ export class AngularXYFlowPanZoomService {
   private handleMoveEnd() {
     const event = window.event as MouseEvent | TouchEvent;
     const position = this.getEventPosition(event);
-    
+
     if (this.onMoveEnd) {
       this.onMoveEnd({ event, position });
     }
@@ -181,8 +192,10 @@ export class AngularXYFlowPanZoomService {
     }
 
     const rect = this.domElement.getBoundingClientRect();
-    const clientX = 'clientX' in event ? event.clientX : event.touches[0]?.clientX || 0;
-    const clientY = 'clientY' in event ? event.clientY : event.touches[0]?.clientY || 0;
+    const clientX =
+      'clientX' in event ? event.clientX : event.touches[0]?.clientX || 0;
+    const clientY =
+      'clientY' in event ? event.clientY : event.touches[0]?.clientY || 0;
 
     return {
       x: clientX - rect.left,
@@ -245,61 +258,77 @@ export class AngularXYFlowPanZoomService {
       this.resetViewport();
       return true;
     }
-    
+
     // Debug: 計算節點邊界
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
     const nodeDetails: any[] = [];
     internalNodeLookup.forEach((node, id) => {
       const x = node.internals.positionAbsolute.x;
       const y = node.internals.positionAbsolute.y;
       const width = node.measured.width;
       const height = node.measured.height;
-      nodeDetails.push({ id, x, y, width, height, right: x + width, bottom: y + height });
+      nodeDetails.push({
+        id,
+        x,
+        y,
+        width,
+        height,
+        right: x + width,
+        bottom: y + height,
+      });
       minX = Math.min(minX, x);
       minY = Math.min(minY, y);
       maxX = Math.max(maxX, x + width);
       maxY = Math.max(maxY, y + height);
     });
-    
+
     const nodeBounds = {
       x: minX,
       y: minY,
       width: maxX - minX,
-      height: maxY - minY
+      height: maxY - minY,
     };
-    
+
     // 計算 padding 後的實際視窗區域
     const padding = options?.padding || 0.1;
-    const paddingPixels = typeof padding === 'number' ? {
-      top: dimensions.height * padding,
-      right: dimensions.width * padding,
-      bottom: dimensions.height * padding,
-      left: dimensions.width * padding
-    } : {
-      top: dimensions.height * (padding.top || 0),
-      right: dimensions.width * (padding.right || 0),
-      bottom: dimensions.height * (padding.bottom || 0),
-      left: dimensions.width * (padding.left || 0)
-    };
-    
-    const availableWidth = dimensions.width - paddingPixels.left - paddingPixels.right;
-    const availableHeight = dimensions.height - paddingPixels.top - paddingPixels.bottom;
-    
+    const paddingPixels =
+      typeof padding === 'number'
+        ? {
+            top: dimensions.height * padding,
+            right: dimensions.width * padding,
+            bottom: dimensions.height * padding,
+            left: dimensions.width * padding,
+          }
+        : {
+            top: dimensions.height * (padding.top || 0),
+            right: dimensions.width * (padding.right || 0),
+            bottom: dimensions.height * (padding.bottom || 0),
+            left: dimensions.width * (padding.left || 0),
+          };
+
+    const availableWidth =
+      dimensions.width - paddingPixels.left - paddingPixels.right;
+    const availableHeight =
+      dimensions.height - paddingPixels.top - paddingPixels.bottom;
+
     // 計算縮放比例
     const scaleX = availableWidth / nodeBounds.width;
     const scaleY = availableHeight / nodeBounds.height;
     const scale = Math.min(scaleX, scaleY, maxZoom);
-    
-    console.log('🔍 FitView Debug:', {
-      nodes: nodeDetails,
-      nodeBounds,
-      viewportDimensions: dimensions,
-      padding,
-      paddingPixels,
-      availableArea: { width: availableWidth, height: availableHeight },
-      scale: { x: scaleX, y: scaleY, final: scale },
-      nodeOrigin: this._flowService.getNodeOrigin()
-    });
+
+    // console.log('🔍 FitView Debug:', {
+    //   nodes: nodeDetails,
+    //   nodeBounds,
+    //   viewportDimensions: dimensions,
+    //   padding,
+    //   paddingPixels,
+    //   availableArea: { width: availableWidth, height: availableHeight },
+    //   scale: { x: scaleX, y: scaleY, final: scale },
+    //   nodeOrigin: this._flowService.getNodeOrigin()
+    // });
 
     try {
       // 使用系統包的 fitViewport 函數，與 React 實現一致
@@ -308,13 +337,13 @@ export class AngularXYFlowPanZoomService {
       if (!fitViewOptions.padding) {
         fitViewOptions.padding = 0.1; // 與 React Flow 一致
       }
-      
+
       // 稍微增加 padding 以確保節點 4 完全在視窗內
       // 這是因為 Angular 版本的測量可能有細微差異
       if (typeof fitViewOptions.padding === 'number') {
         fitViewOptions.padding = Math.max(fitViewOptions.padding, 0.12); // 增加到 12%
       }
-      
+
       const result = await fitViewport(
         {
           nodes: internalNodeLookup,
@@ -326,33 +355,33 @@ export class AngularXYFlowPanZoomService {
         },
         fitViewOptions
       );
-      
+
       const finalViewport = this.getViewport();
-      console.log('✅ After fitView:', {
-        viewport: finalViewport,
-        expectedVisibleArea: {
-          left: -finalViewport.x / finalViewport.zoom,
-          top: -finalViewport.y / finalViewport.zoom,
-          right: (-finalViewport.x + dimensions.width) / finalViewport.zoom,
-          bottom: (-finalViewport.y + dimensions.height) / finalViewport.zoom
-        },
-        node4Check: (() => {
-          const node4 = internalNodeLookup.get('4');
-          if (node4) {
-            const x = node4.internals.positionAbsolute.x;
-            const width = node4.measured.width;
-            const rightEdge = x + width;
-            const visibleRight = (-finalViewport.x + dimensions.width) / finalViewport.zoom;
-            return {
-              rightEdge,
-              visibleRight,
-              isFullyVisible: rightEdge <= visibleRight,
-              overflow: rightEdge - visibleRight
-            };
-          }
-          return null;
-        })()
-      });
+      // console.log('✅ After fitView:', {
+      //   viewport: finalViewport,
+      //   expectedVisibleArea: {
+      //     left: -finalViewport.x / finalViewport.zoom,
+      //     top: -finalViewport.y / finalViewport.zoom,
+      //     right: (-finalViewport.x + dimensions.width) / finalViewport.zoom,
+      //     bottom: (-finalViewport.y + dimensions.height) / finalViewport.zoom
+      //   },
+      //   node4Check: (() => {
+      //     const node4 = internalNodeLookup.get('4');
+      //     if (node4) {
+      //       const x = node4.internals.positionAbsolute.x;
+      //       const width = node4.measured.width;
+      //       const rightEdge = x + width;
+      //       const visibleRight = (-finalViewport.x + dimensions.width) / finalViewport.zoom;
+      //       return {
+      //         rightEdge,
+      //         visibleRight,
+      //         isFullyVisible: rightEdge <= visibleRight,
+      //         overflow: rightEdge - visibleRight
+      //       };
+      //     }
+      //     return null;
+      //   })()
+      // });
       return true;
     } catch (error) {
       console.error('FitView error:', error);
@@ -387,7 +416,11 @@ export class AngularXYFlowPanZoomService {
   }
 
   // 平移功能
-  setCenter(x: number, y: number, options?: { zoom?: number; duration?: number }) {
+  setCenter(
+    x: number,
+    y: number,
+    options?: { zoom?: number; duration?: number }
+  ) {
     if (!this.panZoomInstance) return;
     const dimensions = this._flowService.dimensions();
     const zoom = options?.zoom || this.getViewport().zoom;

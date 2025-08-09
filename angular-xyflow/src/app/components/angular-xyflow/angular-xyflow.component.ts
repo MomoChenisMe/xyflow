@@ -698,15 +698,15 @@ export class AngularXYFlowComponent<
 
     // 渲染後副作用 - 根據 Angular 20 最佳實踐
     // 雖然混合讀寫不是最佳實踐，但由於 TypeScript 類型推斷限制，暫時使用簡化版本
-    
+
     // 首次渲染後的初始化操作
     afterNextRender(() => {
       // 測量容器尺寸並執行初始化
       const container = this.flowContainer()?.nativeElement;
       if (!container) return;
-      
+
       const rect = container.getBoundingClientRect();
-      
+
       // 更新容器尺寸
       const currentSize = this._containerSize();
       if (
@@ -719,34 +719,34 @@ export class AngularXYFlowComponent<
           height: rect.height,
         });
       }
-      
+
       // 設置 PanZoom（只初始化一次）
       if (!this._panZoomInitialized()) {
         this.setupPanZoomWithContainer(container);
       }
-      
+
       // 設置 ResizeObserver（只初始化一次）
       if (!this._resizeObserverInitialized()) {
         this.setupResizeObserverForContainer(container);
       }
-      
+
       // 處理初始 fitView
       this.safeHandleInitialFitView();
     });
-    
+
     // 每次渲染後的尺寸檢查（用於響應容器變化）
     afterEveryRender(() => {
       // 跳過首次渲染（已由 afterNextRender 處理）
       if (!this._panZoomInitialized()) {
         return;
       }
-      
+
       const container = this.flowContainer()?.nativeElement;
       if (!container) return;
-      
+
       const rect = container.getBoundingClientRect();
       const currentSize = this._containerSize();
-      
+
       // 只有在尺寸真正改變時才更新
       if (
         Math.abs(rect.width - currentSize.width) > 1 ||
@@ -760,7 +760,7 @@ export class AngularXYFlowComponent<
       }
     });
   }
-  
+
   // 新增輔助方法，從原本的 safeSetupPanZoom 重構
   private setupPanZoomWithContainer(container: HTMLDivElement): void {
     this._panZoomService.initializePanZoom({
@@ -785,7 +785,7 @@ export class AngularXYFlowComponent<
 
     this._panZoomInitialized.set(true);
   }
-  
+
   // 新增輔助方法，從原本的 safeSetupResizeObserver 重構
   private setupResizeObserverForContainer(container: HTMLDivElement): void {
     const updateDimensions = () => {
@@ -944,7 +944,7 @@ export class AngularXYFlowComponent<
     requestAnimationFrame(() => {
       // 再次檢查以避免重複執行
       if (!this._initialFitViewExecuted()) {
-        console.log('📐 Executing initial fitView');
+        // console.log('📐 Executing initial fitView');
         this.performFitView(this.fitViewOptions());
         this._initialFitViewExecuted.set(true);
       }
@@ -973,20 +973,26 @@ export class AngularXYFlowComponent<
     // 創建與系統包兼容的內部節點結構，使用實際測量的 handle bounds
     const createInternalNode = (node: NodeType) => {
       const internals = this._flowService.getNodeInternals(node.id);
-      
+
       // 模仿 React Flow 的邏輯：
       // 1. 優先使用 internals 中的 handleBounds（來自 DOM 測量）
       // 2. 如果沒有，嘗試從 DOM 測量
       // 3. 如果 DOM 不存在，使用快取的值
-      
+
       let handleBounds = internals?.handleBounds;
-      
+
       if (!handleBounds) {
         // 嘗試從 DOM 測量
-        const measuredBounds = this._flowService.measureNodeHandleBounds(node.id);
-        
+        const measuredBounds = this._flowService.measureNodeHandleBounds(
+          node.id
+        );
+
         // 如果測量成功且有內容，更新快取
-        if (measuredBounds && (measuredBounds.source?.length > 0 || measuredBounds.target?.length > 0)) {
+        if (
+          measuredBounds &&
+          (measuredBounds.source?.length > 0 ||
+            measuredBounds.target?.length > 0)
+        ) {
           this._flowService.setNodeHandleBounds(node.id, measuredBounds);
           handleBounds = measuredBounds;
         } else {
@@ -1412,7 +1418,7 @@ export class AngularXYFlowComponent<
 
     return `${idPrefix}${Object.keys(marker)
       .sort()
-      .map(key => `${key}=${marker[key as keyof EdgeMarker]}`)
+      .map((key) => `${key}=${marker[key as keyof EdgeMarker]}`)
       .join('&')}`;
   };
 

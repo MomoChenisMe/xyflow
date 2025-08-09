@@ -1,10 +1,15 @@
-import { Component, input, ChangeDetectionStrategy, computed } from '@angular/core';
+import {
+  Component,
+  input,
+  ChangeDetectionStrategy,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Position } from '@xyflow/system';
 import { EdgeProps } from '../../angular-xyflow/types';
 
 @Component({
-  selector: '[app-custom-edge]',
+  selector: 'svg:svg[app-custom-edge]',
   standalone: true,
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,13 +55,17 @@ export class CustomEdgeComponent {
     const targetY = this.targetY();
     const sourcePosition = this.sourcePosition() || Position.Bottom;
     const targetPosition = this.targetPosition() || Position.Top;
-    
+
     // 檢查必需的值是否已設置
-    if (sourceX === undefined || sourceY === undefined || 
-        targetX === undefined || targetY === undefined) {
+    if (
+      sourceX === undefined ||
+      sourceY === undefined ||
+      targetX === undefined ||
+      targetY === undefined
+    ) {
       return 'M 0,0 L 0,0'; // 返回一個空路徑
     }
-    
+
     return this.getBezierPath(
       sourceX,
       sourceY,
