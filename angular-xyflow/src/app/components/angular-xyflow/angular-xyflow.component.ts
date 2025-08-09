@@ -18,6 +18,8 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   HostListener,
   untracked,
+  ViewContainerRef,
+  OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -35,6 +37,7 @@ import {
 import { AngularXYFlowService } from './services/angular-xyflow.service';
 import { AngularXYFlowDragService } from './services/drag.service';
 import { AngularXYFlowPanZoomService } from './services/panzoom.service';
+import { EdgeLabelRendererService } from './services/edge-label-renderer.service';
 import {
   AngularNode,
   AngularEdge,
@@ -113,6 +116,19 @@ import { ViewportComponent } from './viewport/viewport.component';
         (edgeFocus)="handleEdgeFocus($event.event, $event.edge)"
         (edgeKeyDown)="handleEdgeKeyDown($event.event, $event.edge)"
       />
+      <!-- Edge Label Renderer container - 獨立的 HTML 層用於渲染邊標籤 -->
+      <div
+        #edgeLabelRendererContainer
+        class="angular-xyflow__edgelabel-renderer"
+        [style.position]="'absolute'"
+        [style.width]="'100%'"
+        [style.height]="'100%'"
+        [style.pointer-events]="'none'"
+        [style.z-index]="'1000'"
+        [style.transform-origin]="'0 0'"
+      >
+        <ng-container #edgeLabelContainer></ng-container>
+      </div>
       <!-- Viewport portal content projection - rendered as overlay -->
       <div
         class="angular-xyflow__viewport-portal"
@@ -282,12 +298,13 @@ import { ViewportComponent } from './viewport/viewport.component';
 export class AngularXYFlowComponent<
   NodeType extends AngularNode = AngularNode,
   EdgeType extends AngularEdge = AngularEdge
-> implements OnDestroy
+> implements OnInit, OnDestroy
 {
   // 注入依賴
   private _flowService = inject(AngularXYFlowService<NodeType, EdgeType>);
   private _dragService = inject(AngularXYFlowDragService);
   private _panZoomService = inject(AngularXYFlowPanZoomService);
+  private _edgeLabelService = inject(EdgeLabelRendererService);
 
   // 自定義連接線模板
   customConnectionLineTemplate = contentChild(ConnectionLineTemplateDirective);
@@ -433,6 +450,8 @@ export class AngularXYFlowComponent<
   flowContainer =
     viewChild.required<ElementRef<HTMLDivElement>>('flowContainer');
   viewportComponent = viewChild.required<ViewportComponent>('viewport');
+  edgeLabelContainer = viewChild('edgeLabelContainer', { read: ViewContainerRef });
+  edgeLabelRendererContainer = viewChild<ElementRef<HTMLDivElement>>('edgeLabelRendererContainer');
 
   // 獲取 viewport 元素的方法
   get viewportElement() {
@@ -551,6 +570,27 @@ export class AngularXYFlowComponent<
   // 邊線標記相關計算 - 現在由 MarkerDefinitions 組件內部處理
 
   constructor() {
+    // 初始化邊標籤容器
+    afterNextRender(() => {
+      const container = this.edgeLabelContainer();
+      if (container) {
+        this._edgeLabelService.setContainer(container);
+      }
+    });
+    
+    // 手動更新 edge label renderer 容器的 transform
+    // 使用 untracked 避免建立依賴關係，防止無限變更檢測
+    afterEveryRender(() => {
+      untracked(() => {
+        const container = this.edgeLabelRendererContainer();
+        if (container) {
+          const viewport = this._flowService.viewport();
+          const transform = `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`;
+          container.nativeElement.style.transform = transform;
+        }
+      });
+    });
+
     // 設置 controlled/uncontrolled 模式標誌（與 React Flow 邏輯一致）
     effect(() => {
       const defaultNodes = this.defaultNodes();
@@ -839,9 +879,16 @@ export class AngularXYFlowComponent<
     );
   }
 
+  ngOnInit() {
+    // 初始化邊標籤容器會在 afterNextRender 中進行，確保視圖已初始化
+  }
+
   ngOnDestroy() {
     // 清理 ResizeObserver 和 window resize listener
     this.cleanupResizeObserver();
+
+    // 清理邊標籤服務
+    this._edgeLabelService.destroy();
 
     this._panZoomService.destroy();
     this._dragService.destroy();

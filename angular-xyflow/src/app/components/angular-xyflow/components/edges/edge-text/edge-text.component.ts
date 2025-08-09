@@ -5,7 +5,9 @@ import {
   computed,
   viewChild,
   ElementRef,
-  afterEveryRender,
+  afterNextRender,
+  afterRenderEffect,
+  untracked,
   CUSTOM_ELEMENTS_SCHEMA,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -225,54 +227,111 @@ export class EdgeTextComponent {
       .join('; ');
   });
 
+  // 追蹤是否已經有待處理的測量
+  private hasPendingMeasurement = false;
+
   constructor() {
-    // 根據 Angular 20 渲染 API 最佳實踐
-    // 使用 afterEveryRender 進行 DOM 測量
-    // 雖然混合讀寫不是最佳實踐，但由於 TypeScript 類型推斷限制，暫時使用簡化版本
-    afterEveryRender(() => {
-      const textElement = this.edgeTextRef()?.nativeElement;
+    // 使用 afterRenderEffect 來響應 label 變化並測量
+    // afterRenderEffect 會自動追蹤依賴並在渲染後執行
+    afterRenderEffect(() => {
       const label = this.label();
+      const textElement = this.edgeTextRef()?.nativeElement;
       
-      if (textElement && label) {
-        // 測量 DOM
-        try {
-          const bbox = textElement.getBBox();
+      if (textElement && label && !this.hasPendingMeasurement) {
+        // 使用 untracked 避免建立不必要的依賴
+        untracked(() => {
+          // 標記有待處理的測量，避免重複觸發
+          this.hasPendingMeasurement = true;
           
-          // 只有當尺寸實際改變時才需要更新
-          const currentBbox = this.edgeTextBbox();
-          if (
-            bbox.width !== currentBbox.width ||
-            bbox.height !== currentBbox.height ||
-            bbox.x !== currentBbox.x ||
-            bbox.y !== currentBbox.y
-          ) {
-            // 更新 signal
-            this.edgeTextBbox.set({
-              x: bbox.x,
-              y: bbox.y,
-              width: bbox.width,
-              height: bbox.height,
-            });
-          }
-        } catch (error) {
-          // 測量失敗時使用估算值
-          const labelStr = String(label);
-          if (typeof labelStr === 'string') {
-            const lines = labelStr.split('\n');
-            const maxLineLength = Math.max(...lines.map((line) => line.length));
-            const estimatedWidth = maxLineLength * 6; // 預估每字元寬度
-            const estimatedHeight = lines.length * 12; // 預估行高
-            
-            this.edgeTextBbox.set({
-              x: 0,
-              y: 0,
-              width: estimatedWidth,
-              height: estimatedHeight,
-            });
-          }
-        }
+          // 延遲測量以確保 DOM 完全更新
+          requestAnimationFrame(() => {
+            try {
+              // 等待字體載入完成
+              if ('fonts' in document) {
+                document.fonts.ready.then(() => {
+                  this.measureTextElement(textElement);
+                  this.hasPendingMeasurement = false;
+                });
+              } else {
+                // 如果 fonts API 不可用，直接測量
+                this.measureTextElement(textElement);
+                this.hasPendingMeasurement = false;
+              }
+            } catch (error) {
+              // 測量失敗時使用估算值
+              this.estimateTextSize(label);
+              this.hasPendingMeasurement = false;
+            }
+          });
+        });
       }
     });
+
+    // 初始測量 - 在下次渲染後執行一次
+    afterNextRender({
+      read: () => {
+        untracked(() => {
+          const textElement = this.edgeTextRef()?.nativeElement;
+          const label = this.label();
+
+          if (textElement && label) {
+            // 等待字體載入
+            if ('fonts' in document) {
+              document.fonts.ready.then(() => {
+                this.measureTextElement(textElement);
+              });
+            } else {
+              this.measureTextElement(textElement);
+            }
+          }
+        });
+      }
+    });
+  }
+
+  // 測量文字元素的輔助方法
+  private measureTextElement(textElement: SVGTextElement) {
+    try {
+      const bbox = textElement.getBBox();
+      const currentBbox = this.edgeTextBbox();
+
+      // 使用容差來避免微小變化觸發更新
+      const tolerance = 0.01;
+      if (
+        Math.abs(bbox.width - currentBbox.width) > tolerance ||
+        Math.abs(bbox.height - currentBbox.height) > tolerance ||
+        Math.abs(bbox.x - currentBbox.x) > tolerance ||
+        Math.abs(bbox.y - currentBbox.y) > tolerance
+      ) {
+        this.edgeTextBbox.set({
+          x: bbox.x,
+          y: bbox.y,
+          width: bbox.width,
+          height: bbox.height,
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to measure text element:', error);
+      this.estimateTextSize(this.label());
+    }
+  }
+
+  // 估算文字尺寸的輔助方法
+  private estimateTextSize(label: string | number) {
+    const labelStr = String(label);
+    if (typeof labelStr === 'string') {
+      const lines = labelStr.split('\n');
+      const maxLineLength = Math.max(...lines.map((line) => line.length));
+      const estimatedWidth = maxLineLength * 6; // 預估每字元寬度
+      const estimatedHeight = lines.length * 12; // 預估行高
+
+      this.edgeTextBbox.set({
+        x: 0,
+        y: 0,
+        width: estimatedWidth,
+        height: estimatedHeight,
+      });
+    }
   }
 
 }

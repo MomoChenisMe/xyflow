@@ -8,6 +8,7 @@ export { AngularXYFlowPanZoomService } from './services/panzoom.service';
 export { NodeWrapperComponent } from './node-wrapper/node-wrapper.component';
 export { HandleComponent } from './handle/handle.component';
 export { EdgeComponent } from './edge/edge.component';
+export { EdgeLabelRendererComponent } from './edge-label-renderer/edge-label-renderer.component';
 export { ConnectionLineComponent } from './connection-line/connection-line.component';
 export { ViewportComponent } from './viewport/viewport.component';
 
