@@ -79,8 +79,10 @@ export class AngularXYFlowService<
           };
 
         // 創建一個包含測量尺寸的節點副本，供 getNodePositionWithOrigin 使用
+        // 確保節點有有效的 position 屬性，避免 undefined 錯誤
         const nodeWithMeasured = {
           ...node,
+          position: node.position || { x: 0, y: 0 }, // 提供 fallback position
           measured,
           width: measured.width,
           height: measured.height,

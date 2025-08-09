@@ -38,11 +38,9 @@ export interface NodeProps<NodeType extends AngularNode = AngularNode> {
 // NodeTypes - 節點類型對應表，映射節點類型字串到對應的 Angular 元件
 export type NodeTypes = Record<string, Type<any>>;
 
-// EdgeProps - 與 React Flow 的 EdgeProps 對應，用於傳遞給邊元件的屬性
-export interface EdgeProps<EdgeType extends AngularEdge = AngularEdge> extends Record<string, any> {
+// EdgeComponentProps - 用於傳遞給邊緣組件的屬性（不包含 source 和 target）
+export interface EdgeComponentProps<EdgeType extends AngularEdge = AngularEdge> extends Record<string, any> {
   id: string;
-  source: string;  // 源節點 ID
-  target: string;  // 目標節點 ID
   data: EdgeType['data'];
   type?: string;
   selected: boolean;
@@ -61,8 +59,21 @@ export interface EdgeProps<EdgeType extends AngularEdge = AngularEdge> extends R
   hidden?: boolean;
   deletable?: boolean;
   selectable?: boolean;
+  focusable?: boolean;
   interactionWidth?: number;
   pathOptions?: any;
+  label?: string | number;
+  labelStyle?: Record<string, any>;
+  labelShowBg?: boolean;
+  labelBgStyle?: Record<string, any>;
+  labelBgPadding?: [number, number];
+  labelBgBorderRadius?: number;
+}
+
+// EdgeProps - 完整的邊緣屬性（包含 source 和 target，用於內部管理）
+export interface EdgeProps<EdgeType extends AngularEdge = AngularEdge> extends EdgeComponentProps<EdgeType> {
+  source: string;  // 源節點 ID
+  target: string;  // 目標節點 ID
 }
 
 // EdgeTypes - 邊類型對應表，映射邊類型字串到對應的 Angular 元件
@@ -145,6 +156,12 @@ export interface AngularEdge<T extends Record<string, unknown> = Record<string, 
   zIndex?: number;
   markerStart?: EdgeMarker | string;
   markerEnd?: EdgeMarker | string;
+  label?: string | any;
+  labelStyle?: Record<string, any>;
+  labelShowBg?: boolean;
+  labelBgStyle?: Record<string, any>;
+  labelBgPadding?: [number, number];
+  labelBgBorderRadius?: number;
 }
 
 // Angular XY Flow Props interface
@@ -426,3 +443,6 @@ export type ErrorCode = '003' | '011'; // 擴展其他錯誤代碼時在此添�
  * 與 React Flow 的 onError 事件保持一致
  */
 export type OnErrorHandler = (code: ErrorCode, message: string) => void;
+
+// 重新匯出從 @xyflow/system 導入的類型
+export type { Connection, Position, XYPosition, NodeOrigin, ConnectionLineType };

@@ -19,6 +19,7 @@ import { DevToolsExampleComponent } from './components/examples/devtools-example
 import { DragHandleExampleComponent } from './components/examples/drag-handle-example/drag-handle-example.component';
 import { DragNDropExampleComponent } from './components/examples/drag-n-drop-example/drag-n-drop-example.component';
 import { EasyConnectExampleComponent } from './components/examples/easy-connect-example/easy-connect-example.component';
+import { EdgesExample } from './components/examples/edges-example/edges-example';
 
 export interface IRoute {
   name: string;
@@ -127,6 +128,11 @@ export const routeList: IRoute[] = [
     path: 'easy-connect',
     component: EasyConnectExampleComponent,
   },
+  {
+    name: 'Edges',
+    path: 'edges',
+    component: EdgesExample,
+  },
 ];
 
 export const routes: Routes = [
@@ -151,4 +157,5 @@ export const routes: Routes = [
   { path: 'drag-handle', component: DragHandleExampleComponent },
   { path: 'drag-n-drop', component: DragNDropExampleComponent },
   { path: 'easy-connect', component: EasyConnectExampleComponent },
+  { path: 'edges', component: EdgesExample },
 ];

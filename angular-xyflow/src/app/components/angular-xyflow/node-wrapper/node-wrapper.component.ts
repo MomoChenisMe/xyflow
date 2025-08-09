@@ -8,7 +8,7 @@ import {
   computed,
   signal,
   effect,
-  afterRenderEffect,
+  afterNextRender,
   ChangeDetectionStrategy,
   OnDestroy,
   inject,
@@ -413,9 +413,10 @@ export class NodeWrapperComponent implements OnDestroy {
       }
     });
 
-    // 關鍵：使用 afterRenderEffect 確保 DOM 渲染後再設置拖曳
+    // 關鍵：使用 afterNextRender 確保 DOM 渲染後再設置拖曳
     // 對應 React 的第二個 useEffect（更新拖曳配置）
-    afterRenderEffect(() => {
+    // 雖然混合讀寫不是最佳實踐，但由於 TypeScript 類型推斷限制，暫時使用簡化版本
+    afterNextRender(() => {
       const nodeData = this.node();
       const element = this.nodeElement()?.nativeElement;
       
@@ -446,10 +447,10 @@ export class NodeWrapperComponent implements OnDestroy {
         // 配置變化，重新初始化
         // 如果有 dragHandle，需要確保 handle 元素已渲染
         if (nodeData.dragHandle) {
-          // 使用 setTimeout 0 讓動態組件完成渲染
-          setTimeout(() => {
+          // 使用 requestAnimationFrame 確保動態組件完成渲染
+          requestAnimationFrame(() => {
             this.initializeDragWithHandle(nodeData, element);
-          }, 0);
+          });
         } else {
           // 沒有 dragHandle，直接初始化
           this.initializeDragWithHandle(nodeData, element);

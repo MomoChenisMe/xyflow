@@ -10,7 +10,8 @@ import {
   inject,
   ChangeDetectionStrategy,
   OnDestroy,
-  afterRenderEffect,
+  afterNextRender,
+  afterEveryRender,
   CUSTOM_ELEMENTS_SCHEMA,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -184,24 +185,34 @@ export class HandleComponent implements OnDestroy {
     // 關鍵：模擬 React Flow Handle 組件的自動行為
     // 在 Handle 首次渲染時，自動觸發 node internals 更新
     // 這確保即使後來 handles 被條件渲染隱藏，系統仍知道它們的位置
-    let isFirstRender = true;
-    afterRenderEffect(() => {
-      // 延遲執行，確保 DOM 完全渲染
-      setTimeout(() => {
-        const nodeId = this.nodeId();
-        // 測量當前節點的 handle bounds
-        const bounds = this._flowService.measureNodeHandleBounds(nodeId);
-        if (bounds && (bounds.source.length > 0 || bounds.target.length > 0)) {
-          // 如果是首次渲染，強制儲存到快取
-          if (isFirstRender) {
-            this._flowService.setNodeHandleBounds(nodeId, bounds);
-            isFirstRender = false;
-          } else {
-            // 後續更新使用 updateNodeInternals
-            this._flowService.updateNodeInternals(nodeId);
-          }
-        }
-      }, 0);
+    
+    // 使用 afterNextRender 進行首次初始化
+    afterNextRender(() => {
+      const nodeId = this.nodeId();
+      // 測量當前節點的 handle bounds
+      const bounds = this._flowService.measureNodeHandleBounds(nodeId);
+      if (bounds && (bounds.source.length > 0 || bounds.target.length > 0)) {
+        // 首次渲染，強制儲存到快取
+        this._flowService.setNodeHandleBounds(nodeId, bounds);
+      }
+    });
+    
+    // 使用 afterEveryRender 處理後續的更新
+    let isFirstUpdate = true;
+    afterEveryRender(() => {
+      // 跳過首次渲染（已由 afterNextRender 處理）
+      if (isFirstUpdate) {
+        isFirstUpdate = false;
+        return;
+      }
+      
+      const nodeId = this.nodeId();
+      // 測量當前節點的 handle bounds
+      const bounds = this._flowService.measureNodeHandleBounds(nodeId);
+      if (bounds && (bounds.source.length > 0 || bounds.target.length > 0)) {
+        // 後續更新使用 updateNodeInternals
+        this._flowService.updateNodeInternals(nodeId);
+      }
     });
   }
 

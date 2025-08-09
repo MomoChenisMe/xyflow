@@ -8,6 +8,24 @@
   box-sizing: border-box;
 }
 
+/* 移除所有 SVG 元素和自定義 Edge 的 focus outline */
+svg:focus,
+svg:focus-visible,
+svg *:focus,
+svg *:focus-visible,
+g:focus,
+g:focus-visible,
+[angular-xyflow-base-edge]:focus,
+[angular-xyflow-base-edge]:focus-visible,
+[app-custom-edge]:focus,
+[app-custom-edge]:focus-visible,
+[app-custom-edge2]:focus,
+[app-custom-edge2]:focus-visible,
+[app-custom-edge3]:focus,
+[app-custom-edge3]:focus-visible {
+  outline: none !important;
+}
+
 html,
 body {
   margin: 0;

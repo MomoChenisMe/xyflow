@@ -8,26 +8,11 @@ import {
   Type,
   Injector,
   CUSTOM_ELEMENTS_SCHEMA,
-  ViewChild,
-  ViewContainerRef,
-  ElementRef,
-  Renderer2,
-  ComponentRef,
-  AfterViewInit,
-  OnDestroy,
-  effect,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { Position } from '@xyflow/system';
-import {
-  AngularEdge,
-  EdgeTypes,
-  EdgeProps,
-  EdgeMarker,
-  MarkerType,
-} from '../types';
+import { AngularEdge, EdgeTypes, EdgeMarker, MarkerType } from '../types';
 import { errorMessages, defaultErrorHandler, ErrorCode } from '../constants';
-import { EdgeComponent } from '../edge/edge.component';
 import { BezierEdgeComponent } from '../components/edges/bezier-edge/bezier-edge.component';
 import { StraightEdgeComponent } from '../components/edges/straight-edge/straight-edge.component';
 import { StepEdgeComponent } from '../components/edges/step-edge/step-edge.component';
@@ -39,284 +24,36 @@ import { SimpleBezierEdgeComponent } from '../components/edges/simple-bezier-edg
   standalone: true,
   imports: [
     CommonModule,
-    EdgeComponent,
+    NgComponentOutlet,
     BezierEdgeComponent,
     StraightEdgeComponent,
     StepEdgeComponent,
     SmoothStepEdgeComponent,
-    SimpleBezierEdgeComponent
+    SimpleBezierEdgeComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  host: {
+    class: 'angular-xyflow__edge xy-flow__edge',
+    '[class.selected]': 'edge().selected',
+    '[class.animated]': 'edge().animated',
+    '[class.selectable]': 'edge().selectable !== false',
+    '[style.position]': '"absolute"',
+    '[style.z-index]': 'edge().zIndex || 0',
+    '[style.pointer-events]': '"none"',
+  },
   template: `
-    <svg
-      class="angular-xyflow__edge xy-flow__edge xy-flow__container"
-      [class.selected]="edge().selected"
-      [class.animated]="edge().animated"
-      [class.selectable]="edge().selectable !== false"
-      [attr.tabindex]="isEdgeFocusable() ? 0 : null"
-      [style.position]="'absolute'"
-      [style.width]="'100%'"
-      [style.height]="'100%'"
-      [style.overflow]="'visible'"
-      [style.z-index]="edge().zIndex || 0"
-      (click)="handleClick($event)"
-      (dblclick)="handleDoubleClick($event)"
-      (contextmenu)="handleContextMenu($event)"
-      (focus)="handleFocus($event)"
-      (keydown)="handleKeyDown($event)"
-    >
-      <!-- 條件渲染內建邊組件 -->
-    @switch (resolvedEdgeType()) {
-        @case ('default') {
-          @if (hasCustomEdgeType()) {
-            <!-- 動態組件容器 -->
-            <svg:g 
-              #dynamicEdgeContainer
-              [style.pointer-events]="'auto'"
-              [style.cursor]="edge().selectable !== false ? 'pointer' : 'default'"
-            ></svg:g>
-          } @else {
-            <svg:g
-              angular-xyflow-bezier-edge
-              [style.pointer-events]="'auto'"
-              [style.cursor]="edge().selectable !== false ? 'pointer' : 'default'"
-              [id]="edgeInputs().id"
-              [sourceX]="edgeInputs().sourceX"
-              [sourceY]="edgeInputs().sourceY"
-              [targetX]="edgeInputs().targetX"
-              [targetY]="edgeInputs().targetY"
-              [sourcePosition]="edgeInputs().sourcePosition"
-              [targetPosition]="edgeInputs().targetPosition"
-              [label]="edgeInputs()['label']"
-              [labelStyle]="edgeInputs()['labelStyle']"
-              [labelShowBg]="edgeInputs()['labelShowBg']"
-              [labelBgStyle]="edgeInputs()['labelBgStyle']"
-              [labelBgPadding]="edgeInputs()['labelBgPadding']"
-              [labelBgBorderRadius]="edgeInputs()['labelBgBorderRadius']"
-              [style]="edgeInputs().style"
-              [markerEnd]="edgeInputs()['markerEnd']"
-              [markerStart]="edgeInputs()['markerStart']"
-              [interactionWidth]="edgeInputs().interactionWidth"
-              [data]="edgeInputs().data"
-              [type]="edgeInputs().type"
-              [selected]="edgeInputs().selected"
-              [sourceHandleId]="edgeInputs().sourceHandleId"
-              [targetHandleId]="edgeInputs().targetHandleId"
-              [animated]="edgeInputs().animated"
-              [hidden]="edgeInputs().hidden"
-              [deletable]="edgeInputs().deletable"
-              [selectable]="edgeInputs().selectable" />
-          }
-        }
-        @case ('bezier') {
-          <svg:g
-            angular-xyflow-bezier-edge
-            [style.pointer-events]="'auto'"
-            [style.cursor]="edge().selectable !== false ? 'pointer' : 'default'"
-            [id]="edgeInputs().id"
-            [sourceX]="edgeInputs().sourceX"
-            [sourceY]="edgeInputs().sourceY"
-            [targetX]="edgeInputs().targetX"
-            [targetY]="edgeInputs().targetY"
-            [sourcePosition]="edgeInputs().sourcePosition"
-            [targetPosition]="edgeInputs().targetPosition"
-            [label]="edgeInputs()['label']"
-            [labelStyle]="edgeInputs()['labelStyle']"
-            [labelShowBg]="edgeInputs()['labelShowBg']"
-            [labelBgStyle]="edgeInputs()['labelBgStyle']"
-            [labelBgPadding]="edgeInputs()['labelBgPadding']"
-            [labelBgBorderRadius]="edgeInputs()['labelBgBorderRadius']"
-            [style]="edgeInputs().style"
-            [markerEnd]="edgeInputs()['markerEnd']"
-            [markerStart]="edgeInputs()['markerStart']"
-            [interactionWidth]="edgeInputs().interactionWidth"
-            [data]="edgeInputs().data"
-            [type]="edgeInputs().type"
-            [selected]="edgeInputs().selected"
-            [sourceHandleId]="edgeInputs().sourceHandleId"
-            [targetHandleId]="edgeInputs().targetHandleId"
-            [animated]="edgeInputs().animated"
-            [hidden]="edgeInputs().hidden"
-            [deletable]="edgeInputs().deletable"
-            [selectable]="edgeInputs().selectable" />
-        }
-        @case ('straight') {
-          <svg:g
-            angular-xyflow-straight-edge
-            [style.pointer-events]="'auto'"
-            [style.cursor]="edge().selectable !== false ? 'pointer' : 'default'"
-            [id]="edgeInputs().id"
-            [sourceX]="edgeInputs().sourceX"
-            [sourceY]="edgeInputs().sourceY"
-            [targetX]="edgeInputs().targetX"
-            [targetY]="edgeInputs().targetY"
-            [label]="edgeInputs()['label']"
-            [labelStyle]="edgeInputs()['labelStyle']"
-            [labelShowBg]="edgeInputs()['labelShowBg']"
-            [labelBgStyle]="edgeInputs()['labelBgStyle']"
-            [labelBgPadding]="edgeInputs()['labelBgPadding']"
-            [labelBgBorderRadius]="edgeInputs()['labelBgBorderRadius']"
-            [style]="edgeInputs().style"
-            [markerEnd]="edgeInputs()['markerEnd']"
-            [markerStart]="edgeInputs()['markerStart']"
-            [interactionWidth]="edgeInputs().interactionWidth"
-            [data]="edgeInputs().data"
-            [type]="edgeInputs().type"
-            [selected]="edgeInputs().selected"
-            [sourceHandleId]="edgeInputs().sourceHandleId"
-            [targetHandleId]="edgeInputs().targetHandleId"
-            [animated]="edgeInputs().animated"
-            [hidden]="edgeInputs().hidden"
-            [deletable]="edgeInputs().deletable"
-            [selectable]="edgeInputs().selectable" />
-        }
-        @case ('step') {
-          <svg:g
-            angular-xyflow-step-edge
-            [style.pointer-events]="'auto'"
-            [style.cursor]="edge().selectable !== false ? 'pointer' : 'default'"
-            [id]="edgeInputs().id"
-            [sourceX]="edgeInputs().sourceX"
-            [sourceY]="edgeInputs().sourceY"
-            [targetX]="edgeInputs().targetX"
-            [targetY]="edgeInputs().targetY"
-            [sourcePosition]="edgeInputs().sourcePosition"
-            [targetPosition]="edgeInputs().targetPosition"
-            [label]="edgeInputs()['label']"
-            [labelStyle]="edgeInputs()['labelStyle']"
-            [labelShowBg]="edgeInputs()['labelShowBg']"
-            [labelBgStyle]="edgeInputs()['labelBgStyle']"
-            [labelBgPadding]="edgeInputs()['labelBgPadding']"
-            [labelBgBorderRadius]="edgeInputs()['labelBgBorderRadius']"
-            [style]="edgeInputs().style"
-            [markerEnd]="edgeInputs()['markerEnd']"
-            [markerStart]="edgeInputs()['markerStart']"
-            [pathOptions]="edgeInputs().pathOptions"
-            [interactionWidth]="edgeInputs().interactionWidth"
-            [data]="edgeInputs().data"
-            [type]="edgeInputs().type"
-            [selected]="edgeInputs().selected"
-            [sourceHandleId]="edgeInputs().sourceHandleId"
-            [targetHandleId]="edgeInputs().targetHandleId"
-            [animated]="edgeInputs().animated"
-            [hidden]="edgeInputs().hidden"
-            [deletable]="edgeInputs().deletable"
-            [selectable]="edgeInputs().selectable" />
-        }
-        @case ('smoothstep') {
-          <svg:g
-            angular-xyflow-smooth-step-edge
-            [style.pointer-events]="'auto'"
-            [style.cursor]="edge().selectable !== false ? 'pointer' : 'default'"
-            [id]="edgeInputs().id"
-            [sourceX]="edgeInputs().sourceX"
-            [sourceY]="edgeInputs().sourceY"
-            [targetX]="edgeInputs().targetX"
-            [targetY]="edgeInputs().targetY"
-            [sourcePosition]="edgeInputs().sourcePosition"
-            [targetPosition]="edgeInputs().targetPosition"
-            [label]="edgeInputs()['label']"
-            [labelStyle]="edgeInputs()['labelStyle']"
-            [labelShowBg]="edgeInputs()['labelShowBg']"
-            [labelBgStyle]="edgeInputs()['labelBgStyle']"
-            [labelBgPadding]="edgeInputs()['labelBgPadding']"
-            [labelBgBorderRadius]="edgeInputs()['labelBgBorderRadius']"
-            [style]="edgeInputs().style"
-            [markerEnd]="edgeInputs()['markerEnd']"
-            [markerStart]="edgeInputs()['markerStart']"
-            [pathOptions]="edgeInputs().pathOptions"
-            [interactionWidth]="edgeInputs().interactionWidth"
-            [data]="edgeInputs().data"
-            [type]="edgeInputs().type"
-            [selected]="edgeInputs().selected"
-            [sourceHandleId]="edgeInputs().sourceHandleId"
-            [targetHandleId]="edgeInputs().targetHandleId"
-            [animated]="edgeInputs().animated"
-            [hidden]="edgeInputs().hidden"
-            [deletable]="edgeInputs().deletable"
-            [selectable]="edgeInputs().selectable" />
-        }
-        @case ('simplebezier') {
-          <svg:g
-            angular-xyflow-simple-bezier-edge
-            [style.pointer-events]="'auto'"
-            [style.cursor]="edge().selectable !== false ? 'pointer' : 'default'"
-            [id]="edgeInputs().id"
-            [sourceX]="edgeInputs().sourceX"
-            [sourceY]="edgeInputs().sourceY"
-            [targetX]="edgeInputs().targetX"
-            [targetY]="edgeInputs().targetY"
-            [sourcePosition]="edgeInputs().sourcePosition"
-            [targetPosition]="edgeInputs().targetPosition"
-            [label]="edgeInputs()['label']"
-            [labelStyle]="edgeInputs()['labelStyle']"
-            [labelShowBg]="edgeInputs()['labelShowBg']"
-            [labelBgStyle]="edgeInputs()['labelBgStyle']"
-            [labelBgPadding]="edgeInputs()['labelBgPadding']"
-            [labelBgBorderRadius]="edgeInputs()['labelBgBorderRadius']"
-            [style]="edgeInputs().style"
-            [markerEnd]="edgeInputs()['markerEnd']"
-            [markerStart]="edgeInputs()['markerStart']"
-            [interactionWidth]="edgeInputs().interactionWidth"
-            [data]="edgeInputs().data"
-            [type]="edgeInputs().type"
-            [selected]="edgeInputs().selected"
-            [sourceHandleId]="edgeInputs().sourceHandleId"
-            [targetHandleId]="edgeInputs().targetHandleId"
-            [animated]="edgeInputs().animated"
-            [hidden]="edgeInputs().hidden"
-            [deletable]="edgeInputs().deletable"
-            [selectable]="edgeInputs().selectable" />
-        }
-        @default {
-          <!-- 預設情況：使用 BezierEdge 或自定義類型通過手動創建 -->
-          @if (hasCustomEdgeType()) {
-            <!-- 動態組件容器 -->
-            <svg:g 
-              #dynamicEdgeContainer
-              [style.pointer-events]="'auto'"
-              [style.cursor]="edge().selectable !== false ? 'pointer' : 'default'"
-            ></svg:g>
-          } @else {
-            <!-- 預設使用 BezierEdge -->
-            <svg:g
-              angular-xyflow-bezier-edge
-              [style.pointer-events]="'auto'"
-              [style.cursor]="edge().selectable !== false ? 'pointer' : 'default'"
-              [id]="edgeInputs().id"
-              [sourceX]="edgeInputs().sourceX"
-              [sourceY]="edgeInputs().sourceY"
-              [targetX]="edgeInputs().targetX"
-              [targetY]="edgeInputs().targetY"
-              [sourcePosition]="edgeInputs().sourcePosition"
-              [targetPosition]="edgeInputs().targetPosition"
-              [label]="edgeInputs()['label']"
-              [labelStyle]="edgeInputs()['labelStyle']"
-              [labelShowBg]="edgeInputs()['labelShowBg']"
-              [labelBgStyle]="edgeInputs()['labelBgStyle']"
-              [labelBgPadding]="edgeInputs()['labelBgPadding']"
-              [labelBgBorderRadius]="edgeInputs()['labelBgBorderRadius']"
-              [style]="edgeInputs().style"
-              [markerEnd]="edgeInputs()['markerEnd']"
-              [markerStart]="edgeInputs()['markerStart']"
-              [interactionWidth]="edgeInputs().interactionWidth"
-              [data]="edgeInputs().data"
-              [type]="edgeInputs().type"
-              [selected]="edgeInputs().selected"
-              [sourceHandleId]="edgeInputs().sourceHandleId"
-              [targetHandleId]="edgeInputs().targetHandleId"
-              [animated]="edgeInputs().animated"
-              [hidden]="edgeInputs().hidden"
-              [deletable]="edgeInputs().deletable"
-              [selectable]="edgeInputs().selectable" />
-          }
-        }
-      }
-    </svg>
+    <!-- 動態載入邊組件 (svg) -->
+    @if (edgeComponent()) {
+      <ng-container
+        [ngComponentOutlet]="edgeComponent()"
+        [ngComponentOutletInputs]="edgeComponentInputs()"
+        [ngComponentOutletInjector]="edgeInjector"
+      />
+    }
   `,
 })
-export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> implements AfterViewInit, OnDestroy {
+export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
   // 輸入屬性
   edge = input.required<EdgeType>();
   sourceX = input.required<number>();
@@ -329,7 +66,10 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
   targetHandleId = input<string>();
   isDarkMode = input<boolean>(false);
   edgeTypes = input<EdgeTypes>();
-  getMarkerId = input.required<(edge: any, position: 'start' | 'end', marker: EdgeMarker) => string>();
+  getMarkerId =
+    input.required<
+      (edge: any, position: 'start' | 'end', marker: EdgeMarker) => string
+    >();
 
   // 輸出事件
   edgeClick = output<{ event: MouseEvent; edge: EdgeType }>();
@@ -337,15 +77,13 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
   edgeContextMenu = output<{ event: MouseEvent; edge: EdgeType }>();
   edgeFocus = output<{ event: FocusEvent; edge: EdgeType }>();
   edgeKeyDown = output<{ event: KeyboardEvent; edge: EdgeType }>();
-  
+
   // 錯誤處理事件（與 React Flow 保持一致）
   onError = output<{ code: string; message: string }>();
 
-  // 動態組件載入所需的依賴
+  // 注入器
   protected readonly edgeInjector = inject(Injector);
-  private readonly renderer = inject(Renderer2);
-  private readonly viewContainerRef = inject(ViewContainerRef);
-  
+
   // 錯誤處理器
   private readonly errorHandler = (code: ErrorCode, message: string) => {
     // 發出錯誤事件
@@ -353,134 +91,148 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
     // 同時使用預設處理器輸出到 console
     defaultErrorHandler(code, message);
   };
-  
-  // ViewChild 引用動態組件容器
-  @ViewChild('dynamicEdgeContainer', { read: ElementRef, static: false })
-  private dynamicEdgeContainer?: ElementRef<SVGGElement>;
-  
-  // 存儲動態創建的組件引用
-  private dynamicComponentRef?: ComponentRef<any>;
-
-  constructor() {
-    // 監聽邊類型和關鍵屬性變化，當這些改變時重新創建組件
-    // 通過重新創建而不是更新來避免無限循環問題
-    effect(() => {
-      const hasCustomType = this.hasCustomEdgeType();
-      const edgeComponent = this.edgeComponent();
-      
-      // 監聽位置變化，確保邊緣能夠更新
-      const sourceX = this.sourceX();
-      const sourceY = this.sourceY();
-      const targetX = this.targetX();
-      const targetY = this.targetY();
-      const edge = this.edge();
-      
-      if (hasCustomType && edgeComponent) {
-        // 等待 ViewChild 初始化後再創建組件
-        setTimeout(() => {
-          if (this.dynamicEdgeContainer) {
-            this.createDynamicComponent();
-          }
-        }, 0);
-      }
-    });
-  }
 
   // 內建邊類型（類似 React Flow 的 builtinEdgeTypes）
   private readonly builtinEdgeTypes: Record<string, Type<any>> = {
-    default: BezierEdgeComponent,           // 預設使用 BezierEdge，與 React Flow 一致
-    bezier: BezierEdgeComponent,            // 標準貝茲曲線
-    straight: StraightEdgeComponent,        // 直線邊
-    step: StepEdgeComponent,                // 階梯邊（無圓角）
-    smoothstep: SmoothStepEdgeComponent,    // 平滑階梯邊（有圓角）
+    default: BezierEdgeComponent, // 預設使用 BezierEdge，與 React Flow 一致
+    bezier: BezierEdgeComponent, // 標準貝茲曲線
+    straight: StraightEdgeComponent, // 直線邊
+    step: StepEdgeComponent, // 階梯邊（無圓角）
+    smoothstep: SmoothStepEdgeComponent, // 平滑階梯邊（有圓角）
     simplebezier: SimpleBezierEdgeComponent, // 簡單貝茲曲線
   };
 
-  // 獲取解析後的邊類型（利用 Angular 響應式系統優勢）
-  // Angular 優勢：computed 記憶化確保相同輸入只計算一次，提供更優的性能
+  // 獲取解析後的邊類型
   readonly resolvedEdgeType = computed(() => {
     const edge = this.edge();
     let edgeType = edge.type || 'default';
     const userEdgeTypes = this.edgeTypes();
-    
+
     // 類型檢查邏輯：
     // 1. 首先查找用戶定義的 edgeTypes
     // 2. 如果沒有找到，查找內建類型
     // 3. 如果類型不存在，回退到 default
-    let EdgeComponent = userEdgeTypes?.[edgeType] || this.builtinEdgeTypes[edgeType];
-    
+    const EdgeComponent =
+      userEdgeTypes?.[edgeType] || this.builtinEdgeTypes[edgeType];
+
     if (EdgeComponent === undefined) {
       // 錯誤處理：類型未找到，回退到 default
-      // Angular 優勢：只在類型真正不存在時警告一次，避免重複的控制台污染
       this.errorHandler('error011', errorMessages.error011(edgeType));
       edgeType = 'default';
     }
-    
+
     return edgeType;
   });
 
-  // 檢查是否為自定義邊類型（非內建類型）
-  readonly hasCustomEdgeType = computed(() => {
+  // 動態邊組件選擇
+  readonly edgeComponent = computed(() => {
     const resolvedType = this.resolvedEdgeType();
     const userEdgeTypes = this.edgeTypes();
-    
-    // 檢查解析後的類型是否有用戶自定義版本
-    return userEdgeTypes && userEdgeTypes[resolvedType] !== undefined;
-  });
 
-  // 動態邊組件選擇（移除重複的警告邏輯）
-  readonly edgeComponent = computed(() => {
-    const resolvedType = this.resolvedEdgeType(); // 使用已解析的類型，避免重複警告
-    const userEdgeTypes = this.edgeTypes();
-    
     // 使用解析後的類型獲取組件
-    let EdgeComponent = userEdgeTypes?.[resolvedType] || this.builtinEdgeTypes[resolvedType];
-    
+    let EdgeComponent =
+      userEdgeTypes?.[resolvedType] || this.builtinEdgeTypes[resolvedType];
+
     // 如果解析後的類型仍然找不到組件（極少見情況），使用預設的 bezier
     if (EdgeComponent === undefined) {
       EdgeComponent = this.builtinEdgeTypes['default'];
     }
-    
+
     return EdgeComponent;
   });
 
-  // 準備傳遞給動態邊組件的輸入屬性
-  readonly edgeInputs = computed(() => {
+  // 準備傳遞給邊緣組件的輸入屬性
+  readonly edgeComponentInputs = computed(() => {
     const edge = this.edge();
     const resolvedEdgeType = this.resolvedEdgeType();
-    const inputs: EdgeProps = {
+
+    // 核心屬性（所有邊緣組件都需要）
+    const coreInputs: Record<string, any> = {
       id: edge.id,
-      source: edge.source,  // 添加 source ID
-      target: edge.target,  // 添加 target ID
-      data: edge.data,
-      type: resolvedEdgeType,
-      selected: edge.selected || false,
       sourceX: this.sourceX(),
       sourceY: this.sourceY(),
       targetX: this.targetX(),
       targetY: this.targetY(),
-      sourcePosition: this.sourcePosition(),
-      targetPosition: this.targetPosition(),
-      sourceHandleId: this.sourceHandleId(),
-      targetHandleId: this.targetHandleId(),
-      // 將 marker 物件轉換為 ID 字串
-      markerStart: edge.markerStart ? this.getMarkerId()(edge, 'start', 
-        typeof edge.markerStart === 'string' 
-          ? { type: MarkerType.ArrowClosed } 
-          : edge.markerStart) : undefined,
-      markerEnd: edge.markerEnd ? this.getMarkerId()(edge, 'end', 
-        typeof edge.markerEnd === 'string' 
-          ? { type: MarkerType.ArrowClosed } 
-          : edge.markerEnd) : undefined,
-      style: edge.style,
-      animated: edge.animated,
-      hidden: edge.hidden,
-      deletable: edge.deletable,
-      selectable: edge.selectable,
-      interactionWidth: 20, // 預設交互寬度
-      pathOptions: (edge as any).pathOptions, // 路徑選項（如 curvature, borderRadius 等）
     };
-    return inputs;
+
+    // 可選的共同屬性
+    // 只有當邊緣有定義這些屬性時才添加
+    if (edge.data !== undefined) coreInputs['data'] = edge.data;
+    if (resolvedEdgeType) coreInputs['type'] = resolvedEdgeType;
+    if (edge.selected !== undefined) coreInputs['selected'] = edge.selected;
+    if (this.sourceHandleId() !== undefined)
+      coreInputs['sourceHandleId'] = this.sourceHandleId();
+    if (this.targetHandleId() !== undefined)
+      coreInputs['targetHandleId'] = this.targetHandleId();
+
+    // 標籤相關屬性（只有內建邊組件支援）
+    // 自定義邊組件需要自己處理標籤
+    const isBuiltinEdge = !!this.builtinEdgeTypes[resolvedEdgeType];
+    if (isBuiltinEdge) {
+      if (edge.label !== undefined) coreInputs['label'] = edge.label;
+      if (edge.labelStyle !== undefined)
+        coreInputs['labelStyle'] = edge.labelStyle;
+      if (edge.labelShowBg !== undefined)
+        coreInputs['labelShowBg'] = edge.labelShowBg;
+      if (edge.labelBgStyle !== undefined)
+        coreInputs['labelBgStyle'] = edge.labelBgStyle;
+      if (edge.labelBgPadding !== undefined)
+        coreInputs['labelBgPadding'] = edge.labelBgPadding;
+      if (edge.labelBgBorderRadius !== undefined)
+        coreInputs['labelBgBorderRadius'] = edge.labelBgBorderRadius;
+    }
+
+    // Marker 處理
+    if (edge.markerStart) {
+      const markerId = this.getMarkerId()(
+        edge,
+        'start',
+        typeof edge.markerStart === 'string'
+          ? { type: MarkerType.ArrowClosed }
+          : edge.markerStart
+      );
+      // SVG marker 需要 url(#id) 格式
+      coreInputs['markerStart'] = markerId ? `url(#${markerId})` : undefined;
+    }
+    if (edge.markerEnd) {
+      const markerId = this.getMarkerId()(
+        edge,
+        'end',
+        typeof edge.markerEnd === 'string'
+          ? { type: MarkerType.ArrowClosed }
+          : edge.markerEnd
+      );
+      // SVG marker 需要 url(#id) 格式
+      coreInputs['markerEnd'] = markerId ? `url(#${markerId})` : undefined;
+    }
+
+    // 樣式和行為屬性
+    if (edge.style !== undefined) coreInputs['style'] = edge.style;
+    if (edge.animated !== undefined) coreInputs['animated'] = edge.animated;
+    if (edge.hidden !== undefined) coreInputs['hidden'] = edge.hidden;
+    if (edge.deletable !== undefined) coreInputs['deletable'] = edge.deletable;
+    if (edge.selectable !== undefined)
+      coreInputs['selectable'] = edge.selectable;
+
+    // 互動寬度
+    coreInputs['interactionWidth'] = edge.interactionWidth || 20;
+
+    // Position 屬性（大部分邊類型需要，StraightEdge 除外）
+    // 但由於組件定義為可選，可以安全傳遞
+    coreInputs['sourcePosition'] = this.sourcePosition();
+    coreInputs['targetPosition'] = this.targetPosition();
+
+    // 自定義邊可能需要的額外屬性
+    // 傳遞 source 和 target ID（某些自定義邊可能需要）
+    if (!isBuiltinEdge) {
+      coreInputs['source'] = edge.source;
+      coreInputs['target'] = edge.target;
+    }
+
+    // 為 BaseEdge 傳遞 selectable 屬性
+    coreInputs['selectable'] = edge.selectable !== false;
+
+    return coreInputs;
   });
 
   // 計算邊是否可聚焦
@@ -490,131 +242,4 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> im
     // 這裡簡化為檢查邊自身的 focusable 屬性
     return edge.focusable !== false;
   });
-
-  // 事件處理方法
-  handleClick(event: MouseEvent): void {
-    const edge = this.edge();
-    if (edge.selectable !== false) {
-      event.stopPropagation();
-      this.edgeClick.emit({ event, edge });
-    }
-  }
-
-  handleDoubleClick(event: MouseEvent): void {
-    const edge = this.edge();
-    event.stopPropagation();
-    this.edgeDoubleClick.emit({ event, edge });
-  }
-
-  handleContextMenu(event: MouseEvent): void {
-    const edge = this.edge();
-    event.stopPropagation();
-    this.edgeContextMenu.emit({ event, edge });
-  }
-
-  handleFocus(event: FocusEvent): void {
-    const edge = this.edge();
-    if (this.isEdgeFocusable()) {
-      this.edgeFocus.emit({ event, edge });
-    }
-  }
-
-  handleKeyDown(event: KeyboardEvent): void {
-    const edge = this.edge();
-    if (this.isEdgeFocusable()) {
-      this.edgeKeyDown.emit({ event, edge });
-    }
-  }
-
-  ngAfterViewInit(): void {
-    // 動態組件創建現在由 constructor 中的 effect 處理
-    // 這裡不再需要手動創建，避免重複創建
-  }
-
-  ngOnDestroy(): void {
-    // 清理動態組件
-    if (this.dynamicComponentRef) {
-      this.dynamicComponentRef.destroy();
-      this.dynamicComponentRef = undefined;
-    }
-  }
-
-  private createDynamicComponent(): void {
-    // 清理舊的組件
-    if (this.dynamicComponentRef) {
-      this.dynamicComponentRef.destroy();
-    }
-
-    const edgeComponent = this.edgeComponent();
-    const inputs = this.edgeInputs();
-    
-    if (!edgeComponent || !this.dynamicEdgeContainer) {
-      return;
-    }
-
-    // 創建一個分離的視圖容器來渲染組件，避免組件出現在主視圖中
-    const detachedContainer = this.renderer.createElement('div');
-    this.renderer.setStyle(detachedContainer, 'display', 'none');
-    this.renderer.appendChild(document.body, detachedContainer);
-    
-    // 創建組件到分離的容器中
-    this.dynamicComponentRef = this.viewContainerRef.createComponent(edgeComponent, {
-      injector: this.edgeInjector
-    });
-
-    // 將組件的 DOM 移動到分離容器中
-    const componentElement = this.dynamicComponentRef.location.nativeElement;
-    this.renderer.appendChild(detachedContainer, componentElement);
-
-    // 設置組件的輸入屬性 - 使用 setInput 方法來正確設置 input 信號
-    Object.keys(inputs).forEach(key => {
-      const value = inputs[key as keyof typeof inputs];
-      if (value !== undefined && this.dynamicComponentRef) {
-        try {
-          this.dynamicComponentRef.setInput(key, value);
-        } catch (error) {
-          console.warn(`Could not set input ${key}:`, error);
-        }
-      }
-    });
-
-    // 手動觸發變更檢測確保組件完全渲染
-    this.dynamicComponentRef.changeDetectorRef.detectChanges();
-    
-    // 等待組件完全渲染後再複製內容
-    setTimeout(() => {
-      if (!this.dynamicComponentRef || !this.dynamicEdgeContainer) {
-        return;
-      }
-      
-      // 再次觸發變更檢測確保所有 signal 都已計算
-      this.dynamicComponentRef.changeDetectorRef.detectChanges();
-      
-      // 清空 SVG 容器
-      while (this.dynamicEdgeContainer.nativeElement.firstChild) {
-        this.renderer.removeChild(
-          this.dynamicEdgeContainer.nativeElement,
-          this.dynamicEdgeContainer.nativeElement.firstChild
-        );
-      }
-      
-      // 複製組件的所有子元素到 SVG 容器
-      const childNodes = Array.from(componentElement.childNodes) as Node[];
-      childNodes.forEach((child: Node) => {
-        const clonedChild = child.cloneNode(true);
-        this.renderer.appendChild(this.dynamicEdgeContainer!.nativeElement, clonedChild);
-      });
-      
-      // 如果沒有子元素但有 innerHTML，使用 innerHTML
-      if (childNodes.length === 0 && componentElement.innerHTML.trim()) {
-        this.dynamicEdgeContainer.nativeElement.innerHTML = componentElement.innerHTML;
-      }
-      
-      // 清理分離的容器
-      if (detachedContainer && detachedContainer.parentNode) {
-        this.renderer.removeChild(document.body, detachedContainer);
-      }
-    }, 10); // 增加延遲時間確保組件完全渲染
-  }
-  
 }

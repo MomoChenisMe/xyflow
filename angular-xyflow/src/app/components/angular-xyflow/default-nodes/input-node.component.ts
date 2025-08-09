@@ -11,7 +11,7 @@ import { HandleComponent } from '../handle/handle.component';
   template: `
     <!-- 節點內容 -->
     <div class="angular-xyflow__node-label">
-      {{ data()['label'] || id() }}
+      {{ data()?.['label'] || id() }}
     </div>
     
     <!-- Source Handle (底部) - Input 節點只有 source handle -->

@@ -12,7 +12,7 @@ import { AngularNode } from '../../angular-xyflow/types';
 import { getEdgeParams } from './utils';
 
 @Component({
-  selector: '[app-floating-edge]',
+  selector: 'svg:svg[app-floating-edge]',
   standalone: true,
   imports: [CommonModule],
   template: `
@@ -134,7 +134,7 @@ export class FloatingEdgeComponent {
   // 計算邊緣樣式 - 直接傳遞樣式，不處理 selected 狀態
   readonly edgeStyle = computed(() => {
     const baseStyle = this.style() || {};
-    
+
     // 轉換為 CSS 字串
     return Object.entries(baseStyle)
       .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)

@@ -1,4 +1,13 @@
-import { Component, input, signal, computed, viewChild, ElementRef, afterRenderEffect, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import {
+  Component,
+  input,
+  signal,
+  computed,
+  viewChild,
+  ElementRef,
+  afterEveryRender,
+  CUSTOM_ELEMENTS_SCHEMA,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface EdgeTextProps {
@@ -22,14 +31,15 @@ interface Rect {
 
 /**
  * EdgeText 組件可以作為輔助組件在自定義邊中顯示文字。
- * 
+ * 這個組件必須在 SVG 上下文中使用。
+ *
  * @example
  * ```typescript
  * import { EdgeTextComponent } from './components/edges/edge-text/edge-text.component';
- * 
+ *
  * @Component({
  *   template: `
- *     <app-edge-text
+ *     <svg:g angular-xyflow-edge-text
  *       [x]="100"
  *       [y]="100"
  *       [label]="label"
@@ -46,42 +56,54 @@ interface Rect {
  * ```
  */
 @Component({
-  selector: 'app-edge-text',
+  selector: '[angular-xyflow-edge-text]',
   standalone: true,
   imports: [CommonModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     @if (label()) {
-      <svg:g 
-        [attr.transform]="transform()"
-        [class]="edgeTextClasses()"
-        [attr.visibility]="visibility()">
-        
-        <!-- 標籤背景 -->
-        @if (labelShowBg()) {
-          <svg:rect
-            [attr.width]="bgWidth()"
-            [attr.x]="bgX()"
-            [attr.y]="bgY()"
-            [attr.height]="bgHeight()"
-            class="angular-xyflow__edge-textbg"
-            [attr.style]="labelBgStyleString()"
-            [attr.rx]="labelBgBorderRadius()"
-            [attr.ry]="labelBgBorderRadius()" />
-        }
-        
-        <!-- 標籤文字 -->
-        <svg:text
-          #edgeTextRef
-          class="angular-xyflow__edge-text"
-          [attr.y]="textY()"
-          dy="0.3em"
-          [attr.style]="labelStyleString()">
-          {{ label() }}
-        </svg:text>
-      </svg:g>
+    <!-- 標籤背景（必須在文字前面） -->
+    @if (labelShowBg()) {
+    <svg:rect
+      [attr.width]="bgWidth()"
+      [attr.x]="bgX()"
+      [attr.y]="bgY()"
+      [attr.height]="bgHeight()"
+      class="angular-xyflow__edge-textbg"
+      [attr.style]="labelBgStyleString()"
+      [attr.rx]="labelBgBorderRadius()"
+      [attr.ry]="labelBgBorderRadius()"
+    />
     }
-  `
+
+    <!-- 標籤文字 -->
+    <svg:text
+      #edgeTextRef
+      class="angular-xyflow__edge-text"
+      [attr.x]="textX()"
+      [attr.y]="textY()"
+      dy="0.3em"
+      text-anchor="middle"
+      [attr.style]="labelStyleString()"
+    >
+      @if (hasMultipleLines()) {
+      <!-- 多行文字使用 tspan -->
+      @for (line of textLines(); track $index; let i = $index) {
+      <svg:tspan [attr.x]="textX()" [attr.dy]="i === 0 ? '0' : '1.2em'">
+        {{ line }}
+      </svg:tspan>
+      } } @else {
+      <!-- 單行文字直接顯示 -->
+      {{ label() }}
+      }
+    </svg:text>
+    }
+  `,
+  host: {
+    '[attr.transform]': 'transform()',
+    '[class]': 'edgeTextClasses()',
+    '[attr.visibility]': 'visibility()',
+  },
 })
 export class EdgeTextComponent {
   // 輸入屬性
@@ -98,8 +120,8 @@ export class EdgeTextComponent {
   // 視圖查詢
   edgeTextRef = viewChild<ElementRef<SVGTextElement>>('edgeTextRef');
 
-  // 狀態
-  private edgeTextBbox = signal<Rect>({ x: 0, y: 0, width: 0, height: 0 });
+  // 狀態 - 與 React 版本一致的初始值
+  private edgeTextBbox = signal<Rect>({ x: 1, y: 0, width: 0, height: 0 });
 
   // 計算屬性
   edgeTextClasses = computed(() => {
@@ -111,6 +133,24 @@ export class EdgeTextComponent {
     return baseClasses.join(' ');
   });
 
+  // 檢查是否有多行文字
+  hasMultipleLines = computed(() => {
+    const label = this.label();
+    if (typeof label === 'string') {
+      return label.includes('\n');
+    }
+    return false;
+  });
+
+  // 分割文字為多行
+  textLines = computed(() => {
+    const label = this.label();
+    if (typeof label === 'string') {
+      return label.split('\n');
+    }
+    return [label?.toString() ?? ''];
+  });
+
   transform = computed(() => {
     const bbox = this.edgeTextBbox();
     const x = this.x() - bbox.width / 2;
@@ -118,9 +158,11 @@ export class EdgeTextComponent {
     return `translate(${x} ${y})`;
   });
 
+  // 使用 visibility 控制顯示
   visibility = computed(() => {
     const bbox = this.edgeTextBbox();
-    return bbox.width ? 'visible' : 'hidden';
+    // 當有寬度時顯示
+    return bbox.width > 0 ? 'visible' : 'hidden';
   });
 
   bgWidth = computed(() => {
@@ -145,8 +187,14 @@ export class EdgeTextComponent {
     return -padding[1];
   });
 
+  textX = computed(() => {
+    const bbox = this.edgeTextBbox();
+    return bbox.width / 2;
+  });
+
   textY = computed(() => {
     const bbox = this.edgeTextBbox();
+    // 單行和多行都使用相同的基準線
     return bbox.height / 2;
   });
 
@@ -154,39 +202,77 @@ export class EdgeTextComponent {
   labelBgStyleString = computed(() => {
     const style = this.labelBgStyle();
     if (!style) return '';
-    return Object.entries(style)
-      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
-      .join('; ');
+    return (
+      Object.entries(style)
+        // 過濾掉 'color' 屬性，因為它不是 SVG rect 的有效屬性
+        .filter(([key]) => key !== 'color')
+        .map(
+          ([key, value]) =>
+            `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`
+        )
+        .join('; ')
+    );
   });
 
   labelStyleString = computed(() => {
     const style = this.labelStyle();
     if (!style) return '';
     return Object.entries(style)
-      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
+      .map(
+        ([key, value]) =>
+          `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`
+      )
       .join('; ');
   });
 
   constructor() {
-    // 監聽標籤變化以更新邊界框
-    afterRenderEffect(() => {
+    // 根據 Angular 20 渲染 API 最佳實踐
+    // 使用 afterEveryRender 進行 DOM 測量
+    // 雖然混合讀寫不是最佳實踐，但由於 TypeScript 類型推斷限制，暫時使用簡化版本
+    afterEveryRender(() => {
       const textElement = this.edgeTextRef()?.nativeElement;
-      const label = this.label(); // 確保響應 label 變化
+      const label = this.label();
       
-      if (textElement) {
+      if (textElement && label) {
+        // 測量 DOM
         try {
-          const textBbox = textElement.getBBox();
-          this.edgeTextBbox.set({
-            x: textBbox.x,
-            y: textBbox.y,
-            width: textBbox.width,
-            height: textBbox.height,
-          });
+          const bbox = textElement.getBBox();
+          
+          // 只有當尺寸實際改變時才需要更新
+          const currentBbox = this.edgeTextBbox();
+          if (
+            bbox.width !== currentBbox.width ||
+            bbox.height !== currentBbox.height ||
+            bbox.x !== currentBbox.x ||
+            bbox.y !== currentBbox.y
+          ) {
+            // 更新 signal
+            this.edgeTextBbox.set({
+              x: bbox.x,
+              y: bbox.y,
+              width: bbox.width,
+              height: bbox.height,
+            });
+          }
         } catch (error) {
-          // 如果 getBBox() 失敗（例如元素不可見），使用默認值
-          this.edgeTextBbox.set({ x: 0, y: 0, width: 0, height: 0 });
+          // 測量失敗時使用估算值
+          const labelStr = String(label);
+          if (typeof labelStr === 'string') {
+            const lines = labelStr.split('\n');
+            const maxLineLength = Math.max(...lines.map((line) => line.length));
+            const estimatedWidth = maxLineLength * 6; // 預估每字元寬度
+            const estimatedHeight = lines.length * 12; // 預估行高
+            
+            this.edgeTextBbox.set({
+              x: 0,
+              y: 0,
+              width: estimatedWidth,
+              height: estimatedHeight,
+            });
+          }
         }
       }
     });
   }
+
 }

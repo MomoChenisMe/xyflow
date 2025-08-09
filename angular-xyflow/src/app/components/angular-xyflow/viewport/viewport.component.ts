@@ -209,12 +209,12 @@ export class ViewportComponent<
   rfId = input<string>();
   defaultMarkerStart = input<EdgeMarker | string>();
   defaultMarkerEnd = input<EdgeMarker | string>();
-  
+
   // 函數輸入
   getNodeById = input.required<(id: string) => NodeType | undefined>();
   getEdgeConnectionPoints = input.required<(sourceNode: NodeType, targetNode: NodeType, edge: EdgeType) => EdgeConnectionPoints>();
   getMarkerId = input.required<(edge: any, position: 'start' | 'end', marker: EdgeMarker) => string>();
-  
+
   // 輸出事件
   nodeClick = output<{ event: MouseEvent; node: NodeType }>();
   nodeDoubleClick = output<{ event: MouseEvent; node: NodeType }>();

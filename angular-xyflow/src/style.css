@@ -82,8 +82,8 @@
   &.selected .angular-xyflow__edge-path,
   &.selectable:focus .angular-xyflow__edge-path,
   &.selectable:focus-visible .angular-xyflow__edge-path {
-    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default)) !important;
-    stroke-width: 2 !important;
+    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default));
+    stroke-width: 2;
   }
   
   /* 確保動畫 edge 的互動區域不受動畫影響 */
@@ -94,20 +94,35 @@
 }
 
 /* Edge path 動畫樣式 */
+/* 默認邊樣式 */
 .angular-xyflow__edge-path {
+  stroke: #b1b1b7;
+  stroke-width: 1;
+  
   &.animated {
     stroke-dasharray: 5;
     animation: dashdraw 0.5s linear infinite;
   }
   
-  /* 動畫邊的選中狀態樣式 - 需要更高的優先級 */
+  /* 動畫邊的選中狀態樣式 */
   &.animated.selected {
-    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default)) !important;
-    stroke-width: 2 !important;
+    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default));
+    stroke-width: 2;
     stroke-dasharray: 5;
     animation: dashdraw 0.5s linear infinite;
   }
 }
+
+/* Edge label styles */
+.angular-xyflow__edge-textbg {
+  fill: var(--xy-edge-label-background-color, var(--xy-edge-label-background-color-default));
+}
+
+.angular-xyflow__edge-text {
+  fill: var(--xy-edge-label-color, var(--xy-edge-label-color-default));
+  font-size: 10px;
+}
+
 
 .xy-flow__node.selectable {
   &:focus,

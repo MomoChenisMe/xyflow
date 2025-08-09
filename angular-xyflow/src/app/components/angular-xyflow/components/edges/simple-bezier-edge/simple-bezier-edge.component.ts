@@ -1,7 +1,8 @@
-import { Component, input, computed, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, input, computed, output, inject, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Position, getBezierEdgeCenter, isNumeric } from '@xyflow/system';
-import { EdgeTextComponent } from '../edge-text/edge-text.component';
+import { Position, getBezierEdgeCenter } from '@xyflow/system';
+import { BaseEdgeComponent } from '../base-edge/base-edge.component';
+import { EdgeWrapperComponent } from '../../../edge-wrapper/edge-wrapper.component';
 
 export interface SimpleBezierEdgeProps {
   id?: string;
@@ -59,7 +60,7 @@ function getControl({ pos, x1, y1, x2, y2 }: GetControlParams): [number, number]
 
 /**
  * getSimpleBezierPath 函數返回渲染兩個節點之間的簡單貝茲邊所需的一切。
- * 
+ *
  * @returns
  * - `path`: 用於 SVG `<path>` 元素的路徑
  * - `labelX`: 用於渲染此邊標籤的 `x` 位置
@@ -110,15 +111,15 @@ export function getSimpleBezierPath({
 }
 
 /**
- * 可以在自定義邊內使用的組件，用於渲染簡單貝茲曲線。
- * 
+ * Component that can be used inside a custom edge to render a simple bezier curve.
+ *
  * @example
  * ```typescript
  * import { SimpleBezierEdgeComponent } from './components/edges/simple-bezier-edge/simple-bezier-edge.component';
- * 
+ *
  * @Component({
  *   template: `
- *     <app-simple-bezier-edge
+ *     <svg:g angular-xyflow-simple-bezier-edge
  *       [sourceX]="sourceX"
  *       [sourceY]="sourceY"
  *       [targetX]="targetX"
@@ -138,43 +139,34 @@ export function getSimpleBezierPath({
  * ```
  */
 @Component({
-  selector: '[angular-xyflow-simple-bezier-edge]',
+  selector: 'svg:svg[angular-xyflow-simple-bezier-edge]',
   standalone: true,
-  imports: [CommonModule, EdgeTextComponent],
+  imports: [CommonModule, BaseEdgeComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <!-- 主要邊路徑 -->
-    <svg:path 
-      [attr.d]="path()"
-      fill="none"
-      [class]="edgePathClasses()"
-      [attr.style]="styleString()"
-      [attr.marker-end]="markerEnd()"
-      [attr.marker-start]="markerStart()" />
-    
-    <!-- 互動區域（不可見但可點擊） -->
-    @if (interactionWidth()) {
-      <svg:path
-        [attr.d]="path()"
-        fill="none"
-        stroke="transparent"
-        [attr.stroke-width]="interactionWidth()"
-        [style.pointer-events]="'stroke'"
-        class="angular-xyflow__edge-interaction" />
-    }
-    
-    <!-- 邊標籤 -->
-    @if (shouldShowLabel()) {
-      <app-edge-text
-        [x]="labelX()!"
-        [y]="labelY()!"
-        [label]="label()!"
-        [labelStyle]="labelStyle()"
-        [labelShowBg]="labelShowBg() !== false"
-        [labelBgStyle]="labelBgStyle()"
-        [labelBgPadding]="labelBgPadding() || [2, 4]"
-        [labelBgBorderRadius]="labelBgBorderRadius() || 2" />
-    }
+    <svg:g angular-xyflow-base-edge
+      [id]="id()"
+      [path]="edgePath()"
+      [labelX]="labelX()"
+      [labelY]="labelY()"
+      [label]="label()"
+      [labelStyle]="labelStyle()"
+      [labelShowBg]="labelShowBg()"
+      [labelBgStyle]="labelBgStyle()"
+      [labelBgPadding]="labelBgPadding()"
+      [labelBgBorderRadius]="labelBgBorderRadius()"
+      [style]="mergedStyle()"
+      [className]="className()"
+      [markerEnd]="markerEnd()"
+      [markerStart]="markerStart()"
+      [interactionWidth]="interactionWidth() || 20"
+      [selectable]="selectable() ?? true"
+      (edgeClick)="handleEdgeClick($event)"
+      (edgeDoubleClick)="handleEdgeDoubleClick($event)"
+      (edgeContextMenu)="handleEdgeContextMenu($event)"
+      (edgeMouseEnter)="handleEdgeMouseEnter($event)"
+      (edgeMouseLeave)="handleEdgeMouseLeave($event)"
+      (edgeMouseMove)="handleEdgeMouseMove($event)" />
   `
 })
 export class SimpleBezierEdgeComponent {
@@ -206,8 +198,8 @@ export class SimpleBezierEdgeComponent {
   deletable = input<boolean>();
   selectable = input<boolean>();
 
-  // 計算路徑
-  private pathResult = computed(() => {
+  // 計算路徑數據
+  pathData = computed(() => {
     return getSimpleBezierPath({
       sourceX: this.sourceX(),
       sourceY: this.sourceY(),
@@ -218,41 +210,67 @@ export class SimpleBezierEdgeComponent {
     });
   });
 
-  // 提取路徑和標籤位置
-  path = computed(() => this.pathResult()[0]);
-  labelX = computed(() => this.pathResult()[1]);
-  labelY = computed(() => this.pathResult()[2]);
-
   // 計算屬性
-  edgePathClasses = computed(() => {
-    const baseClasses = ['angular-xyflow__edge-path'];
+  edgePath = computed(() => this.pathData()[0]);
+  labelX = computed(() => this.pathData()[1]);
+  labelY = computed(() => this.pathData()[2]);
+
+  // 計算 className
+  className = computed(() => {
+    const classes = [];
     if (this.selected()) {
-      baseClasses.push('selected');
+      classes.push('selected');
     }
     if (this.animated()) {
-      baseClasses.push('animated');
+      classes.push('animated');
     }
-    return baseClasses.join(' ');
+    return classes.join(' ');
   });
 
-  shouldShowLabel = computed(() => {
-    const label = this.label();
-    const labelX = this.labelX();
-    const labelY = this.labelY();
-    return label && isNumeric(labelX) && isNumeric(labelY);
-  });
-
-  // 將樣式對象轉換為 CSS 字符串
-  styleString = computed(() => {
-    const style = this.style();
+  // 合併樣式
+  mergedStyle = computed(() => {
     const isSelected = this.selected();
     const defaultStyle = {
       stroke: isSelected ? '#555' : '#b1b1b7',
       strokeWidth: isSelected ? 2 : 1
     };
-    const mergedStyle = { ...defaultStyle, ...style };
-    return Object.entries(mergedStyle)
-      .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
-      .join('; ');
+    return { ...defaultStyle, ...this.style() };
   });
+
+  // 注入 EdgeWrapper 以傳遞事件
+  private edgeWrapper = inject(EdgeWrapperComponent, { optional: true });
+
+  // 事件處理方法
+  handleEdgeClick(event: MouseEvent): void {
+    if (this.edgeWrapper) {
+      const edge = this.edgeWrapper.edge();
+      this.edgeWrapper.edgeClick.emit({ event, edge });
+    }
+  }
+
+  handleEdgeDoubleClick(event: MouseEvent): void {
+    if (this.edgeWrapper) {
+      const edge = this.edgeWrapper.edge();
+      this.edgeWrapper.edgeDoubleClick.emit({ event, edge });
+    }
+  }
+
+  handleEdgeContextMenu(event: MouseEvent): void {
+    if (this.edgeWrapper) {
+      const edge = this.edgeWrapper.edge();
+      this.edgeWrapper.edgeContextMenu.emit({ event, edge });
+    }
+  }
+
+  handleEdgeMouseEnter(event: MouseEvent): void {
+    // 可以在這裡處理 hover 效果
+  }
+
+  handleEdgeMouseLeave(event: MouseEvent): void {
+    // 可以在這裡處理 hover 效果
+  }
+
+  handleEdgeMouseMove(event: MouseEvent): void {
+    // 可以在這裡處理 mouse move
+  }
 }

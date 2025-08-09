@@ -19,7 +19,7 @@ import { HandleComponent } from '../handle/handle.component';
     
     <!-- 節點內容 -->
     <div class="angular-xyflow__node-label">
-      {{ data()['label'] || id() }}
+      {{ data()?.['label'] || id() }}
     </div>
     
     <!-- Source Handle (使用 sourcePosition 屬性) -->

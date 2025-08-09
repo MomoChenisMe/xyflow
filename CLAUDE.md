@@ -896,6 +896,297 @@ export class SearchComponent {
 
 ---
 
+## Angular 20 渲染週期 API
+
+Angular 20 穩定了新的渲染週期 API，提供精確的 DOM 操作時機控制，取代傳統的生命週期鉤子。
+
+### 渲染 API 概覽
+
+| API | 穩定版本 | 執行時機 | 適用場景 |
+|-----|----------|----------|----------|
+| `afterRenderEffect()` | Angular 20 | Signal 變化後的渲染完成時 | 響應式 DOM 操作 |
+| `afterEveryRender()` | Angular 20 (重命名自 afterRender) | 每次渲染完成後 | 持續性 DOM 同步 |
+| `afterNextRender()` | Angular 20 (穩定) | 下次渲染完成後（一次性） | 一次性 DOM 測量/初始化 |
+
+### 渲染階段 (Phases)
+
+Angular 20 的渲染 API 支援四個執行階段，按順序執行。階段通過物件屬性方式指定，而非 enum：
+
+#### 階段執行順序
+1. **earlyRead** - 早期讀取：在後續寫入前讀取 DOM
+2. **write** - 寫入：修改 DOM
+3. **mixedReadWrite** - 混合讀寫：同時讀寫 DOM（避免使用）
+4. **read** - 讀取：最終讀取階段
+
+#### 階段使用指導原則
+
+- **earlyRead**: 在寫入前讀取 DOM，用於自定義佈局計算。永遠不要在此階段寫入 DOM
+- **write**: 專門用於寫入 DOM。永遠不要在此階段讀取 DOM  
+- **mixedReadWrite**: 同時讀寫 DOM。**避免使用**以防止性能降級
+- **read**: 專門用於讀取 DOM。永遠不要在此階段寫入 DOM
+
+### afterRenderEffect() - 響應式渲染效果
+
+結合 Signal 和渲染完成的響應式 API，在 Angular 20 中穩定。
+
+```typescript
+import { afterRenderEffect } from '@angular/core';
+
+@Component({})
+export class MyComponent {
+  data = signal<any>(null);
+  
+  constructor() {
+    // 基本用法 - 響應 signal 變化
+    // afterRenderEffect 會在 mixedReadWrite 階段執行
+    afterRenderEffect(() => {
+      const currentData = this.data();
+      if (currentData) {
+        // DOM 操作邏輯
+        this.updateChart(currentData);
+      }
+    });
+    
+    // 帶清理函數的用法
+    afterRenderEffect((onCleanup) => {
+      const element = this.elementRef()?.nativeElement;
+      if (element) {
+        const handler = () => console.log('clicked');
+        element.addEventListener('click', handler);
+        
+        onCleanup(() => {
+          element.removeEventListener('click', handler);
+        });
+      }
+    });
+  }
+}
+```
+
+**重要特性：**
+- 值在各階段間以 signal 形式傳播，提供性能優化
+- 如果前一階段的值未變化，後續階段可能不會執行
+- 自動追蹤 signal 依賴，響應變化重新執行
+
+### afterEveryRender() - 每次渲染後執行
+
+前身為 `afterRender()`，在 Angular 20 中重命名並穩定。
+
+```typescript
+import { afterEveryRender } from '@angular/core';
+
+@Component({})
+export class MyComponent {
+  constructor() {
+    // 每次渲染後執行（使用物件屬性指定階段）
+    afterEveryRender({
+      earlyRead: () => {
+        // 階段 1：早期讀取
+        return this.getCurrentDimensions();
+      },
+      write: (dimensions) => {
+        // 階段 2：基於讀取結果寫入
+        this.applyLayout(dimensions);
+        return this.getNewState();
+      },
+      read: (newState) => {
+        // 階段 3：最終讀取和驗證
+        const element = this.viewChild()?.nativeElement;
+        if (element) {
+          const bbox = element.getBBox(); // SVG 測量
+          this.updateLayout(bbox);
+        }
+        this.validateLayout(newState);
+      }
+    });
+    
+    // 簡單用法（不指定階段，會在 mixedReadWrite 執行）
+    afterEveryRender(() => {
+      console.log('每次渲染完成');
+      this.syncDOMState();
+    });
+  }
+}
+```
+
+### afterNextRender() - 下次渲染後執行
+
+一次性執行的渲染後回調，適合初始化和一次性測量。
+
+```typescript
+import { afterNextRender } from '@angular/core';
+
+@Component({})
+export class MyComponent {
+  constructor() {
+    // 基本一次性初始化（不指定階段）
+    afterNextRender(() => {
+      this.initializeThirdPartyLibrary();
+    });
+    
+    // 使用階段進行 DOM 測量（推薦用於 SVG getBBox）
+    afterNextRender({
+      read: () => {
+        const svgElement = this.svgRef()?.nativeElement;
+        if (svgElement) {
+          const bbox = svgElement.getBBox();
+          this.initialMeasurements.set(bbox);
+        }
+      }
+    });
+    
+    // 設置觀察者（在 write 階段）
+    afterNextRender({
+      write: () => {
+        const target = this.targetElement()?.nativeElement;
+        if (target) {
+          const observer = new ResizeObserver(entries => {
+            this.handleResize(entries);
+          });
+          observer.observe(target);
+        }
+      }
+    });
+  }
+}
+```
+
+### 渲染 API 最佳實踐
+
+#### 1. 選擇合適的 API
+
+```typescript
+// ✅ 響應式 DOM 更新 - 使用 afterRenderEffect
+afterRenderEffect(() => {
+  const data = this.chartData();
+  this.updateChart(data);
+});
+
+// ✅ 持續同步 - 使用 afterEveryRender  
+afterEveryRender({
+  read: () => {
+    this.syncScrollPosition();
+  }
+});
+
+// ✅ 一次性初始化 - 使用 afterNextRender
+afterNextRender(() => {
+  this.setupEventListeners();
+});
+```
+
+#### 2. 正確使用階段
+
+```typescript
+// ✅ DOM 測量使用 read 階段
+afterNextRender({
+  read: () => {
+    const bbox = svgElement.getBBox();
+    return bbox;
+  }
+});
+
+// ✅ DOM 修改使用 write 階段
+afterEveryRender({
+  write: () => {
+    element.style.transform = `translate(${x}px, ${y}px)`;
+  }
+});
+
+// ❌ 避免在 afterRenderEffect 中混合讀寫
+afterRenderEffect(() => {
+  const width = element.offsetWidth; // 讀取
+  element.style.height = `${width}px`; // 寫入 - 可能導致 layout thrashing
+}); // afterRenderEffect 固定在 mixedReadWrite 階段
+```
+
+#### 3. 階段協調模式
+
+```typescript
+// ✅ 階段間協調的典型模式
+constructor() {
+  afterEveryRender({
+    earlyRead: () => {
+      // 階段 1: 早期讀取
+      return element.getBoundingClientRect();
+    },
+    write: (rect) => {
+      // 階段 2: 基於讀取結果寫入
+      element.style.left = `${rect.width}px`;
+      return rect.width;
+    },
+    read: (width) => {
+      // 階段 3: 最終驗證
+      console.log('應用的寬度:', width);
+    }
+  });
+}
+```
+
+#### 4. SVG 測量專用模式
+
+```typescript
+// 🎯 SVG getBBox 最佳實踐
+constructor() {
+  afterNextRender({
+    read: async () => {
+      // 等待字體載入
+      if ('fonts' in document) {
+        await document.fonts.ready;
+      }
+      
+      const svgText = this.textRef()?.nativeElement;
+      if (svgText) {
+        const bbox = svgText.getBBox();
+        this.textMeasurements.set(bbox);
+      }
+    }
+  });
+}
+```
+
+### 注入上下文要求
+
+所有渲染 API 都必須在注入上下文中調用：
+
+```typescript
+@Component({})
+export class MyComponent {
+  private injector = inject(Injector);
+  
+  constructor() {
+    // ✅ 在 constructor 中調用（推薦）
+    afterNextRender(() => {
+      // 渲染後邏輯
+    });
+  }
+  
+  // ✅ 作為 field initializer
+  private renderEffect = afterRenderEffect(() => {
+    // 響應式渲染邏輯
+  });
+  
+  ngOnInit() {
+    // ❌ 生命週期鉤子中直接調用會失敗
+    // afterNextRender(() => {}); // 拋出錯誤
+    
+    // ✅ 使用 injector 選項
+    afterNextRender(() => {
+      // 渲染後邏輯
+    }, { injector: this.injector });
+  }
+}
+```
+
+### 性能考量
+
+1. **避免 MixedReadWrite**: 可能導致顯著性能降級
+2. **使用適當階段**: Read 和 Write 階段性能最佳
+3. **階段值傳播**: afterRenderEffect 中的 signal 傳播提供自動優化
+4. **瀏覽器專用**: 所有渲染 API 在 SSR 中不執行
+
+---
+
 ## 注意事項
 
 1. **Signal 在 Angular 20 中已穩定**，包括 effect、linkedSignal、toSignal 和 toObservable

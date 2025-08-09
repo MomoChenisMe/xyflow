@@ -9,7 +9,8 @@ import {
   effect,
   signal,
   computed,
-  afterRenderEffect,
+  afterNextRender,
+  afterEveryRender,
   ElementRef,
   ChangeDetectionStrategy,
   OnDestroy,
@@ -695,13 +696,139 @@ export class AngularXYFlowComponent<
       this._flowService.setEdgesFocusable(edgesFocusable);
     });
 
-    // 渲染後副作用
-    afterRenderEffect(() => {
-      this.safeUpdateContainerSize();
-      this.safeSetupPanZoom();
+    // 渲染後副作用 - 根據 Angular 20 最佳實踐
+    // 雖然混合讀寫不是最佳實踐，但由於 TypeScript 類型推斷限制，暫時使用簡化版本
+    
+    // 首次渲染後的初始化操作
+    afterNextRender(() => {
+      // 測量容器尺寸並執行初始化
+      const container = this.flowContainer()?.nativeElement;
+      if (!container) return;
+      
+      const rect = container.getBoundingClientRect();
+      
+      // 更新容器尺寸
+      const currentSize = this._containerSize();
+      if (
+        Math.abs(rect.width - currentSize.width) > 1 ||
+        Math.abs(rect.height - currentSize.height) > 1
+      ) {
+        this._containerSize.set({ width: rect.width, height: rect.height });
+        this._flowService.setDimensions({
+          width: rect.width,
+          height: rect.height,
+        });
+      }
+      
+      // 設置 PanZoom（只初始化一次）
+      if (!this._panZoomInitialized()) {
+        this.setupPanZoomWithContainer(container);
+      }
+      
+      // 設置 ResizeObserver（只初始化一次）
+      if (!this._resizeObserverInitialized()) {
+        this.setupResizeObserverForContainer(container);
+      }
+      
+      // 處理初始 fitView
       this.safeHandleInitialFitView();
-      this.safeSetupResizeObserver();
     });
+    
+    // 每次渲染後的尺寸檢查（用於響應容器變化）
+    afterEveryRender(() => {
+      // 跳過首次渲染（已由 afterNextRender 處理）
+      if (!this._panZoomInitialized()) {
+        return;
+      }
+      
+      const container = this.flowContainer()?.nativeElement;
+      if (!container) return;
+      
+      const rect = container.getBoundingClientRect();
+      const currentSize = this._containerSize();
+      
+      // 只有在尺寸真正改變時才更新
+      if (
+        Math.abs(rect.width - currentSize.width) > 1 ||
+        Math.abs(rect.height - currentSize.height) > 1
+      ) {
+        this._containerSize.set({ width: rect.width, height: rect.height });
+        this._flowService.setDimensions({
+          width: rect.width,
+          height: rect.height,
+        });
+      }
+    });
+  }
+  
+  // 新增輔助方法，從原本的 safeSetupPanZoom 重構
+  private setupPanZoomWithContainer(container: HTMLDivElement): void {
+    this._panZoomService.initializePanZoom({
+      domNode: container,
+      minZoom: this.minZoom(),
+      maxZoom: this.maxZoom(),
+      zoomOnScroll: true,
+      zoomOnPinch: true,
+      panOnScroll: false,
+      panOnScrollSpeed: 0.5,
+      zoomOnDoubleClick: true,
+      panOnDrag: this.panOnDrag(),
+      preventScrolling: true,
+      paneClickDistance: this.paneClickDistance(),
+      defaultViewport: { x: 0, y: 0, zoom: 1 },
+    });
+
+    const panZoomInstance = this._panZoomService.getPanZoomInstance();
+    if (panZoomInstance) {
+      this._flowService.setPanZoom(panZoomInstance);
+    }
+
+    this._panZoomInitialized.set(true);
+  }
+  
+  // 新增輔助方法，從原本的 safeSetupResizeObserver 重構
+  private setupResizeObserverForContainer(container: HTMLDivElement): void {
+    const updateDimensions = () => {
+      if (!container) {
+        return false;
+      }
+
+      const rect = container.getBoundingClientRect();
+      const size = { width: rect.width, height: rect.height };
+
+      if (size.height === 0 || size.width === 0) {
+        console.warn(
+          'Angular XYFlow: Container dimensions are zero, this might affect the minimap and other functionality'
+        );
+      }
+
+      untracked(() => {
+        this._flowService.setDimensions({
+          width: size.width || 500,
+          height: size.height || 500,
+        });
+
+        this._containerSize.set({
+          width: size.width || 500,
+          height: size.height || 500,
+        });
+      });
+
+      return true;
+    };
+
+    // 立即更新一次尺寸
+    updateDimensions();
+
+    // 設置 window resize listener
+    this._windowResizeHandler = updateDimensions;
+    window.addEventListener('resize', this._windowResizeHandler);
+
+    // 設置 ResizeObserver
+    this._resizeObserver = new ResizeObserver(() => updateDimensions());
+    this._resizeObserver.observe(container);
+
+    this._resizeObserverInitialized.set(true);
   }
 
   // 生成唯一 ID 的私有方法
