@@ -1025,10 +1025,14 @@ export class AngularXYFlowComponent<
     sourcePosition: Position;
     targetPosition: Position;
   } {
-    // 直接使用節點資訊，因為從 nodeLookup 獲取的節點已經包含 internals
-    // 這樣避免在 computed 內部呼叫會觸發其他 signals 的方法
+    // 檢查節點是否已完全初始化
     const internalSourceNode = sourceNode as any;
     const internalTargetNode = targetNode as any;
+    
+    // 如果節點還沒有 handleBounds，表示還未初始化完成，使用備用計算
+    if (!internalSourceNode.internals?.handleBounds || !internalTargetNode.internals?.handleBounds) {
+      return this.getFallbackEdgePosition(sourceNode, targetNode);
+    }
 
     // 使用系統包的 getEdgePosition 函數
     const edgePosition = getEdgePosition({
@@ -1492,66 +1496,6 @@ export class AngularXYFlowComponent<
     }
   }
 
-  // 安全設置 ResizeObserver 和 window resize listener - 與 React useResizeHandler 一致的實現
-  private safeSetupResizeObserver() {
-    // 如果已經初始化過，則跳過
-    if (this._resizeObserverInitialized()) {
-      return;
-    }
-
-    const container = this.flowContainer()?.nativeElement;
-    if (!container) {
-      return;
-    }
-
-    // 創建 updateDimensions 函數 - 與 React 版本一致
-    const updateDimensions = () => {
-      if (!container) {
-        return false;
-      }
-
-      const rect = container.getBoundingClientRect();
-      const size = { width: rect.width, height: rect.height };
-
-      // 與 React 版本一致的錯誤處理
-      if (size.height === 0 || size.width === 0) {
-        console.warn(
-          'Angular XYFlow: Container dimensions are zero, this might affect the minimap and other functionality'
-        );
-      }
-
-      // 使用 untracked 避免在 resize 過程中觸發變更偵測循環
-      untracked(() => {
-        // 更新服務的尺寸 - 與 React store.setState({ width, height }) 等效
-        this._flowService.setDimensions({
-          width: size.width || 500,
-          height: size.height || 500,
-        });
-
-        // 同時更新本地信號
-        this._containerSize.set({
-          width: size.width || 500,
-          height: size.height || 500,
-        });
-      });
-
-      return true;
-    };
-
-    // 立即更新一次尺寸
-    updateDimensions();
-
-    // 設置 window resize listener - 與 React 版本一致
-    this._windowResizeHandler = updateDimensions;
-    window.addEventListener('resize', this._windowResizeHandler);
-
-    // 設置 ResizeObserver - 與 React 版本一致
-    this._resizeObserver = new ResizeObserver(() => updateDimensions());
-    this._resizeObserver.observe(container);
-
-    // 標記為已初始化
-    this._resizeObserverInitialized.set(true);
-  }
 
   // 清理 ResizeObserver 和 window resize listener
   private cleanupResizeObserver() {
