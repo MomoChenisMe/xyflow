@@ -162,6 +162,8 @@ export interface AngularEdge<T extends Record<string, unknown> = Record<string, 
   labelBgStyle?: Record<string, any>;
   labelBgPadding?: [number, number];
   labelBgBorderRadius?: number;
+  pathOptions?: any;
+  interactionWidth?: number;
 }
 
 // Angular XY Flow Props interface

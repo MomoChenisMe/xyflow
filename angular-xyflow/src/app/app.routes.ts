@@ -20,6 +20,7 @@ import { DragHandleExampleComponent } from './components/examples/drag-handle-ex
 import { DragNDropExampleComponent } from './components/examples/drag-n-drop-example/drag-n-drop-example.component';
 import { EasyConnectExampleComponent } from './components/examples/easy-connect-example/easy-connect-example.component';
 import { EdgeRendererExampleComponent } from './components/examples/edge-renderer-example/edge-renderer-example.component';
+import { EdgeRoutingExampleComponent } from './components/examples/edge-routing-example/edge-routing-example.component';
 import { EdgesExample } from './components/examples/edges-example/edges-example';
 import { EdgeTypesComponent } from './components/examples/edge-types/edge-types';
 
@@ -136,6 +137,11 @@ export const routeList: IRoute[] = [
     component: EdgeRendererExampleComponent,
   },
   {
+    name: 'Edge Routing',
+    path: 'edge-routing',
+    component: EdgeRoutingExampleComponent,
+  },
+  {
     name: 'Edges',
     path: 'edges',
     component: EdgesExample,
@@ -170,6 +176,7 @@ export const routes: Routes = [
   { path: 'drag-n-drop', component: DragNDropExampleComponent },
   { path: 'easy-connect', component: EasyConnectExampleComponent },
   { path: 'edge-renderer', component: EdgeRendererExampleComponent },
+  { path: 'edge-routing', component: EdgeRoutingExampleComponent },
   { path: 'edges', component: EdgesExample },
   { path: 'edge-types', component: EdgeTypesComponent },
 ];

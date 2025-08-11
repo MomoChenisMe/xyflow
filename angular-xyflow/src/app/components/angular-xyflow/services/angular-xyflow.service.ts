@@ -496,6 +496,9 @@ export class AngularXYFlowService<
       // 獲取節點內部狀態中的絕對位置
       const internals = nodeInternals.get(node.id);
 
+      // 獲取緩存的 handle bounds
+      const handleBounds = this.getNodeHandleBounds(node.id);
+      
       lookup.set(node.id, {
         ...node,
         measured,
@@ -510,7 +513,7 @@ export class AngularXYFlowService<
             x: node.position.x,
             y: node.position.y,
           },
-          handleBounds: true,
+          handleBounds: handleBounds || undefined,
         },
       });
     });
@@ -930,35 +933,56 @@ export class AngularXYFlowService<
     const viewport = this._viewport();
     const zoom = viewport.zoom;
 
+
     const sourceHandles = nodeElement.querySelectorAll('.source');
     const targetHandles = nodeElement.querySelectorAll('.target');
 
     const source = Array.from(sourceHandles).map((handle): any => {
       const handleBounds = handle.getBoundingClientRect();
-      return {
+      // 計算 handle 位置時考慮 CSS transform 的偏移
+      // Handle 使用 transform: translate(-50%, -50%) 來居中對齊
+      const width = handleBounds.width / zoom;
+      const height = handleBounds.height / zoom;
+      const x = (handleBounds.left - nodeBounds.left) / zoom;
+      const y = (handleBounds.top - nodeBounds.top) / zoom;
+      
+      const handleData = {
         id: handle.getAttribute('data-handleid') || null,
         type: 'source',
         nodeId,
         position: handle.getAttribute('data-handlepos') || 'bottom',
-        x: (handleBounds.left - nodeBounds.left) / zoom,
-        y: (handleBounds.top - nodeBounds.top) / zoom,
-        width: handleBounds.width / zoom,
-        height: handleBounds.height / zoom,
+        x: x,
+        y: y,
+        width: width,
+        height: height,
       };
+      
+      
+      return handleData;
     });
 
     const target = Array.from(targetHandles).map((handle): any => {
       const handleBounds = handle.getBoundingClientRect();
-      return {
+      // 計算 handle 位置時考慮 CSS transform 的偏移
+      // Handle 使用 transform: translate(-50%, -50%) 來居中對齊
+      const width = handleBounds.width / zoom;
+      const height = handleBounds.height / zoom;
+      const x = (handleBounds.left - nodeBounds.left) / zoom;
+      const y = (handleBounds.top - nodeBounds.top) / zoom;
+      
+      const handleData = {
         id: handle.getAttribute('data-handleid') || null,
         type: 'target',
         nodeId,
         position: handle.getAttribute('data-handlepos') || 'top',
-        x: (handleBounds.left - nodeBounds.left) / zoom,
-        y: (handleBounds.top - nodeBounds.top) / zoom,
-        width: handleBounds.width / zoom,
-        height: handleBounds.height / zoom,
+        x: x,
+        y: y,
+        width: width,
+        height: height,
       };
+      
+      
+      return handleData;
     });
 
     return { source, target };
@@ -970,20 +994,67 @@ export class AngularXYFlowService<
   getHandlePositionAbsolute(
     nodeId: string,
     handleType: 'source' | 'target',
-    handlePosition?: Position
+    handlePosition?: Position,
+    handleId?: string | null
   ): XYPosition | null {
     const node = this._nodes().find((n) => n.id === nodeId);
     const internals = this._nodeInternals().get(nodeId);
 
     if (!node || !internals) return null;
 
+    // 嘗試從 handle bounds 獲取具體的 handle
+    const handleBounds = this.getNodeHandleBounds(nodeId);
+    let handle: any = null;
+    
+    if (handleBounds) {
+      const handles = handleType === 'source' ? handleBounds.source : handleBounds.target;
+      if (handles && handles.length > 0) {
+        // 如果沒有指定 handleId，使用第一個 handle；否則根據 id 查找
+        handle = !handleId ? handles[0] : handles.find((h: any) => h.id === handleId);
+      }
+    }
+
     const position =
-      handlePosition ||
+      handlePosition || handle?.position ||
       (handleType === 'source' ? Position.Bottom : Position.Top);
+    
+    
+    // 如果有具體的 handle，使用其位置和尺寸
+    // 完全對應 React 的 getHandlePosition 邏輯
+    if (handle) {
+      const x = (handle.x ?? 0) + internals.positionAbsolute.x;
+      const y = (handle.y ?? 0) + internals.positionAbsolute.y;
+      const width = handle.width ?? 1;
+      const height = handle.height ?? 1;
+      
+      let result: XYPosition;
+      
+      // 完全對應 React 的 switch 邏輯
+      switch (position) {
+        case Position.Top:
+          result = { x: x + width / 2, y };
+          break;
+        case Position.Right:
+          result = { x: x + width, y: y + height / 2 };
+          break;
+        case Position.Bottom:
+          result = { x: x + width / 2, y: y + height };
+          break;
+        case Position.Left:
+          result = { x, y: y + height / 2 };
+          break;
+        default:
+          result = { x: x + width / 2, y: y + height / 2 };
+      }
+      
+      
+      return result;
+    }
+    
+    // 備用：如果沒有 handle bounds，使用節點尺寸（保持原有邏輯）
     const { width, height } = internals.measured;
     const { x, y } = internals.positionAbsolute;
 
-    // Handle 現在使用 CSS transform 來定位，所以位置計算已經考慮了中心點
     switch (position) {
       case Position.Top:
         return { x: x + width / 2, y: y };
@@ -1810,13 +1881,15 @@ export class AngularXYFlowService<
     handleType: 'source' | 'target',
     handlePosition?: Position,
     nodeWidth: number = 150,
-    nodeHeight: number = 40
+    nodeHeight: number = 40,
+    handleId?: string | null
   ): { x: number; y: number } {
     // 使用統一系統獲取 Handle 位置
     const position = this.getHandlePositionAbsolute(
       node.id,
       handleType,
-      handlePosition
+      handlePosition,
+      handleId
     );
 
     if (position) {

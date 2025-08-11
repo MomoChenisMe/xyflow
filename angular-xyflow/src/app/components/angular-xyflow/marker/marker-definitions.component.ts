@@ -106,9 +106,9 @@ export class MarkerDefinitionsComponent {
     const markers: MarkerProps[] = [];
 
     edges.forEach(edge => {
-      // 只處理邊本身定義的 markerStart 和 markerEnd
-      // defaultMarker 應該只在創建新連接時使用，不應作為現有邊的 fallback
-      [edge.markerStart, edge.markerEnd].forEach(marker => {
+      // 處理邊的 markerStart 和 markerEnd，並且使用預設值作為 fallback
+      // 與 React Flow 保持一致
+      [edge.markerStart || options.defaultMarkerStart, edge.markerEnd || options.defaultMarkerEnd].forEach(marker => {
         if (marker && typeof marker === 'object') {
           const markerId = this.getMarkerId(marker, options.id);
           if (!ids.has(markerId)) {
