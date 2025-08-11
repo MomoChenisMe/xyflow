@@ -938,13 +938,17 @@ export class AngularXYFlowService<
     const targetHandles = nodeElement.querySelectorAll('.target');
 
     const source = Array.from(sourceHandles).map((handle): any => {
-      const handleBounds = handle.getBoundingClientRect();
-      // 計算 handle 位置時考慮 CSS transform 的偏移
-      // Handle 使用 transform: translate(-50%, -50%) 來居中對齊
-      const width = handleBounds.width / zoom;
-      const height = handleBounds.height / zoom;
+      const handleElement = handle as HTMLElement;
+      const handleBounds = handleElement.getBoundingClientRect();
+      // 使用 offsetWidth/offsetHeight 獲取原始尺寸（不受 transform 影響）
+      // 這與 React 版本的 getDimensions 一致
+      const width = handleElement.offsetWidth;
+      const height = handleElement.offsetHeight;
+      // x, y 是變換後的位置（左上角）
       const x = (handleBounds.left - nodeBounds.left) / zoom;
       const y = (handleBounds.top - nodeBounds.top) / zoom;
+      
+      
       
       const handleData = {
         id: handle.getAttribute('data-handleid') || null,
@@ -962,13 +966,16 @@ export class AngularXYFlowService<
     });
 
     const target = Array.from(targetHandles).map((handle): any => {
-      const handleBounds = handle.getBoundingClientRect();
-      // 計算 handle 位置時考慮 CSS transform 的偏移
-      // Handle 使用 transform: translate(-50%, -50%) 來居中對齊
-      const width = handleBounds.width / zoom;
-      const height = handleBounds.height / zoom;
+      const handleElement = handle as HTMLElement;
+      const handleBounds = handleElement.getBoundingClientRect();
+      // 使用 offsetWidth/offsetHeight 獲取原始尺寸（不受 transform 影響）
+      // 這與 React 版本的 getDimensions 一致
+      const width = handleElement.offsetWidth;
+      const height = handleElement.offsetHeight;
+      // x, y 是變換後的位置（左上角）
       const x = (handleBounds.left - nodeBounds.left) / zoom;
       const y = (handleBounds.top - nodeBounds.top) / zoom;
+      
       
       const handleData = {
         id: handle.getAttribute('data-handleid') || null,
@@ -1020,33 +1027,45 @@ export class AngularXYFlowService<
     
     
     // 如果有具體的 handle，使用其位置和尺寸
-    // 完全對應 React 的 getHandlePosition 邏輯
+    // 重要：handle.x 和 handle.y 是經過 CSS transform 後的位置
+    // CSS transform 已經將 Handle 移動到視覺位置（例如 bottom handle 向下偏移 50%）
+    // 所以 handle 的位置實際上已經接近中心點
     if (handle) {
       const x = (handle.x ?? 0) + internals.positionAbsolute.x;
       const y = (handle.y ?? 0) + internals.positionAbsolute.y;
-      const width = handle.width ?? 1;
-      const height = handle.height ?? 1;
+      // handle.width 和 handle.height 是 offsetWidth/offsetHeight（包含 border）
+      // 對於 6px + 1px border 的 Handle，實際是 8x8
+      const width = handle.width ?? 8;
+      const height = handle.height ?? 8;
       
+      
+      // 根據 position 計算 Edge 端點位置
+      // Edge 應該連接到 Handle 的邊緣，而不是中心
       let result: XYPosition;
+      const centerX = x + width / 2;
+      const centerY = y + height / 2;
       
-      // 完全對應 React 的 switch 邏輯
       switch (position) {
         case Position.Top:
-          result = { x: x + width / 2, y };
+          // Edge 連接到 Handle 的頂部邊緣
+          result = { x: centerX, y };
           break;
         case Position.Right:
-          result = { x: x + width, y: y + height / 2 };
+          // Edge 連接到 Handle 的右邊緣
+          result = { x: x + width, y: centerY };
           break;
         case Position.Bottom:
-          result = { x: x + width / 2, y: y + height };
+          // Edge 連接到 Handle 的底部邊緣
+          result = { x: centerX, y: y + height };
           break;
         case Position.Left:
-          result = { x, y: y + height / 2 };
+          // Edge 連接到 Handle 的左邊緣
+          result = { x, y: centerY };
           break;
         default:
-          result = { x: x + width / 2, y: y + height / 2 };
+          // 預設返回中心點
+          result = { x: centerX, y: centerY };
       }
-      
       
       return result;
     }

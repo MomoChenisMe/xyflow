@@ -30,7 +30,7 @@ export interface MarkerProps extends EdgeMarker {
               [attr.markerWidth]="marker.width || 12.5"
               [attr.markerHeight]="marker.height || 12.5"
               [attr.viewBox]="'-10 -10 20 20'"
-              [attr.refX]="0"
+              [attr.refX]="4"
               [attr.refY]="0"
               [attr.orient]="marker.orient || 'auto-start-reverse'"
               [attr.markerUnits]="marker.markerUnits || 'strokeWidth'"
@@ -66,7 +66,7 @@ export interface MarkerProps extends EdgeMarker {
 export class MarkerDefinitionsComponent {
   // 常數
   markerType = MarkerType;
-  
+
   // 輸入屬性
   edges = input.required<any[]>();
   defaultColor = input<string>('#b1b1b7');
@@ -81,14 +81,14 @@ export class MarkerDefinitionsComponent {
     const rfIdValue = this.rfId();
     const defaultStart = this.defaultMarkerStart();
     const defaultEnd = this.defaultMarkerEnd();
-    
+
     const result = this.createMarkerIds(edgeList, {
       id: rfIdValue,
       defaultColor: defaultColorValue,
       defaultMarkerStart: defaultStart,
       defaultMarkerEnd: defaultEnd
     });
-    
+
     return result;
   });
 
