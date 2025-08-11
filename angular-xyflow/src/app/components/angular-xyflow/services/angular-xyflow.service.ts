@@ -430,8 +430,16 @@ export class AngularXYFlowService<
 
   // 單獨的 setViewport 方法（供服務內部使用）
   setViewport(viewport: Viewport): void {
-    this._viewport.set({ ...viewport });
-    this._transform.set([viewport.x, viewport.y, viewport.zoom]);
+    const currentViewport = this._viewport();
+    const hasChanged = 
+      currentViewport.x !== viewport.x ||
+      currentViewport.y !== viewport.y ||
+      currentViewport.zoom !== viewport.zoom;
+    
+    if (hasChanged) {
+      this._viewport.set({ ...viewport });
+      this._transform.set([viewport.x, viewport.y, viewport.zoom]);
+    }
   }
 
   // 節點和邊的查找映射 - 效能優化的查找表

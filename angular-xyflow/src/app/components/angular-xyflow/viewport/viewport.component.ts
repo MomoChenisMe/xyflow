@@ -19,9 +19,7 @@ import {
   NodeTypes,
   EdgeTypes,
 } from '../types';
-import { NodeTemplateDirective } from '../node-template.directive';
 import { NodeWrapperComponent } from '../node-wrapper/node-wrapper.component';
-import { EdgeComponent } from '../edge/edge.component';
 import { EdgeWrapperComponent } from '../edge-wrapper/edge-wrapper.component';
 import { ConnectionLineComponent } from '../connection-line/connection-line.component';
 import { AngularXYFlowService } from '../services/angular-xyflow.service';
@@ -53,7 +51,6 @@ export interface EdgeConnectionPoints {
   imports: [
     CommonModule,
     NodeWrapperComponent,
-    EdgeComponent,
     EdgeWrapperComponent,
     ConnectionLineComponent,
     MarkerDefinitionsComponent,
@@ -83,10 +80,8 @@ export interface EdgeConnectionPoints {
       <!-- Edges layer -->
       <div class="xy-flow__edges angular-xyflow__edges">
         @for (edge of visibleEdges(); track edge.id) {
-          @let sourceNode = getNodeById()(edge.source);
-          @let targetNode = getNodeById()(edge.target);
-          @if (sourceNode && targetNode) {
-            @let connectionPoints = getEdgeConnectionPoints()(sourceNode, targetNode, edge);
+          @let connectionPoints = edgeConnectionPointsMap().get(edge.id);
+          @if (connectionPoints) {
             <angular-xyflow-edge-wrapper
               [edge]="edge"
               [sourceX]="connectionPoints.sourceX"
@@ -214,6 +209,30 @@ export class ViewportComponent<
   getNodeById = input.required<(id: string) => NodeType | undefined>();
   getEdgeConnectionPoints = input.required<(sourceNode: NodeType, targetNode: NodeType, edge: EdgeType) => EdgeConnectionPoints>();
   getMarkerId = input.required<(edge: any, position: 'start' | 'end', marker: EdgeMarker) => string>();
+
+  // 計算 Edge 連接點
+  // 注意：移除快取機制，確保節點位置變化時能正確更新
+  // React 版本的做法是在每個 EdgeWrapper 內部獨立計算，這裡為了架構一致性在父組件計算
+  readonly edgeConnectionPointsMap = computed(() => {
+    const edges = this.visibleEdges();
+    const getNode = this.getNodeById();
+    const getConnectionPoints = this.getEdgeConnectionPoints();
+    
+    const connectionPointsMap = new Map<string, EdgeConnectionPoints>();
+    
+    // 不使用快取，確保每次節點位置改變時都能重新計算
+    edges.forEach(edge => {
+      const sourceNode = getNode(edge.source);
+      const targetNode = getNode(edge.target);
+      
+      if (sourceNode && targetNode) {
+        const connectionPoints = getConnectionPoints(sourceNode, targetNode, edge);
+        connectionPointsMap.set(edge.id, connectionPoints);
+      }
+    });
+    
+    return connectionPointsMap;
+  });
 
   // 輸出事件
   nodeClick = output<{ event: MouseEvent; node: NodeType }>();

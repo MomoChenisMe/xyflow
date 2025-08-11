@@ -142,9 +142,16 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
   });
 
   // 準備傳遞給邊緣組件的輸入屬性
+  private lastComputedEdgeId: string | null = null;
   readonly edgeComponentInputs = computed(() => {
     const edge = this.edge();
     const resolvedEdgeType = this.resolvedEdgeType();
+    
+    // 只在 edge id 改變時輸出，避免重複
+    if (this.lastComputedEdgeId !== edge.id) {
+      console.log(`[Edge Wrapper Debug] Computing inputs for edge ${edge.id}`);
+      this.lastComputedEdgeId = edge.id;
+    }
 
     // 核心屬性（所有邊緣組件都需要）
     const coreInputs: Record<string, any> = {

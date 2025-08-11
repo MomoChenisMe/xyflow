@@ -237,7 +237,8 @@ export class ControlsComponent {
     
     if (!this.canZoomIn()) return;
     
-    this.panZoomService.zoomIn();
+    // 使用平滑動畫
+    this.panZoomService.zoomIn({ duration: 200 });
     this.onZoomInClick.emit();
   }
 
@@ -247,7 +248,8 @@ export class ControlsComponent {
     
     if (!this.canZoomOut()) return;
     
-    this.panZoomService.zoomOut();
+    // 使用平滑動畫
+    this.panZoomService.zoomOut({ duration: 200 });
     this.onZoomOutClick.emit();
   }
 

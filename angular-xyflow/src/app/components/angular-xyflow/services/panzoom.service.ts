@@ -100,6 +100,11 @@ export class AngularXYFlowPanZoomService {
         event: MouseEvent | TouchEvent | null,
         viewport: Viewport
       ) => {
+        // 移除過於頻繁的 log，只在真正需要時才輸出
+        // console.log('[Zoom Debug] onPanZoom triggered', { 
+        //   event: event ? event.type : 'null',
+        //   viewport 
+        // });
         if (event) {
           this.handleMove(event);
         }
@@ -395,19 +400,19 @@ export class AngularXYFlowPanZoomService {
     return this._flowService.containerElement;
   }
 
-  // 縮放功能
+  // 縮放功能 - 使用與 React Flow 相同的縮放係數 (1.2)
   zoomIn(options?: { duration?: number }) {
     if (!this.panZoomInstance) return;
-    const currentViewport = this.getViewport();
-    const newZoom = currentViewport.zoom * 1.5;
-    this.panZoomInstance.scaleTo(newZoom, options);
+    // 使用 scaleBy 而非 scaleTo，與 React Flow 保持一致
+    // React Flow 使用 1.2 作為縮放係數
+    return this.panZoomInstance.scaleBy(1.2, options);
   }
 
   zoomOut(options?: { duration?: number }) {
     if (!this.panZoomInstance) return;
-    const currentViewport = this.getViewport();
-    const newZoom = currentViewport.zoom / 1.5;
-    this.panZoomInstance.scaleTo(newZoom, options);
+    // 使用 scaleBy 而非 scaleTo，與 React Flow 保持一致
+    // React Flow 使用 1/1.2 (約 0.833) 作為縮放係數
+    return this.panZoomInstance.scaleBy(1 / 1.2, options);
   }
 
   zoomTo(zoom: number, options?: { duration?: number }) {

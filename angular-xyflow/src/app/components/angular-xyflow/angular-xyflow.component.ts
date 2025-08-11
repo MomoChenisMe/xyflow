@@ -998,10 +998,18 @@ export class AngularXYFlowComponent<
     });
   }
 
-  // 根據ID獲取節點
+  // 根據ID獲取節點 - 使用 nodeLookup 確保獲取最新的節點資訊（包含 internals）
   getNodeById(id: string): NodeType | undefined {
-    const node = this.visibleNodes().find((node) => node.id === id);
-    return node;
+    // 使用 nodeLookup 而不是 visibleNodes，確保獲取包含 internals 的完整節點資訊
+    const nodeLookup = this._flowService.nodeLookup();
+    const internalNode = nodeLookup.get(id);
+    
+    if (!internalNode) {
+      return undefined;
+    }
+    
+    // 返回包含 internals 的完整節點
+    return internalNode as NodeType;
   }
 
   // 獲取邊的連接點（使用實際測量的 handle 位置）
@@ -1017,60 +1025,10 @@ export class AngularXYFlowComponent<
     sourcePosition: Position;
     targetPosition: Position;
   } {
-    // 創建與系統包兼容的內部節點結構，使用實際測量的 handle bounds
-    const createInternalNode = (node: NodeType) => {
-      const internals = this._flowService.getNodeInternals(node.id);
-
-      // 模仿 React Flow 的邏輯：
-      // 1. 優先使用 internals 中的 handleBounds（來自 DOM 測量）
-      // 2. 如果沒有，嘗試從 DOM 測量
-      // 3. 如果 DOM 不存在，使用快取的值
-
-      let handleBounds = internals?.handleBounds;
-
-      if (!handleBounds) {
-        // 嘗試從 DOM 測量
-        const measuredBounds = this._flowService.measureNodeHandleBounds(
-          node.id
-        );
-
-        // 如果測量成功且有內容，更新快取
-        if (
-          measuredBounds &&
-          (measuredBounds.source?.length > 0 ||
-            measuredBounds.target?.length > 0)
-        ) {
-          this._flowService.setNodeHandleBounds(node.id, measuredBounds);
-          handleBounds = measuredBounds;
-        } else {
-          // 測量失敗，使用快取
-          const cachedBounds = this._flowService.getNodeHandleBounds(node.id);
-          if (cachedBounds) {
-            handleBounds = cachedBounds;
-          } else {
-            handleBounds = undefined;
-          }
-        }
-      }
-
-      return {
-        ...node,
-        internals: {
-          positionAbsolute: internals?.positionAbsolute || {
-            x: node.position.x,
-            y: node.position.y,
-          },
-          handleBounds,
-        },
-        measured: internals?.measured || {
-          width: node.width || 150,
-          height: node.height || 40,
-        },
-      };
-    };
-
-    const internalSourceNode = createInternalNode(sourceNode);
-    const internalTargetNode = createInternalNode(targetNode);
+    // 直接使用節點資訊，因為從 nodeLookup 獲取的節點已經包含 internals
+    // 這樣避免在 computed 內部呼叫會觸發其他 signals 的方法
+    const internalSourceNode = sourceNode as any;
+    const internalTargetNode = targetNode as any;
 
     // 使用系統包的 getEdgePosition 函數
     const edgePosition = getEdgePosition({
@@ -1104,13 +1062,13 @@ export class AngularXYFlowComponent<
     const sourcePosition = sourceNode.sourcePosition || Position.Bottom;
     const targetPosition = targetNode.targetPosition || Position.Top;
 
-    const getSimpleHandlePosition = (node: NodeType, position: Position) => {
-      const internals = this._flowService.getNodeInternals(node.id);
-      const nodePos = internals?.positionAbsolute || {
+    const getSimpleHandlePosition = (node: any, position: Position) => {
+      // 直接使用節點的 internals，因為從 nodeLookup 獲取的節點已包含此資訊
+      const nodePos = node.internals?.positionAbsolute || {
         x: node.position.x,
         y: node.position.y,
       };
-      const measured = internals?.measured || {
+      const measured = node.measured || {
         width: node.width || 150,
         height: node.height || 40,
       };
