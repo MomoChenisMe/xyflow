@@ -351,12 +351,8 @@ export class AngularXYFlowService<
     
     // 如果沒有節點，視為已初始化
     if (nodes.length === 0) {
-      console.log('nodesInitialized: no nodes, returning true');
       return true;
     }
-    
-    console.log('=== Checking Node Initialization ===');
-    console.log('Total nodes:', nodes.length);
     
     // 檢查每個節點是否都完成了所有三個階段
     const allInitialized = nodes.every(node => {
@@ -366,17 +362,10 @@ export class AngularXYFlowService<
              stages.domRendered && 
              stages.dimensionsMeasured;
       
-      console.log(`Node ${node.id}:`, {
-        hasStages: !!stages,
-        stages: stages,
-        isComplete
-      });
       
       return isComplete;
     });
     
-    console.log('All nodes initialized:', allInitialized);
-    console.log('===========================');
     
     return allInitialized;
   });
@@ -2154,9 +2143,6 @@ export class AngularXYFlowService<
     const fitViewNodes = new Map<string, NodeType>();
     const optionNodeIds = options.nodes ? new Set(options.nodes.map((node: any) => node.id)) : null;
 
-    console.log('=== FitView Node Filtering ===');
-    console.log('Total nodes:', nodes.length);
-    console.log('Options:', options);
 
     nodes.forEach(node => {
       // 使用與 React Flow 完全相同的邏輯：檢查 internals 中的測量尺寸
@@ -2166,13 +2152,6 @@ export class AngularXYFlowService<
                        internals.measured.height > 0 && 
                        (options.includeHiddenNodes || !node.hidden);
 
-      console.log(`Node ${node.id}:`, {
-        hasInternals: !!internals,
-        measured: internals?.measured,
-        hidden: node.hidden,
-        isVisible,
-        inOptionNodes: !optionNodeIds || optionNodeIds.has(node.id)
-      });
 
       // 只包含在選項中指定的節點（如果有的話）
       if (isVisible && (!optionNodeIds || optionNodeIds.has(node.id))) {
@@ -2180,8 +2159,6 @@ export class AngularXYFlowService<
       }
     });
 
-    console.log('Nodes to fit:', fitViewNodes.size);
-    console.log('========================');
     
     return fitViewNodes;
   }
@@ -2195,7 +2172,6 @@ export class AngularXYFlowService<
     let box = { x: Infinity, y: Infinity, x2: -Infinity, y2: -Infinity };
     const nodeInternals = this._nodeInternals();
 
-    console.log('=== Node Bounds Calculation (React Flow Style) ===');
     
     nodes.forEach(node => {
       const internals = nodeInternals.get(node.id);
@@ -2212,12 +2188,6 @@ export class AngularXYFlowService<
           y2: y + height
         };
 
-        console.log(`Node ${node.id}:`, {
-          position: node.position,
-          positionAbsolute: { x, y },
-          measured: { width, height },
-          nodeBox
-        });
 
         // React Flow 的 getBoundsOfBoxes 邏輯
         box = {
@@ -2227,10 +2197,6 @@ export class AngularXYFlowService<
           y2: Math.max(box.y2, nodeBox.y2)
         };
       } else {
-        console.log(`Node ${node.id}: No valid internals`, { 
-          position: node.position, 
-          internals: internals || 'missing'
-        });
       }
     });
 
@@ -2242,8 +2208,6 @@ export class AngularXYFlowService<
       height: box.y2 - box.y
     };
     
-    console.log('Final bounds (React Flow style):', bounds);
-    console.log('=========================');
     return bounds;
   }
 
@@ -2274,7 +2238,6 @@ export class AngularXYFlowService<
 
   // 實際執行 fitView 的方法 - 使用與 React Flow 完全一致的邏輯
   private executeFitView(): void {
-    console.log('🚀 executeFitView called');
     try {
       const dimensions = this._dimensions();
       const options = this._fitViewOptions || {};
@@ -2295,17 +2258,10 @@ export class AngularXYFlowService<
       // 步驟2：使用 React Flow 的邊界計算邏輯
       const bounds = this.getInternalNodesBounds(nodesToFit);
 
-      // 調試信息
-      console.log('=== FitView Debug Info ===');
-      console.log('Nodes to fit:', nodesToFit.size);
-      console.log('Calculated bounds:', bounds);
-      console.log('Container dimensions:', dimensions);
       
       // 步驟3：使用 React Flow 的 padding 計算公式
       const padding = options.padding || 0.1;
       const parsedPadding = this.parsePaddingValue(padding, dimensions.width, dimensions.height);
-      console.log('Original padding:', padding);
-      console.log('Parsed padding:', parsedPadding);
 
       // 步驟4：計算縮放比例（與 React Flow 一致）
       const availableWidth = dimensions.width - parsedPadding.left - parsedPadding.right;
@@ -2331,19 +2287,6 @@ export class AngularXYFlowService<
 
       const newViewport = { x, y, zoom };
       
-      console.log('Final calculations:', {
-        availableWidth,
-        availableHeight,
-        scaleX,
-        scaleY,
-        zoom,
-        boundsCenterX,
-        boundsCenterY,
-        viewportCenterX,
-        viewportCenterY,
-        newViewport
-      });
-      console.log('=========================');
 
       // 使用 PanZoom 實例進行平滑動畫
       if (this.panZoom && typeof this.panZoom.setViewport === 'function') {

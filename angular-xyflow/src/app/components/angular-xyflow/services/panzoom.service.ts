@@ -101,20 +101,13 @@ export class AngularXYFlowPanZoomService {
         viewport: Viewport
       ) => {
         // 移除過於頻繁的 log，只在真正需要時才輸出
-        // console.log('[Zoom Debug] onPanZoom triggered', { 
-        //   event: event ? event.type : 'null',
-        //   viewport 
-        // });
         if (event) {
           this.handleMove(event);
         }
         // 同步 viewport 到服務
         this._flowService.setViewport(viewport);
       },
-      onPanZoomEnd: (
-        event: MouseEvent | TouchEvent | null,
-        viewport: Viewport
-      ) => {
+      onPanZoomEnd: () => {
         this._isZooming.set(false);
         this.handleMoveEnd();
       },
@@ -158,11 +151,11 @@ export class AngularXYFlowPanZoomService {
 
   // 處理移動開始事件
   private handleMoveStart() {
-    const event = window.event as MouseEvent | TouchEvent;
-    const position = this.getEventPosition(event);
+    // 直接使用 undefined，避免使用 deprecated window.event
+    const position = this.getEventPosition(undefined);
 
     if (this.onMoveStart) {
-      this.onMoveStart({ event, position });
+      this.onMoveStart({ position });
     }
   }
 
@@ -182,11 +175,11 @@ export class AngularXYFlowPanZoomService {
 
   // 處理移動結束事件
   private handleMoveEnd() {
-    const event = window.event as MouseEvent | TouchEvent;
-    const position = this.getEventPosition(event);
+    // 直接使用 undefined，避免使用 deprecated window.event
+    const position = this.getEventPosition(undefined);
 
     if (this.onMoveEnd) {
-      this.onMoveEnd({ event, position });
+      this.onMoveEnd({ position });
     }
   }
 
@@ -322,18 +315,7 @@ export class AngularXYFlowPanZoomService {
     // 計算縮放比例
     const scaleX = availableWidth / nodeBounds.width;
     const scaleY = availableHeight / nodeBounds.height;
-    const scale = Math.min(scaleX, scaleY, maxZoom);
 
-    // console.log('🔍 FitView Debug:', {
-    //   nodes: nodeDetails,
-    //   nodeBounds,
-    //   viewportDimensions: dimensions,
-    //   padding,
-    //   paddingPixels,
-    //   availableArea: { width: availableWidth, height: availableHeight },
-    //   scale: { x: scaleX, y: scaleY, final: scale },
-    //   nodeOrigin: this._flowService.getNodeOrigin()
-    // });
 
     try {
       // 使用系統包的 fitViewport 函數，與 React 實現一致
@@ -349,7 +331,7 @@ export class AngularXYFlowPanZoomService {
         fitViewOptions.padding = Math.max(fitViewOptions.padding, 0.12); // 增加到 12%
       }
 
-      const result = await fitViewport(
+      await fitViewport(
         {
           nodes: internalNodeLookup,
           width: dimensions.width,
@@ -361,32 +343,6 @@ export class AngularXYFlowPanZoomService {
         fitViewOptions
       );
 
-      const finalViewport = this.getViewport();
-      // console.log('✅ After fitView:', {
-      //   viewport: finalViewport,
-      //   expectedVisibleArea: {
-      //     left: -finalViewport.x / finalViewport.zoom,
-      //     top: -finalViewport.y / finalViewport.zoom,
-      //     right: (-finalViewport.x + dimensions.width) / finalViewport.zoom,
-      //     bottom: (-finalViewport.y + dimensions.height) / finalViewport.zoom
-      //   },
-      //   node4Check: (() => {
-      //     const node4 = internalNodeLookup.get('4');
-      //     if (node4) {
-      //       const x = node4.internals.positionAbsolute.x;
-      //       const width = node4.measured.width;
-      //       const rightEdge = x + width;
-      //       const visibleRight = (-finalViewport.x + dimensions.width) / finalViewport.zoom;
-      //       return {
-      //         rightEdge,
-      //         visibleRight,
-      //         isFullyVisible: rightEdge <= visibleRight,
-      //         overflow: rightEdge - visibleRight
-      //       };
-      //     }
-      //     return null;
-      //   })()
-      // });
       return true;
     } catch (error) {
       console.error('FitView error:', error);
@@ -394,11 +350,6 @@ export class AngularXYFlowPanZoomService {
     }
   }
 
-  // 獲取DOM元素
-  private getDomElement(): HTMLElement | null {
-    // 使用正確的流程容器 - 從 AngularFlowService 獲取當前實例的容器
-    return this._flowService.containerElement;
-  }
 
   // 縮放功能 - 使用與 React Flow 相同的縮放係數 (1.2)
   zoomIn(options?: { duration?: number }) {

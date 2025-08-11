@@ -991,7 +991,6 @@ export class AngularXYFlowComponent<
     requestAnimationFrame(() => {
       // 再次檢查以避免重複執行
       if (!this._initialFitViewExecuted()) {
-        // console.log('📐 Executing initial fitView');
         this.performFitView(this.fitViewOptions());
         this._initialFitViewExecuted.set(true);
       }
@@ -1042,8 +1041,9 @@ export class AngularXYFlowComponent<
       sourceHandle: edge.sourceHandle || null,
       targetHandle: edge.targetHandle || null,
       connectionMode: ConnectionMode.Strict,
-      onError: (id, message) =>
-        console.warn(`Edge position error ${id}:`, message),
+      onError: () => {
+        // Silently handle edge position errors
+      },
     });
 
     // 如果 getEdgePosition 返回 null，則使用備用計算

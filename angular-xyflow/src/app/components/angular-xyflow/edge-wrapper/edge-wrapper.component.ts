@@ -149,7 +149,6 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
     
     // 只在 edge id 改變時輸出，避免重複
     if (this.lastComputedEdgeId !== edge.id) {
-      console.log(`[Edge Wrapper Debug] Computing inputs for edge ${edge.id}`);
       this.lastComputedEdgeId = edge.id;
     }
 
