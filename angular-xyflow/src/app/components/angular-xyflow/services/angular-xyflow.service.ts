@@ -15,6 +15,9 @@ import {
   addEdge as systemAddEdge,
   getNodesInside,
   getNodePositionWithOrigin,
+  updateNodeInternals as systemUpdateNodeInternals,
+  getDimensions,
+  type InternalNodeUpdate,
 } from '@xyflow/system';
 
 // 專案內部模組
@@ -70,13 +73,18 @@ export class AngularXYFlowService<
         // 優先使用測量的尺寸，然後是節點的尺寸，最後使用合理的預設值
         // React Flow 使用 initialWidth/initialHeight 作為 fallback。若為 0 會導致節點被過濾掉
         const measuredFromObserver = measuredDimensions.get(node.id);
+        const styleWidth = this.getNodeStyleDimension(node, 'width');
+        const styleHeight = this.getNodeStyleDimension(node, 'height');
+        
         const measured = measuredFromObserver ||
           node.measured || {
-            // 使用與 React Flow 相同的 fallback 邏輯
-            // 使用稍大的預設高度以適應 EasyConnect 節點 (150x80)
-            width: (node as any).width || (node as any).initialWidth || 150,
-            height: (node as any).height || (node as any).initialHeight || 80,
+            // 使用與 React Flow 相同的 fallback 邏輯，包括 style 中的尺寸
+            // 優先序: node.width -> node.style?.width -> node.initialWidth -> 預設值
+            width: styleWidth || (node as any).initialWidth || 150,
+            height: styleHeight || (node as any).initialHeight || 80,
           };
+          
+        // 節點尺寸計算完成
 
         // 創建一個包含測量尺寸的節點副本，供 getNodePositionWithOrigin 使用
         // 確保節點有有效的 position 屬性，避免 undefined 錯誤
@@ -434,7 +442,30 @@ export class AngularXYFlowService<
   // 節點和邊的查找映射 - 效能優化的查找表
   readonly nodeLookup: Signal<Map<string, NodeType>> = computed(() => {
     const lookup = new Map<string, NodeType>();
-    this._nodes().forEach((node) => lookup.set(node.id, node));
+    const nodes = this._nodes();
+    const nodeInternals = this._nodeInternals();
+    
+    nodes.forEach((node) => {
+      const internals = nodeInternals.get(node.id);
+      if (internals) {
+        // 創建包含 internals 的完整節點，與 React Flow 一致
+        const nodeWithInternals = {
+          ...node,
+          internals,
+          // 確保 measured 屬性是最新的
+          measured: internals.measured,
+          // 添加 width 和 height 屬性供 system 函數使用
+          width: internals.measured.width,
+          height: internals.measured.height,
+        } as NodeType;
+        
+        
+        lookup.set(node.id, nodeWithInternals);
+      } else {
+        lookup.set(node.id, node);
+      }
+    });
+    
     return lookup;
   });
 
@@ -2357,15 +2388,15 @@ export class AngularXYFlowService<
   /**
    * 報告階段3完成：尺寸測量完成
    */
-  reportNodeDimensionsMeasured(nodeId: string, dimensions: { width: number; height: number }): void {
+  reportNodeDimensionsMeasured(nodeId: string, dimensions: { width: number; height: number }, nodeElement: HTMLElement): void {
     const stages = this.nodeRenderingStages.get(nodeId);
+    
     if (stages && dimensions.width > 0 && dimensions.height > 0) {
       stages.dimensionsMeasured = true;
-      // 同時更新測量尺寸
-      this._nodeMeasuredDimensions.update(map => {
-        map.set(nodeId, dimensions);
-        return map;
-      });
+      
+      // 與 React Flow 一致：在測量尺寸後立即調用 updateNodeInternals
+      this.updateNodeInternalsForElement(nodeId, nodeElement);
+      
       this.checkAndExecutePendingFitView();
     }
   }
@@ -2396,6 +2427,57 @@ export class AngularXYFlowService<
    */
   getNodeStages(nodeId: string) {
     return this.nodeRenderingStages.get(nodeId);
+  }
+
+  /**
+   * 從節點中提取尺寸，優先序: node.width/height -> node.style?.width/height
+   * 與 React Flow 的 getNodeInlineStyleDimensions 邏輯一致
+   */
+  private getNodeStyleDimension(node: any, dimension: 'width' | 'height'): number | undefined {
+    // 1. 優先使用直接設置的 width/height
+    if (node[dimension] !== undefined) {
+      return typeof node[dimension] === 'number' ? node[dimension] : parseFloat(node[dimension]);
+    }
+    
+    // 2. 然後使用 style 中的 width/height
+    if (node.style?.[dimension] !== undefined) {
+      const styleValue = node.style[dimension];
+      if (typeof styleValue === 'number') {
+        return styleValue;
+      } else if (typeof styleValue === 'string') {
+        // 如果是字串，去除 'px' 後綴並轉換為數字
+        const numericValue = parseFloat(styleValue.replace('px', ''));
+        return isNaN(numericValue) ? undefined : numericValue;
+      }
+    }
+    
+    return undefined;
+  }
+
+  /**
+   * 為單一節點調用 system updateNodeInternals邏輯
+   * 與 React Flow 一致，用於更新節點的內部狀態和 handle bounds
+   */
+  private updateNodeInternalsForElement(nodeId: string, nodeElement: HTMLElement): void {
+    const node = this._nodes().find(n => n.id === nodeId);
+    const currentInternals = this._nodeInternals().get(nodeId);
+    
+    if (!node || !currentInternals) {
+      console.warn(`[Service] Cannot update internals for node ${nodeId}: node or internals not found`);
+      return;
+    }
+
+    // 使用 system getDimensions 獲取實際 DOM 尺寸
+    const actualDimensions = getDimensions(nodeElement as HTMLDivElement);
+
+    // 直接更新測量尺寸 signal
+    this._nodeMeasuredDimensions.update(map => {
+      map.set(nodeId, actualDimensions);
+      return map;
+    });
+    
+    // 觸發重新計算 - 這會使 computed nodeInternals 重新執行
+    this._nodeInternalsUpdateTrigger.update(value => value + 1);
   }
 
   /**

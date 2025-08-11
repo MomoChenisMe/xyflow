@@ -9,10 +9,8 @@ import { HandleComponent } from '../handle/handle.component';
   standalone: true,
   imports: [CommonModule, HandleComponent],
   template: `
-    <!-- 節點內容 -->
-    <div class="angular-xyflow__node-label">
-      {{ data()?.['label'] || id() }}
-    </div>
+    <!-- 節點內容 - 直接輸出文字，與 React 保持一致 -->
+    {{ data()?.['label'] }}
     
     <!-- Source Handle (底部) - Input 節點只有 source handle -->
     <angular-xyflow-handle

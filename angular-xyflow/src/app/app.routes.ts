@@ -21,6 +21,7 @@ import { DragNDropExampleComponent } from './components/examples/drag-n-drop-exa
 import { EasyConnectExampleComponent } from './components/examples/easy-connect-example/easy-connect-example.component';
 import { EdgeRendererExampleComponent } from './components/examples/edge-renderer-example/edge-renderer-example.component';
 import { EdgesExample } from './components/examples/edges-example/edges-example';
+import { EdgeTypesComponent } from './components/examples/edge-types/edge-types';
 
 export interface IRoute {
   name: string;
@@ -139,6 +140,11 @@ export const routeList: IRoute[] = [
     path: 'edges',
     component: EdgesExample,
   },
+  {
+    name: 'Edge Types',
+    path: 'edge-types',
+    component: EdgeTypesComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -165,4 +171,5 @@ export const routes: Routes = [
   { path: 'easy-connect', component: EasyConnectExampleComponent },
   { path: 'edge-renderer', component: EdgeRendererExampleComponent },
   { path: 'edges', component: EdgesExample },
+  { path: 'edge-types', component: EdgeTypesComponent },
 ];

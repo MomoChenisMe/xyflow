@@ -3,7 +3,6 @@ import {
   Component,
   input,
   output,
-  viewChild,
   ElementRef,
   computed,
   signal,
@@ -13,19 +12,16 @@ import {
   OnDestroy,
   inject,
   CUSTOM_ELEMENTS_SCHEMA,
-  TemplateRef,
-  Type,
   Injector
 } from '@angular/core';
 import { CommonModule, NgComponentOutlet } from '@angular/common';
 
 // XyFlow 系統模組
-import { type Connection, Position, getNodePositionWithOrigin, elementSelectionKeys } from '@xyflow/system';
+import { type Connection, Position, elementSelectionKeys } from '@xyflow/system';
 
 // 專案內部模組
-import { AngularNode, NodeTemplateContext, NodeTypes, NodeProps, OnErrorHandler } from '../types';
+import { AngularNode, NodeTypes } from '../types';
 import { errorMessages, defaultErrorHandler, ErrorCode } from '../constants';
-import { HandleComponent } from '../handle/handle.component';
 import { AngularXYFlowDragService } from '../services/drag.service';
 import { AngularXYFlowService } from '../services/angular-xyflow.service';
 import { NodeTemplateDirective } from '../node-template.directive';
@@ -37,75 +33,71 @@ import { builtinNodeTypes } from '../default-nodes';
   imports: [CommonModule, NgComponentOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  host: {
+    'class': 'xy-flow__node angular-xyflow__node',
+    '[class]': 'nodeClasses()',
+    '[attr.data-node-id]': 'node().id',
+    '[attr.tabindex]': 'getTabIndex()',
+    '[attr.role]': 'getNodeRole()',
+    '[attr.aria-label]': 'getAriaLabel()',
+    '[style.position]': '"absolute"',
+    '[style.transform]': 'nodeTransform()',
+    '[style.z-index]': 'node().zIndex || 1',
+    '[style.width]': 'getNodeWidth()',
+    '[style.height]': 'getNodeHeight()',
+    '[style.user-select]': '"none"',
+    '[style.pointer-events]': '"auto"',
+    '[style.visibility]': 'nodeHasDimensions() ? "visible" : "hidden"',
+    '[style.opacity]': 'node().hidden ? 0 : 1',
+    '[style.cursor]': 'getCursor()',
+    '[style]': 'getNodeStyles()',
+    '(click)': 'onNodeClick($event)',
+    '(dblclick)': 'onNodeDoubleClick($event)',
+    '(contextmenu)': 'onNodeContextMenu($event)',
+    '(mousedown)': 'onNodeMouseDown($event)',
+    '(focus)': 'onNodeFocus($event)',
+    '(keydown)': 'onNodeKeyDown($event)'
+  },
   template: `
-    <div
-      #nodeElement
-      class="xy-flow__node angular-xyflow__node"
-      [class]="nodeClasses()"
-      [attr.data-node-id]="node().id"
-      [attr.tabindex]="getTabIndex()"
-      [attr.role]="getNodeRole()"
-      [attr.aria-label]="getAriaLabel()"
-      [style.position]="'absolute'"
-      [style.transform]="nodeTransform()"
-      [style.z-index]="node().zIndex || 1"
-      [style.width]="getNodeWidth()"
-      [style.height]="node().height ? node().height + 'px' : null"
-      [style.user-select]="'none'"
-      [style.pointer-events]="'auto'"
-      [style.visibility]="nodeHasDimensions() ? 'visible' : 'hidden'"
-      [style.opacity]="node().hidden ? 0 : 1"
-      [style.cursor]="getCursor()"
-      [style]="getNodeStyles()"
-      (click)="onNodeClick($event)"
-      (dblclick)="onNodeDoubleClick($event)"
-      (contextmenu)="onNodeContextMenu($event)"
-      (mousedown)="onNodeMouseDown($event)"
-      (focus)="onNodeFocus($event)"
-      (keydown)="onNodeKeyDown($event)"
-    >
-      <!-- Node content -->
-      @if (nodeComponent()) {
-        <!-- 使用動態元件載入 - 直接渲染，不包裹 -->
-        <ng-container 
-          [ngComponentOutlet]="nodeComponent()"
-          [ngComponentOutletInputs]="nodeInputs()"
-          [ngComponentOutletInjector]="nodeInjector"
-        />
+    <!-- Node content -->
+    @if (nodeComponent()) {
+      <!-- 使用動態元件載入 - 直接渲染，不包裹 -->
+      <ng-container 
+        [ngComponentOutlet]="nodeComponent()"
+        [ngComponentOutletInputs]="nodeInputs()"
+        [ngComponentOutletInjector]="nodeInjector"
+      />
+    } @else {
+      @if (customTemplate()) {
+      <!-- 使用自定義模板（向後兼容） -->
+      <ng-container
+        [ngTemplateOutlet]="customTemplate().templateRef"
+        [ngTemplateOutletContext]="{
+          $implicit: {
+            node: node(),
+            selected: selected(),
+            dragging: dragging(),
+            onNodeClick: onNodeClick.bind(this),
+            onColorChange: onColorChange.bind(this),
+            onConnectStart: onConnectStart.bind(this),
+            onConnectEnd: onConnectEnd.bind(this),
+            onHandleClick: onHandleClick.bind(this)
+          },
+          node: node(),
+          selected: selected(),
+          dragging: dragging(),
+          onNodeClick: onNodeClick.bind(this),
+          onColorChange: onColorChange.bind(this),
+          onConnectStart: onConnectStart.bind(this),
+          onConnectEnd: onConnectEnd.bind(this),
+          onHandleClick: onHandleClick.bind(this)
+        }"
+      />
       } @else {
-        <div class="angular-xyflow__node-content">
-          @if (customTemplate()) {
-          <!-- 使用自定義模板（向後兼容） -->
-          <ng-container
-            [ngTemplateOutlet]="customTemplate().templateRef"
-            [ngTemplateOutletContext]="{
-              $implicit: {
-                node: node(),
-                selected: selected(),
-                dragging: dragging(),
-                onNodeClick: onNodeClick.bind(this),
-                onColorChange: onColorChange.bind(this),
-                onConnectStart: onConnectStart.bind(this),
-                onConnectEnd: onConnectEnd.bind(this),
-                onHandleClick: onHandleClick.bind(this)
-              },
-              node: node(),
-              selected: selected(),
-              dragging: dragging(),
-              onNodeClick: onNodeClick.bind(this),
-              onColorChange: onColorChange.bind(this),
-              onConnectStart: onConnectStart.bind(this),
-              onConnectEnd: onConnectEnd.bind(this),
-              onHandleClick: onHandleClick.bind(this)
-            }"
-          />
-          } @else {
-            <!-- 後備：簡單的標籤顯示 -->
-            <div class="angular-xyflow__node-label">{{ node().data['label'] || node().id }}</div>
-          }
-        </div>
+        <!-- 後備：簡單的標籤顯示 - 直接輸出文字，與 React 保持一致 -->
+        {{ node().data['label'] || node().id }}
       }
-    </div>
+    }
   `,
   styles: [`
     /* 基本定位和行為樣式 - 不包含顏色主題 */
@@ -127,12 +119,6 @@ import { builtinNodeTypes } from '../default-nodes';
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .angular-xyflow__node-label {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     /* 讓系統 CSS 處理所有顏色和主題相關的樣式 */
@@ -199,8 +185,12 @@ export class NodeWrapperComponent implements OnDestroy {
   // 錯誤處理事件（與 React Flow 保持一致）
   readonly onError = output<{ code: string; message: string }>();
 
-  // 視圖子元素
-  readonly nodeElement = viewChild.required<ElementRef<HTMLDivElement>>('nodeElement');
+  // Host 元素引用
+  private readonly elementRef = inject(ElementRef<HTMLDivElement>);
+  // 為了相容性，保留 nodeElement 作為 host 元素的引用
+  get nodeElement() {
+    return { nativeElement: this.elementRef.nativeElement };
+  }
 
   // 內部狀態
   private readonly isDragging = signal(false);
@@ -418,7 +408,7 @@ export class NodeWrapperComponent implements OnDestroy {
     // 雖然混合讀寫不是最佳實踐，但由於 TypeScript 類型推斷限制，暫時使用簡化版本
     afterNextRender(() => {
       const nodeData = this.node();
-      const element = this.nodeElement()?.nativeElement;
+      const element = this.nodeElement?.nativeElement;
       
       if (!element || !nodeData) {
         return;
@@ -519,7 +509,7 @@ export class NodeWrapperComponent implements OnDestroy {
 
   // 設置大小調整觀察器
   private setupResizeObserver() {
-    const element = this.nodeElement()?.nativeElement;
+    const element = this.nodeElement?.nativeElement;
     if (!element) return;
 
     this.resizeObserver = new ResizeObserver((entries) => {
@@ -530,8 +520,10 @@ export class NodeWrapperComponent implements OnDestroy {
         const width = target.offsetWidth;
         const height = target.offsetHeight;
         
+        // 測量尺寸完成
+        
         // 階段3：報告尺寸測量完成（同時更新測量尺寸）
-        this._flowService.reportNodeDimensionsMeasured(this.node().id, { width, height });
+        this._flowService.reportNodeDimensionsMeasured(this.node().id, { width, height }, target);
       }
     });
 
@@ -661,13 +653,39 @@ export class NodeWrapperComponent implements OnDestroy {
   // 輔助方法
   getNodeWidth(): string | undefined {
     const nodeData = this.node();
+    
+    // 優先使用明確設定的 width
     if (nodeData.width) {
-      return nodeData.width + 'px';
+      return typeof nodeData.width === 'number' ? nodeData.width + 'px' : nodeData.width;
+    }
+    
+    // 如果沒有明確的 width，檢查 style 中的 width（與 React Flow 一致）
+    if (nodeData.style?.['width']) {
+      const styleWidth = nodeData.style['width'];
+      return typeof styleWidth === 'number' ? styleWidth + 'px' : styleWidth;
     }
     
     // 讓 CSS 後備樣式處理預設寬度
     // 當節點沒有明確指定寬度時，不設置內聯樣式
     // 這樣 CSS 中的 150px 預設寬度會生效
+    return undefined;
+  }
+
+  getNodeHeight(): string | undefined {
+    const nodeData = this.node();
+    
+    // 優先使用明確設定的 height
+    if (nodeData.height) {
+      return typeof nodeData.height === 'number' ? nodeData.height + 'px' : nodeData.height;
+    }
+    
+    // 如果沒有明確的 height，檢查 style 中的 height（與 React Flow 一致）
+    if (nodeData.style?.['height']) {
+      const styleHeight = nodeData.style['height'];
+      return typeof styleHeight === 'number' ? styleHeight + 'px' : styleHeight;
+    }
+    
+    // 讓 CSS 後備樣式處理預設高度
     return undefined;
   }
 
@@ -696,7 +714,30 @@ export class NodeWrapperComponent implements OnDestroy {
   getNodeStyles(): any {
     const node = this.node();
     // 返回節點的自定義樣式（如果有的話）
-    return node.style || null;
+    // 注意：這裡返回的樣式會被應用到節點元素上
+    // 包含 fontSize, color, background 等樣式屬性
+    if (node.style) {
+      // 建立新的樣式物件，確保 fontSize 和 color 正確應用
+      const styles: any = {};
+      
+      // 處理 fontSize - 如果是數字，加上 'px' 單位
+      if (node.style['fontSize'] !== undefined) {
+        styles['fontSize'] = typeof node.style['fontSize'] === 'number' 
+          ? node.style['fontSize'] + 'px' 
+          : node.style['fontSize'];
+      }
+      
+      // 處理其他所有樣式屬性（包括 color, background 等）
+      Object.keys(node.style).forEach(key => {
+        if (key !== 'fontSize' && key !== 'width' && key !== 'height') {
+          // width 和 height 已經由 getNodeWidth() 和 getNodeHeight() 處理
+          styles[key] = node.style![key];
+        }
+      });
+      
+      return styles;
+    }
+    return null;
   }
 
   // 顏色改變處理（用於 selectorNode）
@@ -808,7 +849,7 @@ export class NodeWrapperComponent implements OnDestroy {
         // 清除選擇
         this._flowService.clearSelection();
         // 移除焦點 - 與 React 版本保持一致
-        const element = this.nodeElement()?.nativeElement;
+        const element = this.nodeElement?.nativeElement;
         if (element) {
           requestAnimationFrame(() => element.blur());
         }

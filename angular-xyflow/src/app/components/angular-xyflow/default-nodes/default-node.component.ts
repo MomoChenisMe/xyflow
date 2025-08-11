@@ -17,10 +17,8 @@ import { HandleComponent } from '../handle/handle.component';
       [isConnectable]="isConnectable()"
     />
     
-    <!-- 節點內容 -->
-    <div class="angular-xyflow__node-label">
-      {{ data()?.['label'] || id() }}
-    </div>
+    <!-- 節點內容 - 直接輸出文字，與 React 保持一致 -->
+    {{ data()?.['label'] || id() }}
     
     <!-- Source Handle (使用 sourcePosition 屬性) -->
     <angular-xyflow-handle

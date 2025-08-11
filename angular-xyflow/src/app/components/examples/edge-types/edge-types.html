@@ -1,0 +1,14 @@
+<angular-xyflow
+  [nodes]="nodes()"
+  [edges]="edges()"
+  (onNodesChange)="onNodesChange($event)"
+  (onEdgesChange)="onEdgesChange($event)"
+  (onInit)="onInit($event)"
+  (onConnect)="onConnect($event)"
+  [minZoom]="minZoom"
+  [fitView]="true"
+>
+  <angular-xyflow-minimap />
+  <angular-xyflow-controls />
+  <angular-xyflow-background [variant]="backgroundVariant" />
+</angular-xyflow>
