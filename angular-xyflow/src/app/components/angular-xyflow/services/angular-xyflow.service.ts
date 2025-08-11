@@ -48,17 +48,22 @@ export class AngularXYFlowService<
   EdgeType extends AngularEdge = AngularEdge
 > {
   // 持久化存储节点的 handle 位置，类似 React Flow 的行为
-  private nodeHandleBounds: Map<string, { source: any[]; target: any[] }> = new Map();
-  
+  private nodeHandleBounds: Map<string, { source: any[]; target: any[] }> =
+    new Map();
+
   // 備用的 handle 元數據（當 DOM 被移除時使用）
-  private nodeHandlesCache: Map<string, { source: any[]; target: any[] }> = new Map();
+  private nodeHandlesCache: Map<string, { source: any[]; target: any[] }> =
+    new Map();
 
   // Angular 專用：三階段測量協調器
-  private nodeRenderingStages: Map<string, {
-    componentCreated: boolean;      // 階段1：組件創建完成
-    domRendered: boolean;          // 階段2：DOM 渲染完成  
-    dimensionsMeasured: boolean;   // 階段3：尺寸測量完成
-  }> = new Map();
+  private nodeRenderingStages: Map<
+    string,
+    {
+      componentCreated: boolean; // 階段1：組件創建完成
+      domRendered: boolean; // 階段2：DOM 渲染完成
+      dimensionsMeasured: boolean; // 階段3：尺寸測量完成
+    }
+  > = new Map();
 
   constructor() {
     // 使用 computed 來自動計算節點內部狀態，避免 effect 無窮迴圈
@@ -75,7 +80,7 @@ export class AngularXYFlowService<
         const measuredFromObserver = measuredDimensions.get(node.id);
         const styleWidth = this.getNodeStyleDimension(node, 'width');
         const styleHeight = this.getNodeStyleDimension(node, 'height');
-        
+
         const measured = measuredFromObserver ||
           node.measured || {
             // 使用與 React Flow 相同的 fallback 邏輯，包括 style 中的尺寸
@@ -83,7 +88,7 @@ export class AngularXYFlowService<
             width: styleWidth || (node as any).initialWidth || 150,
             height: styleHeight || (node as any).initialHeight || 80,
           };
-          
+
         // 節點尺寸計算完成
 
         // 創建一個包含測量尺寸的節點副本，供 getNodePositionWithOrigin 使用
@@ -103,9 +108,13 @@ export class AngularXYFlowService<
           nodeOrigin
         );
 
+        // 獲取 handle bounds（與 React Flow 一致）
+        const handleBounds = this.getNodeHandleBounds(node.id);
+
         internals.set(node.id, {
           positionAbsolute,
           measured,
+          handleBounds: handleBounds || undefined, // 包含 handleBounds，與 React Flow 一致
         });
       });
 
@@ -115,22 +124,22 @@ export class AngularXYFlowService<
     // 監聽節點變化，自動管理階段追蹤
     effect(() => {
       const nodes = this._nodes();
-      
+
       // 初始化新節點的階段追蹤
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         if (!this.nodeRenderingStages.has(node.id)) {
           this.initializeNodeStages(node.id);
         }
       });
-      
+
       // 清理已移除節點的階段追蹤
-      const currentNodeIds = new Set(nodes.map(n => n.id));
+      const currentNodeIds = new Set(nodes.map((n) => n.id));
       for (const [nodeId] of this.nodeRenderingStages) {
         if (!currentNodeIds.has(nodeId)) {
           this.cleanupNodeStages(nodeId);
         }
       }
-      
+
       // 清理不再存在的節點的 handle bounds 緩存（只在節點真正被移除時）
       for (const nodeId of this.nodeHandleBounds.keys()) {
         if (!currentNodeIds.has(nodeId)) {
@@ -162,11 +171,11 @@ export class AngularXYFlowService<
   private _maxZoom = signal<number>(2);
   private _connectionRadius = signal<number>(50);
   private _fitViewQueued = signal<boolean>(false);
-  
+
   // fitView 延遲執行相關屬性
   private _fitViewOptions: any = undefined;
   private _fitViewResolver: ((value: boolean) => void) | null = null;
-  
+
   private _nodesDraggable = signal<boolean>(true);
   private _nodesConnectable = signal<boolean>(true);
   private _elementsSelectable = signal<boolean>(true);
@@ -345,39 +354,39 @@ export class AngularXYFlowService<
   readonly selectedHandles: Signal<
     Array<{ nodeId: string; handleId?: string; type: 'source' | 'target' }>
   > = computed(() => this._selectedHandles());
-  readonly connectionState: Signal<ConnectionState<NodeType>> = this._connectionState.asReadonly();
+  readonly connectionState: Signal<ConnectionState<NodeType>> =
+    this._connectionState.asReadonly();
   readonly initialized: Signal<boolean> = computed(() => this._initialized());
   readonly minZoom: Signal<number> = computed(() => this._minZoom());
   readonly maxZoom: Signal<number> = computed(() => this._maxZoom());
   readonly connectionRadius: Signal<number> = computed(() =>
     this._connectionRadius()
   );
-  
+
   // Angular 專用：檢查所有節點是否都完成三個渲染階段
   readonly nodesInitialized: Signal<boolean> = computed(() => {
     const nodes = this._nodes();
-    
+
     // 如果沒有節點，視為已初始化
     if (nodes.length === 0) {
       return true;
     }
-    
+
     // 檢查每個節點是否都完成了所有三個階段
-    const allInitialized = nodes.every(node => {
+    const allInitialized = nodes.every((node) => {
       const stages = this.nodeRenderingStages.get(node.id);
-      const isComplete = stages && 
-             stages.componentCreated && 
-             stages.domRendered && 
-             stages.dimensionsMeasured;
-      
-      
+      const isComplete =
+        stages &&
+        stages.componentCreated &&
+        stages.domRendered &&
+        stages.dimensionsMeasured;
+
       return isComplete;
     });
-    
-    
+
     return allInitialized;
   });
-  
+
   readonly nodesDraggable: Signal<boolean> = computed(() =>
     this._nodesDraggable()
   );
@@ -428,11 +437,11 @@ export class AngularXYFlowService<
   // 單獨的 setViewport 方法（供服務內部使用）
   setViewport(viewport: Viewport): void {
     const currentViewport = this._viewport();
-    const hasChanged = 
+    const hasChanged =
       currentViewport.x !== viewport.x ||
       currentViewport.y !== viewport.y ||
       currentViewport.zoom !== viewport.zoom;
-    
+
     if (hasChanged) {
       this._viewport.set({ ...viewport });
       this._transform.set([viewport.x, viewport.y, viewport.zoom]);
@@ -444,28 +453,32 @@ export class AngularXYFlowService<
     const lookup = new Map<string, NodeType>();
     const nodes = this._nodes();
     const nodeInternals = this._nodeInternals();
-    
+
     nodes.forEach((node) => {
       const internals = nodeInternals.get(node.id);
       if (internals) {
         // 創建包含 internals 的完整節點，與 React Flow 一致
+        // 確保 internals 包含所有必需的屬性，包括 handleBounds
         const nodeWithInternals = {
           ...node,
-          internals,
+          internals: {
+            positionAbsolute: internals.positionAbsolute,
+            measured: internals.measured,
+            handleBounds: (internals as any).handleBounds, // 確保 handleBounds 被包含
+          },
           // 確保 measured 屬性是最新的
           measured: internals.measured,
           // 添加 width 和 height 屬性供 system 函數使用
           width: internals.measured.width,
           height: internals.measured.height,
         } as NodeType;
-        
-        
+
         lookup.set(node.id, nodeWithInternals);
       } else {
         lookup.set(node.id, node);
       }
     });
-    
+
     return lookup;
   });
 
@@ -498,7 +511,7 @@ export class AngularXYFlowService<
 
       // 獲取緩存的 handle bounds
       const handleBounds = this.getNodeHandleBounds(node.id);
-      
+
       lookup.set(node.id, {
         ...node,
         measured,
@@ -833,7 +846,7 @@ export class AngularXYFlowService<
           this._fitViewOptions = options;
           this._fitViewResolver = resolve;
           this._fitViewQueued.set(true);
-          
+
           // 如果節點已經初始化，立即執行
           if (this.nodesInitialized()) {
             requestAnimationFrame(() => {
@@ -882,21 +895,19 @@ export class AngularXYFlowService<
   /**
    * 獲取節點的內部狀態
    */
-  getNodeInternals(
-    nodeId: string
-  ): {
+  getNodeInternals(nodeId: string): {
     positionAbsolute: XYPosition;
     measured: { width: number; height: number };
     handleBounds?: { source: any[]; target: any[] };
   } | null {
     const internals = this._nodeInternals().get(nodeId);
     if (!internals) return null;
-    
+
     // 包含 handleBounds（如果有的話）
     const handleBounds = this.nodeHandleBounds.get(nodeId);
     return {
       ...internals,
-      handleBounds: handleBounds || undefined
+      handleBounds: handleBounds || undefined,
     };
   }
 
@@ -912,6 +923,24 @@ export class AngularXYFlowService<
    */
   setNodeOrigin(origin: [number, number]): void {
     this._nodeOrigin.set(origin);
+  }
+
+  /**
+   * 將 position 字符串轉換為 Position enum
+   */
+  private stringToPositionEnum(position: string): Position {
+    switch (position) {
+      case 'top':
+        return Position.Top;
+      case 'right':
+        return Position.Right;
+      case 'bottom':
+        return Position.Bottom;
+      case 'left':
+        return Position.Left;
+      default:
+        return Position.Bottom;
+    }
   }
 
   /**
@@ -933,7 +962,6 @@ export class AngularXYFlowService<
     const viewport = this._viewport();
     const zoom = viewport.zoom;
 
-
     const sourceHandles = nodeElement.querySelectorAll('.source');
     const targetHandles = nodeElement.querySelectorAll('.target');
 
@@ -947,21 +975,22 @@ export class AngularXYFlowService<
       // x, y 是變換後的位置（左上角）
       const x = (handleBounds.left - nodeBounds.left) / zoom;
       const y = (handleBounds.top - nodeBounds.top) / zoom;
-      
-      
+
+      // 將 position 字符串轉換為 Position enum
+      const positionStr = handle.getAttribute('data-handlepos') || 'bottom';
+      const positionEnum = this.stringToPositionEnum(positionStr);
       
       const handleData = {
         id: handle.getAttribute('data-handleid') || null,
-        type: 'source',
+        type: 'source' as const,
         nodeId,
-        position: handle.getAttribute('data-handlepos') || 'bottom',
+        position: positionEnum,
         x: x,
         y: y,
         width: width,
         height: height,
       };
-      
-      
+
       return handleData;
     });
 
@@ -975,20 +1004,23 @@ export class AngularXYFlowService<
       // x, y 是變換後的位置（左上角）
       const x = (handleBounds.left - nodeBounds.left) / zoom;
       const y = (handleBounds.top - nodeBounds.top) / zoom;
-      
+
+
+      // 將 position 字符串轉換為 Position enum
+      const positionStr = handle.getAttribute('data-handlepos') || 'top';
+      const positionEnum = this.stringToPositionEnum(positionStr);
       
       const handleData = {
         id: handle.getAttribute('data-handleid') || null,
-        type: 'target',
+        type: 'target' as const,
         nodeId,
-        position: handle.getAttribute('data-handlepos') || 'top',
+        position: positionEnum,
         x: x,
         y: y,
         width: width,
         height: height,
       };
-      
-      
+
       return handleData;
     });
 
@@ -1012,20 +1044,23 @@ export class AngularXYFlowService<
     // 嘗試從 handle bounds 獲取具體的 handle
     const handleBounds = this.getNodeHandleBounds(nodeId);
     let handle: any = null;
-    
+
     if (handleBounds) {
-      const handles = handleType === 'source' ? handleBounds.source : handleBounds.target;
+      const handles =
+        handleType === 'source' ? handleBounds.source : handleBounds.target;
       if (handles && handles.length > 0) {
         // 如果沒有指定 handleId，使用第一個 handle；否則根據 id 查找
-        handle = !handleId ? handles[0] : handles.find((h: any) => h.id === handleId);
+        handle = !handleId
+          ? handles[0]
+          : handles.find((h: any) => h.id === handleId);
       }
     }
 
     const position =
-      handlePosition || handle?.position ||
+      handlePosition ||
+      handle?.position ||
       (handleType === 'source' ? Position.Bottom : Position.Top);
-    
-    
+
     // 如果有具體的 handle，使用其位置和尺寸
     // 重要：handle.x 和 handle.y 是經過 CSS transform 後的位置
     // CSS transform 已經將 Handle 移動到視覺位置（例如 bottom handle 向下偏移 50%）
@@ -1037,14 +1072,13 @@ export class AngularXYFlowService<
       // 對於 6px + 1px border 的 Handle，實際是 8x8
       const width = handle.width ?? 8;
       const height = handle.height ?? 8;
-      
-      
+
       // 根據 position 計算 Edge 端點位置
       // Edge 應該連接到 Handle 的邊緣，而不是中心
       let result: XYPosition;
       const centerX = x + width / 2;
       const centerY = y + height / 2;
-      
+
       switch (position) {
         case Position.Top:
           // Edge 連接到 Handle 的頂部邊緣
@@ -1066,10 +1100,10 @@ export class AngularXYFlowService<
           // 預設返回中心點
           result = { x: centerX, y: centerY };
       }
-      
+
       return result;
     }
-    
+
     // 備用：如果沒有 handle bounds，使用節點尺寸（保持原有邏輯）
     const { width, height } = internals.measured;
     const { x, y } = internals.positionAbsolute;
@@ -1097,10 +1131,10 @@ export class AngularXYFlowService<
    */
   updateNodeInternals(nodeIds: string | string[]) {
     const ids = Array.isArray(nodeIds) ? nodeIds : [nodeIds];
-    
+
     // 測量並存储 handle 位置
     requestAnimationFrame(() => {
-      ids.forEach(nodeId => {
+      ids.forEach((nodeId) => {
         const bounds = this.measureNodeHandleBounds(nodeId);
         if (bounds && (bounds.source.length > 0 || bounds.target.length > 0)) {
           // 儲存到兩個地方：主要快取和備用快取
@@ -1108,24 +1142,29 @@ export class AngularXYFlowService<
           this.nodeHandlesCache.set(nodeId, bounds);
         }
       });
-      
+
       // 觸發 computed signal 更新
       this._nodeInternalsUpdateTrigger.update((v) => v + 1);
     });
   }
-  
+
   /**
    * 獲取快取的 handle bounds（用於 DOM 被移除時的備用）
    */
   getNodeHandleBounds(nodeId: string) {
     // 優先返回主要快取，如果沒有則返回備用快取
-    return this.nodeHandleBounds.get(nodeId) || this.nodeHandlesCache.get(nodeId);
+    return (
+      this.nodeHandleBounds.get(nodeId) || this.nodeHandlesCache.get(nodeId)
+    );
   }
-  
+
   /**
    * 直接設定 handle bounds（用於初始化）
    */
-  setNodeHandleBounds(nodeId: string, bounds: { source: any[]; target: any[] }) {
+  setNodeHandleBounds(
+    nodeId: string,
+    bounds: { source: any[]; target: any[] }
+  ) {
     if (bounds && (bounds.source.length > 0 || bounds.target.length > 0)) {
       this.nodeHandleBounds.set(nodeId, bounds);
       this.nodeHandlesCache.set(nodeId, bounds);
@@ -1681,7 +1720,6 @@ export class AngularXYFlowService<
   // 全局事件監聽器管理
   private activeMouseMoveHandler: ((e: MouseEvent) => void) | null = null;
   private activeMouseUpHandler: ((e: MouseEvent) => void) | null = null;
-  
 
   // 連接狀態管理方法
   startConnection(
@@ -1692,11 +1730,11 @@ export class AngularXYFlowService<
   ) {
     // 清理之前的事件監聽器（如果有的話）
     this.cleanupConnectionListeners();
-    
+
     // 重要：在連接開始前預先快取所有節點的 handle 位置
     // 這樣即使後來 handles 被條件渲染隱藏，我們仍然知道它們的位置
     const allNodes = this._nodes();
-    allNodes.forEach(node => {
+    allNodes.forEach((node) => {
       const bounds = this.measureNodeHandleBounds(node.id);
       if (bounds) {
         this.nodeHandleBounds.set(node.id, bounds);
@@ -1752,7 +1790,8 @@ export class AngularXYFlowService<
     });
 
     // 尋找最近的有效 handle 進行磁吸
-    const fromHandle = (currentState as ConnectionInProgress<NodeType>).fromHandle;
+    const fromHandle = (currentState as ConnectionInProgress<NodeType>)
+      .fromHandle;
     const closestHandle = this.findClosestHandle(flowPosition, {
       nodeId: fromHandle.nodeId,
       type: fromHandle.type,
@@ -1784,7 +1823,8 @@ export class AngularXYFlowService<
       y: event.clientY,
     });
 
-    const fromHandle = (currentState as ConnectionInProgress<NodeType>).fromHandle;
+    const fromHandle = (currentState as ConnectionInProgress<NodeType>)
+      .fromHandle;
     const closestHandle = this.findClosestHandle(mousePosition, {
       nodeId: fromHandle.nodeId,
       type: fromHandle.type,
@@ -1801,10 +1841,18 @@ export class AngularXYFlowService<
 
       if (isValidConnection) {
         connection = {
-          source: fromHandle.type === 'source' ? fromHandle.nodeId : closestHandle.nodeId,
-          sourceHandle: fromHandle.type === 'source' ? fromHandle.id : closestHandle.id,
-          target: fromHandle.type === 'source' ? closestHandle.nodeId : fromHandle.nodeId,
-          targetHandle: fromHandle.type === 'source' ? closestHandle.id : fromHandle.id,
+          source:
+            fromHandle.type === 'source'
+              ? fromHandle.nodeId
+              : closestHandle.nodeId,
+          sourceHandle:
+            fromHandle.type === 'source' ? fromHandle.id : closestHandle.id,
+          target:
+            fromHandle.type === 'source'
+              ? closestHandle.nodeId
+              : fromHandle.nodeId,
+          targetHandle:
+            fromHandle.type === 'source' ? closestHandle.id : fromHandle.id,
         };
       }
     }
@@ -1883,7 +1931,7 @@ export class AngularXYFlowService<
 
     // 清理全局事件監聽器
     this.cleanupConnectionListeners();
-    
+
     // 清理緩存的 handle bounds
   }
 
@@ -2023,15 +2071,22 @@ export class AngularXYFlowService<
         const container = this.getContainerElement();
         if (container) {
           const containerRect = container.getBoundingClientRect();
-          const screenX = handle.x * this._viewport().zoom + this._viewport().x + containerRect.left;
-          const screenY = handle.y * this._viewport().zoom + this._viewport().y + containerRect.top;
-          
+          const screenX =
+            handle.x * this._viewport().zoom +
+            this._viewport().x +
+            containerRect.left;
+          const screenY =
+            handle.y * this._viewport().zoom +
+            this._viewport().y +
+            containerRect.top;
+
           // 使用 elementFromPoint 檢查該位置是否真的有 handle 元素
           const elementAtPoint = document.elementFromPoint(screenX, screenY);
-          const isValidHandle = elementAtPoint?.classList.contains('xy-flow__handle') ||
-                               elementAtPoint?.classList.contains('source') ||
-                               elementAtPoint?.classList.contains('target');
-          
+          const isValidHandle =
+            elementAtPoint?.classList.contains('xy-flow__handle') ||
+            elementAtPoint?.classList.contains('source') ||
+            elementAtPoint?.classList.contains('target');
+
           // 如果 DOM 驗證失敗，跳過這個 handle（可能被條件渲染移除了）
           if (!isValidHandle) {
             return;
@@ -2077,7 +2132,7 @@ export class AngularXYFlowService<
         this.nodeHandleBounds.set(node.id, measured);
       }
     }
-    
+
     if (handleBounds) {
       const handles: Handle[] = [];
       const internals = this._nodeInternals().get(node.id);
@@ -2264,17 +2319,18 @@ export class AngularXYFlowService<
     const options = this._fitViewOptions || {};
     const nodeInternals = this._nodeInternals();
     const fitViewNodes = new Map<string, NodeType>();
-    const optionNodeIds = options.nodes ? new Set(options.nodes.map((node: any) => node.id)) : null;
+    const optionNodeIds = options.nodes
+      ? new Set(options.nodes.map((node: any) => node.id))
+      : null;
 
-
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       // 使用與 React Flow 完全相同的邏輯：檢查 internals 中的測量尺寸
       const internals = nodeInternals.get(node.id);
-      const isVisible = internals && 
-                       internals.measured.width > 0 && 
-                       internals.measured.height > 0 && 
-                       (options.includeHiddenNodes || !node.hidden);
-
+      const isVisible =
+        internals &&
+        internals.measured.width > 0 &&
+        internals.measured.height > 0 &&
+        (options.includeHiddenNodes || !node.hidden);
 
       // 只包含在選項中指定的節點（如果有的話）
       if (isVisible && (!optionNodeIds || optionNodeIds.has(node.id))) {
@@ -2282,12 +2338,16 @@ export class AngularXYFlowService<
       }
     });
 
-    
     return fitViewNodes;
   }
 
   // React Flow 風格的輔助方法：計算節點邊界（完全模擬 React Flow 的 getInternalNodesBounds + nodeToBox）
-  private getInternalNodesBounds(nodes: Map<string, NodeType>): { x: number; y: number; width: number; height: number } {
+  private getInternalNodesBounds(nodes: Map<string, NodeType>): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } {
     if (nodes.size === 0) {
       return { x: 0, y: 0, width: 0, height: 0 };
     }
@@ -2295,29 +2355,31 @@ export class AngularXYFlowService<
     let box = { x: Infinity, y: Infinity, x2: -Infinity, y2: -Infinity };
     const nodeInternals = this._nodeInternals();
 
-    
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       const internals = nodeInternals.get(node.id);
-      if (internals && internals.measured.width > 0 && internals.measured.height > 0) {
+      if (
+        internals &&
+        internals.measured.width > 0 &&
+        internals.measured.height > 0
+      ) {
         // 使用與 React Flow nodeToBox 完全相同的邏輯
         const { x, y } = internals.positionAbsolute;
         const width = internals.measured.width;
         const height = internals.measured.height;
-        
+
         const nodeBox = {
           x,
-          y, 
+          y,
           x2: x + width,
-          y2: y + height
+          y2: y + height,
         };
-
 
         // React Flow 的 getBoundsOfBoxes 邏輯
         box = {
           x: Math.min(box.x, nodeBox.x),
           y: Math.min(box.y, nodeBox.y),
           x2: Math.max(box.x2, nodeBox.x2),
-          y2: Math.max(box.y2, nodeBox.y2)
+          y2: Math.max(box.y2, nodeBox.y2),
         };
       } else {
       }
@@ -2328,25 +2390,30 @@ export class AngularXYFlowService<
       x: box.x,
       y: box.y,
       width: box.x2 - box.x,
-      height: box.y2 - box.y
+      height: box.y2 - box.y,
     };
-    
+
     return bounds;
   }
 
   // React Flow 風格的輔助方法：解析 padding 值（模擬 React Flow 的 parsePadding 函數）
-  private parsePaddingValue(padding: number | { top?: number; right?: number; bottom?: number; left?: number }, 
-                          width: number, height: number): { top: number; right: number; bottom: number; left: number } {
+  private parsePaddingValue(
+    padding:
+      | number
+      | { top?: number; right?: number; bottom?: number; left?: number },
+    width: number,
+    height: number
+  ): { top: number; right: number; bottom: number; left: number } {
     if (typeof padding === 'number') {
       // React Flow 的關鍵公式：Math.floor((viewport - viewport / (1 + padding)) * 0.5)
       const paddingX = Math.floor((width - width / (1 + padding)) * 0.5);
       const paddingY = Math.floor((height - height / (1 + padding)) * 0.5);
-      
+
       return {
         top: paddingY,
         right: paddingX,
         bottom: paddingY,
-        left: paddingX
+        left: paddingX,
       };
     } else {
       // 對象類型 padding
@@ -2354,7 +2421,7 @@ export class AngularXYFlowService<
         top: padding.top || 0,
         right: padding.right || 0,
         bottom: padding.bottom || 0,
-        left: padding.left || 0
+        left: padding.left || 0,
       };
     }
   }
@@ -2381,15 +2448,20 @@ export class AngularXYFlowService<
       // 步驟2：使用 React Flow 的邊界計算邏輯
       const bounds = this.getInternalNodesBounds(nodesToFit);
 
-      
       // 步驟3：使用 React Flow 的 padding 計算公式
       const padding = options.padding || 0.1;
-      const parsedPadding = this.parsePaddingValue(padding, dimensions.width, dimensions.height);
+      const parsedPadding = this.parsePaddingValue(
+        padding,
+        dimensions.width,
+        dimensions.height
+      );
 
       // 步驟4：計算縮放比例（與 React Flow 一致）
-      const availableWidth = dimensions.width - parsedPadding.left - parsedPadding.right;
-      const availableHeight = dimensions.height - parsedPadding.top - parsedPadding.bottom;
-      
+      const availableWidth =
+        dimensions.width - parsedPadding.left - parsedPadding.right;
+      const availableHeight =
+        dimensions.height - parsedPadding.top - parsedPadding.bottom;
+
       const scaleX = availableWidth / bounds.width;
       const scaleY = availableHeight / bounds.height;
       let zoom = Math.min(scaleX, scaleY);
@@ -2409,23 +2481,24 @@ export class AngularXYFlowService<
       const y = viewportCenterY - boundsCenterY * zoom;
 
       const newViewport = { x, y, zoom };
-      
 
       // 使用 PanZoom 實例進行平滑動畫
       if (this.panZoom && typeof this.panZoom.setViewport === 'function') {
-        this.panZoom.setViewport(newViewport, {
-          duration: options.duration || 200,
-        }).then(() => {
-          this.resolveFitView(true);
-        }).catch(() => {
-          this.resolveFitView(false);
-        });
+        this.panZoom
+          .setViewport(newViewport, {
+            duration: options.duration || 200,
+          })
+          .then(() => {
+            this.resolveFitView(true);
+          })
+          .catch(() => {
+            this.resolveFitView(false);
+          });
       } else {
         // 如果沒有 PanZoom 實例，直接更新 viewport
         this._viewport.set(newViewport);
         this.resolveFitView(true);
       }
-
     } catch (error) {
       console.error('Error in executeFitView:', error);
       this.resolveFitView(false);
@@ -2443,7 +2516,7 @@ export class AngularXYFlowService<
   }
 
   // Angular 專用：三階段測量管理方法
-  
+
   /**
    * 初始化節點的渲染階段追蹤
    */
@@ -2451,7 +2524,7 @@ export class AngularXYFlowService<
     this.nodeRenderingStages.set(nodeId, {
       componentCreated: false,
       domRendered: false,
-      dimensionsMeasured: false
+      dimensionsMeasured: false,
     });
   }
 
@@ -2480,15 +2553,19 @@ export class AngularXYFlowService<
   /**
    * 報告階段3完成：尺寸測量完成
    */
-  reportNodeDimensionsMeasured(nodeId: string, dimensions: { width: number; height: number }, nodeElement: HTMLElement): void {
+  reportNodeDimensionsMeasured(
+    nodeId: string,
+    dimensions: { width: number; height: number },
+    nodeElement: HTMLElement
+  ): void {
     const stages = this.nodeRenderingStages.get(nodeId);
-    
+
     if (stages && dimensions.width > 0 && dimensions.height > 0) {
       stages.dimensionsMeasured = true;
-      
+
       // 與 React Flow 一致：在測量尺寸後立即調用 updateNodeInternals
       this.updateNodeInternalsForElement(nodeId, nodeElement);
-      
+
       this.checkAndExecutePendingFitView();
     }
   }
@@ -2507,7 +2584,11 @@ export class AngularXYFlowService<
    * 檢查並執行待執行的 fitView
    */
   private checkAndExecutePendingFitView(): void {
-    if (this._fitViewQueued() && this.nodesInitialized() && this._fitViewResolver) {
+    if (
+      this._fitViewQueued() &&
+      this.nodesInitialized() &&
+      this._fitViewResolver
+    ) {
       requestAnimationFrame(() => {
         this.executeFitView();
       });
@@ -2525,12 +2606,17 @@ export class AngularXYFlowService<
    * 從節點中提取尺寸，優先序: node.width/height -> node.style?.width/height
    * 與 React Flow 的 getNodeInlineStyleDimensions 邏輯一致
    */
-  private getNodeStyleDimension(node: any, dimension: 'width' | 'height'): number | undefined {
+  private getNodeStyleDimension(
+    node: any,
+    dimension: 'width' | 'height'
+  ): number | undefined {
     // 1. 優先使用直接設置的 width/height
     if (node[dimension] !== undefined) {
-      return typeof node[dimension] === 'number' ? node[dimension] : parseFloat(node[dimension]);
+      return typeof node[dimension] === 'number'
+        ? node[dimension]
+        : parseFloat(node[dimension]);
     }
-    
+
     // 2. 然後使用 style 中的 width/height
     if (node.style?.[dimension] !== undefined) {
       const styleValue = node.style[dimension];
@@ -2542,7 +2628,7 @@ export class AngularXYFlowService<
         return isNaN(numericValue) ? undefined : numericValue;
       }
     }
-    
+
     return undefined;
   }
 
@@ -2550,12 +2636,17 @@ export class AngularXYFlowService<
    * 為單一節點調用 system updateNodeInternals邏輯
    * 與 React Flow 一致，用於更新節點的內部狀態和 handle bounds
    */
-  private updateNodeInternalsForElement(nodeId: string, nodeElement: HTMLElement): void {
-    const node = this._nodes().find(n => n.id === nodeId);
+  private updateNodeInternalsForElement(
+    nodeId: string,
+    nodeElement: HTMLElement
+  ): void {
+    const node = this._nodes().find((n) => n.id === nodeId);
     const currentInternals = this._nodeInternals().get(nodeId);
-    
+
     if (!node || !currentInternals) {
-      console.warn(`[Service] Cannot update internals for node ${nodeId}: node or internals not found`);
+      console.warn(
+        `[Service] Cannot update internals for node ${nodeId}: node or internals not found`
+      );
       return;
     }
 
@@ -2563,13 +2654,13 @@ export class AngularXYFlowService<
     const actualDimensions = getDimensions(nodeElement as HTMLDivElement);
 
     // 直接更新測量尺寸 signal
-    this._nodeMeasuredDimensions.update(map => {
+    this._nodeMeasuredDimensions.update((map) => {
       map.set(nodeId, actualDimensions);
       return map;
     });
-    
+
     // 觸發重新計算 - 這會使 computed nodeInternals 重新執行
-    this._nodeInternalsUpdateTrigger.update(value => value + 1);
+    this._nodeInternalsUpdateTrigger.update((value) => value + 1);
   }
 
   /**
@@ -2583,13 +2674,17 @@ export class AngularXYFlowService<
     let stage3Complete = 0;
     let fullyComplete = 0;
 
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       const stages = this.nodeRenderingStages.get(node.id);
       if (stages) {
         if (stages.componentCreated) stage1Complete++;
         if (stages.domRendered) stage2Complete++;
         if (stages.dimensionsMeasured) stage3Complete++;
-        if (stages.componentCreated && stages.domRendered && stages.dimensionsMeasured) {
+        if (
+          stages.componentCreated &&
+          stages.domRendered &&
+          stages.dimensionsMeasured
+        ) {
           fullyComplete++;
         }
       }
@@ -2601,7 +2696,7 @@ export class AngularXYFlowService<
       stage2Complete,
       stage3Complete,
       fullyComplete,
-      isFullyInitialized: fullyComplete === total
+      isFullyInitialized: fullyComplete === total,
     };
   }
 }

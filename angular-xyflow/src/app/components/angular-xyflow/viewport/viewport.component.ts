@@ -79,47 +79,45 @@ export interface EdgeConnectionPoints {
 
       <!-- Edges layer -->
       <div class="xy-flow__edges angular-xyflow__edges">
-        @for (edge of visibleEdges(); track edge.id) {
-          @let connectionPoints = edgeConnectionPointsMap().get(edge.id);
-          @if (connectionPoints) {
-            <angular-xyflow-edge-wrapper
-              [edge]="edge"
-              [sourceX]="connectionPoints.sourceX"
-              [sourceY]="connectionPoints.sourceY"
-              [targetX]="connectionPoints.targetX"
-              [targetY]="connectionPoints.targetY"
-              [sourcePosition]="connectionPoints.sourcePosition"
-              [targetPosition]="connectionPoints.targetPosition"
-              [isDarkMode]="isDarkMode()"
-              [edgeTypes]="edgeTypes()"
-              [getMarkerId]="getMarkerId()"
-              (edgeClick)="edgeClick.emit($event)"
-              (edgeDoubleClick)="edgeDoubleClick.emit($event)"
-              (edgeContextMenu)="edgeContextMenu.emit($event)"
-              (edgeFocus)="edgeFocus.emit($event)"
-              (edgeKeyDown)="edgeKeyDown.emit($event)"
-            />
-          }
-        }
+        @for (edge of visibleEdges(); track edge.id) { @let connectionPoints =
+        edgeConnectionPointsMap().get(edge.id); @if (connectionPoints) {
+        <angular-xyflow-edge-wrapper
+          [edge]="edge"
+          [sourceX]="connectionPoints.sourceX"
+          [sourceY]="connectionPoints.sourceY"
+          [targetX]="connectionPoints.targetX"
+          [targetY]="connectionPoints.targetY"
+          [sourcePosition]="connectionPoints.sourcePosition"
+          [targetPosition]="connectionPoints.targetPosition"
+          [isDarkMode]="isDarkMode()"
+          [edgeTypes]="edgeTypes()"
+          [getMarkerId]="getMarkerId()"
+          (edgeClick)="edgeClick.emit($event)"
+          (edgeDoubleClick)="edgeDoubleClick.emit($event)"
+          (edgeContextMenu)="edgeContextMenu.emit($event)"
+          (edgeFocus)="edgeFocus.emit($event)"
+          (edgeKeyDown)="edgeKeyDown.emit($event)"
+        />
+        } }
       </div>
 
       <!-- Connection Line - 顯示連接進行中的線條（獨立層，高於節點） -->
       @if (connectionInProgress()) {
-        <svg:svg
-          class="xy-flow__connectionline angular-xyflow__connectionline xy-flow__container"
-          [style.position]="'absolute'"
-          [style.top]="'0'"
-          [style.left]="'0'"
-          [style.width]="'100%'"
-          [style.height]="'100%'"
-          [style.pointer-events]="'none'"
-          [style.z-index]="'1001'"
-          [style.overflow]="'visible'"
-          angular-xyflow-connection-line
-          [connectionState]="connectionInProgress()"
-          [customTemplate]="customConnectionLineTemplate()"
-          [connectionLineStyle]="connectionLineStyle()"
-        />
+      <svg:svg
+        class="xy-flow__connectionline angular-xyflow__connectionline xy-flow__container"
+        [style.position]="'absolute'"
+        [style.top]="'0'"
+        [style.left]="'0'"
+        [style.width]="'100%'"
+        [style.height]="'100%'"
+        [style.pointer-events]="'none'"
+        [style.z-index]="'1001'"
+        [style.overflow]="'visible'"
+        angular-xyflow-connection-line
+        [connectionState]="connectionInProgress()"
+        [customTemplate]="customConnectionLineTemplate()"
+        [connectionLineStyle]="connectionLineStyle()"
+      />
       }
 
       <!-- Nodes layer -->
@@ -144,7 +142,13 @@ export interface EdgeConnectionPoints {
           (nodeContextMenu)="nodeContextMenu.emit({ event: $event, node })"
           (nodeFocus)="nodeFocus.emit({ event: $event, node })"
           (nodeDragStart)="nodeDragStart.emit({ event: $event, node })"
-          (nodeDrag)="nodeDrag.emit({ event: $event.event, position: $event.position, node })"
+          (nodeDrag)="
+            nodeDrag.emit({
+              event: $event.event,
+              position: $event.position,
+              node
+            })
+          "
           (nodeDragStop)="nodeDragStop.emit({ event: $event, node })"
           (connectStart)="connectStart.emit({ event: $event.event, node })"
           (connectEnd)="connectEnd.emit($event)"
@@ -194,7 +198,9 @@ export class ViewportComponent<
   visibleNodes = input.required<NodeType[]>();
   visibleEdges = input.required<EdgeType[]>();
   connectionInProgress = input.required<ConnectionState | null>();
-  customConnectionLineTemplate = input<TemplateRef<ConnectionLineTemplateContext> | undefined>();
+  customConnectionLineTemplate = input<
+    TemplateRef<ConnectionLineTemplateContext> | undefined
+  >();
   connectionLineStyle = input<Record<string, any>>();
   customNodeTemplates = input<readonly any[]>([]);
   nodeTypes = input<NodeTypes>();
@@ -207,8 +213,18 @@ export class ViewportComponent<
 
   // 函數輸入
   getNodeById = input.required<(id: string) => NodeType | undefined>();
-  getEdgeConnectionPoints = input.required<(sourceNode: NodeType, targetNode: NodeType, edge: EdgeType) => EdgeConnectionPoints>();
-  getMarkerId = input.required<(edge: any, position: 'start' | 'end', marker: EdgeMarker) => string>();
+  getEdgeConnectionPoints =
+    input.required<
+      (
+        sourceNode: NodeType,
+        targetNode: NodeType,
+        edge: EdgeType
+      ) => EdgeConnectionPoints
+    >();
+  getMarkerId =
+    input.required<
+      (edge: any, position: 'start' | 'end', marker: EdgeMarker) => string
+    >();
 
   // 計算 Edge 連接點
   // 注意：移除快取機制，確保節點位置變化時能正確更新
@@ -217,20 +233,22 @@ export class ViewportComponent<
     const edges = this.visibleEdges();
     const getNode = this.getNodeById();
     const getConnectionPoints = this.getEdgeConnectionPoints();
-    
+
     const connectionPointsMap = new Map<string, EdgeConnectionPoints>();
-    
+
     // 不使用快取，確保每次節點位置改變時都能重新計算
-    edges.forEach(edge => {
+    edges.forEach((edge) => {
       const sourceNode = getNode(edge.source);
       const targetNode = getNode(edge.target);
-      
       if (sourceNode && targetNode) {
-        const connectionPoints = getConnectionPoints(sourceNode, targetNode, edge);
+        const connectionPoints = getConnectionPoints(
+          sourceNode,
+          targetNode,
+          edge
+        );
         connectionPointsMap.set(edge.id, connectionPoints);
       }
     });
-    
     return connectionPointsMap;
   });
 
@@ -240,11 +258,20 @@ export class ViewportComponent<
   nodeContextMenu = output<{ event: MouseEvent; node: NodeType }>();
   nodeFocus = output<{ event: FocusEvent; node: NodeType }>();
   nodeDragStart = output<{ event: MouseEvent; node: NodeType }>();
-  nodeDrag = output<{ event: MouseEvent; position: { x: number; y: number }; node: NodeType }>();
+  nodeDrag = output<{
+    event: MouseEvent;
+    position: { x: number; y: number };
+    node: NodeType;
+  }>();
   nodeDragStop = output<{ event: MouseEvent; node: NodeType }>();
   connectStart = output<{ event: MouseEvent; node: NodeType }>();
   connectEnd = output<{ connection?: any; event: MouseEvent }>();
-  handleClick = output<{ event: MouseEvent; nodeId: string; handleId?: string; handleType: string }>();
+  handleClick = output<{
+    event: MouseEvent;
+    nodeId: string;
+    handleId?: string;
+    handleType: string;
+  }>();
   edgeClick = output<{ event: MouseEvent; edge: EdgeType }>();
   edgeDoubleClick = output<{ event: MouseEvent; edge: EdgeType }>();
   edgeContextMenu = output<{ event: MouseEvent; edge: EdgeType }>();
@@ -262,7 +289,10 @@ export class ViewportComponent<
     return (edge: EdgeType) => {
       // React 版本邏輯：edge.focusable || (edgesFocusable && typeof edge.focusable === 'undefined')
       const edgesFocusable = this._flowService.edgesFocusable();
-      return !!(edge.focusable || (edgesFocusable && typeof edge.focusable === 'undefined'));
+      return !!(
+        edge.focusable ||
+        (edgesFocusable && typeof edge.focusable === 'undefined')
+      );
     };
   });
 

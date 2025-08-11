@@ -185,7 +185,7 @@ export class HandleComponent implements OnDestroy {
     // 關鍵：模擬 React Flow Handle 組件的自動行為
     // 在 Handle 首次渲染時，自動觸發 node internals 更新
     // 這確保即使後來 handles 被條件渲染隱藏，系統仍知道它們的位置
-    
+
     // 使用 afterNextRender 進行首次初始化
     afterNextRender(() => {
       const nodeId = this.nodeId();
@@ -196,24 +196,24 @@ export class HandleComponent implements OnDestroy {
         this._flowService.setNodeHandleBounds(nodeId, bounds);
       }
     });
-    
+
     // 使用 afterEveryRender 處理後續的更新
     let isFirstUpdate = true;
-    afterEveryRender(() => {
-      // 跳過首次渲染（已由 afterNextRender 處理）
-      if (isFirstUpdate) {
-        isFirstUpdate = false;
-        return;
-      }
-      
-      const nodeId = this.nodeId();
-      // 測量當前節點的 handle bounds
-      const bounds = this._flowService.measureNodeHandleBounds(nodeId);
-      if (bounds && (bounds.source.length > 0 || bounds.target.length > 0)) {
-        // 後續更新使用 updateNodeInternals
-        this._flowService.updateNodeInternals(nodeId);
-      }
-    });
+    // afterEveryRender(() => {
+    //   // 跳過首次渲染（已由 afterNextRender 處理）
+    //   if (isFirstUpdate) {
+    //     isFirstUpdate = false;
+    //     return;
+    //   }
+
+    //   const nodeId = this.nodeId();
+    //   // 測量當前節點的 handle bounds
+    //   const bounds = this._flowService.measureNodeHandleBounds(nodeId);
+    //   if (bounds && (bounds.source.length > 0 || bounds.target.length > 0)) {
+    //     // 後續更新使用 updateNodeInternals
+    //     this._flowService.updateNodeInternals(nodeId);
+    //   }
+    // });
   }
 
   ngOnDestroy(): void {
@@ -221,7 +221,7 @@ export class HandleComponent implements OnDestroy {
     // 連線的生命週期應該由全局 mouse 事件管理，而不是由 Handle 組件的生命週期管理
     // 這是為了支援條件渲染：當 Handle 因為條件渲染而被移除時，連線狀態應該保持
     // React Flow 也是這樣處理的 - Handle 的銷毀不會影響連線狀態
-    
+
     // 只清理本地狀態，不影響全局連線狀態
     this.isConnecting.set(false);
     this.connectionValid.set(null);
@@ -231,7 +231,7 @@ export class HandleComponent implements OnDestroy {
   handleMouseDown(event: MouseEvent): void {
     // 檢查是否允許連接
     if (!this.canConnect()) return;
-    
+
     // 檢查是否可以作為連線起點
     if (!this.isConnectableStart()) return;
 
@@ -275,7 +275,7 @@ export class HandleComponent implements OnDestroy {
       x: handlePosition.x,
       y: handlePosition.y,
     };
-    
+
     // 開始連接並觸發事件（通過服務）
     // 服務現在會管理所有的全局事件監聽器
     this._flowService.startConnection(node, handle, handlePosition, event);

@@ -140,7 +140,7 @@ export class BezierEdgeComponent {
       targetX: this.targetX(),
       targetY: this.targetY(),
       targetPosition: this.targetPosition(),
-      curvature: this.pathOptions()?.curvature,
+      curvature: this.pathOptions()?.curvature || 30,
     });
   });
 

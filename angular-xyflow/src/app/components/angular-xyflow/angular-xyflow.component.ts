@@ -462,8 +462,12 @@ export class AngularXYFlowComponent<
   flowContainer =
     viewChild.required<ElementRef<HTMLDivElement>>('flowContainer');
   viewportComponent = viewChild.required<ViewportComponent>('viewport');
-  edgeLabelContainer = viewChild('edgeLabelContainer', { read: ViewContainerRef });
-  edgeLabelRendererContainer = viewChild<ElementRef<HTMLDivElement>>('edgeLabelRendererContainer');
+  edgeLabelContainer = viewChild('edgeLabelContainer', {
+    read: ViewContainerRef,
+  });
+  edgeLabelRendererContainer = viewChild<ElementRef<HTMLDivElement>>(
+    'edgeLabelRendererContainer'
+  );
 
   // 獲取 viewport 元素的方法
   get viewportElement() {
@@ -589,7 +593,7 @@ export class AngularXYFlowComponent<
         this._edgeLabelService.setContainer(container);
       }
     });
-    
+
     // 手動更新 edge label renderer 容器的 transform
     // 使用 untracked 避免建立依賴關係，防止無限變更檢測
     afterEveryRender(() => {
@@ -1014,11 +1018,11 @@ export class AngularXYFlowComponent<
     // 使用 nodeLookup 而不是 visibleNodes，確保獲取包含 internals 的完整節點資訊
     const nodeLookup = this._flowService.nodeLookup();
     const internalNode = nodeLookup.get(id);
-    
+
     if (!internalNode) {
       return undefined;
     }
-    
+
     // 返回包含 internals 的完整節點
     return internalNode as NodeType;
   }
@@ -1040,8 +1044,12 @@ export class AngularXYFlowComponent<
     const internalSourceNode = sourceNode as any;
     const internalTargetNode = targetNode as any;
     
+    
     // 如果節點還沒有 handleBounds，表示還未初始化完成，使用備用計算
-    if (!internalSourceNode.internals?.handleBounds || !internalTargetNode.internals?.handleBounds) {
+    if (
+      !internalSourceNode.internals?.handleBounds ||
+      !internalTargetNode.internals?.handleBounds
+    ) {
       return this.getFallbackEdgePosition(sourceNode, targetNode);
     }
 
@@ -1057,12 +1065,11 @@ export class AngularXYFlowComponent<
         // Silently handle edge position errors
       },
     });
-
+    
     // 如果 getEdgePosition 返回 null，則使用備用計算
     if (!edgePosition) {
       return this.getFallbackEdgePosition(sourceNode, targetNode);
     }
-
     return {
       sourceX: edgePosition.sourceX,
       sourceY: edgePosition.sourceY,
@@ -1507,7 +1514,6 @@ export class AngularXYFlowComponent<
       }
     }
   }
-
 
   // 清理 ResizeObserver 和 window resize listener
   private cleanupResizeObserver() {

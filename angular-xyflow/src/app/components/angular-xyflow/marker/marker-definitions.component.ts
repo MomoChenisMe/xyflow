@@ -30,7 +30,7 @@ export interface MarkerProps extends EdgeMarker {
               [attr.markerWidth]="marker.width || 12.5"
               [attr.markerHeight]="marker.height || 12.5"
               [attr.viewBox]="'-10 -10 20 20'"
-              [attr.refX]="4"
+              [attr.refX]="0"
               [attr.refY]="0"
               [attr.orient]="marker.orient || 'auto-start-reverse'"
               [attr.markerUnits]="marker.markerUnits || 'strokeWidth'"
