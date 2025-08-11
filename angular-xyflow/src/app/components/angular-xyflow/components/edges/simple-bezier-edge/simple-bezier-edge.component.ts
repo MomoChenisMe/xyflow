@@ -232,7 +232,7 @@ export class SimpleBezierEdgeComponent {
     const isSelected = this.selected();
     const defaultStyle = {
       stroke: isSelected ? '#555' : '#b1b1b7',
-      strokeWidth: isSelected ? 2 : 1
+      strokeWidth: 1 // 與 React 版本保持一致，選中狀態不改變寬度
     };
     return { ...defaultStyle, ...this.style() };
   });

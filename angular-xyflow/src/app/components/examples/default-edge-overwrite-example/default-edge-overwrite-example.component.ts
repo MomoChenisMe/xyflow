@@ -17,7 +17,7 @@ import { CustomEdgeComponent } from './custom-edge.component';
     CommonModule,
     AngularXYFlowComponent,
     BackgroundComponent,
-    CustomEdgeComponent, // 必須包含，因為動態載入也需要在 imports 中聲明
+    // CustomEdgeComponent 在 edgeTypes 中動態載入，不需要在 imports 中列出
   ],
   template: `
     <angular-xyflow

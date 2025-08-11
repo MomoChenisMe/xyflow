@@ -16,10 +16,20 @@ import { EdgeProps } from '../../angular-xyflow/types';
   template: `
     <svg:path
       [attr.d]="edgePath()"
-      stroke="red"
+      [attr.stroke]="pathStroke()"
       stroke-width="3"
       fill="none"
       stroke-dasharray="5,5"
+      style="pointer-events: none;"
+    />
+    
+    <!-- 不可見的交互路徑，用於擴大點擊和 hover 範圍 -->
+    <svg:path
+      [attr.d]="edgePath()"
+      stroke="transparent"
+      [attr.stroke-width]="interactionWidth() || 20"
+      fill="none"
+      style="pointer-events: stroke; cursor: pointer;"
     />
   `,
 })
@@ -46,6 +56,12 @@ export class CustomEdgeComponent {
   readonly selectable = input<boolean>();
   readonly interactionWidth = input<number>();
   readonly pathOptions = input<any>();
+
+  // 計算邊顏色（基於選中狀態）
+  pathStroke = computed(() => {
+    const isSelected = this.selected();
+    return isSelected ? '#555' : 'red'; // 選中時使用統一顏色，未選中時使用紅色
+  });
 
   // 計算邊路徑（類似 React 版本的 getBezierPath）
   edgePath = computed(() => {

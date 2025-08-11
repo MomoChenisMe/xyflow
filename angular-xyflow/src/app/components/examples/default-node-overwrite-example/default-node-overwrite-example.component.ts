@@ -16,7 +16,7 @@ import { CustomNodeComponent } from './custom-node.component';
     CommonModule,
     AngularXYFlowComponent,
     BackgroundComponent,
-    CustomNodeComponent, // 必須包含，因為動態載入也需要在 imports 中聲明
+    // CustomNodeComponent 在 nodeTypes 中動態載入，不需要在 imports 中列出
   ],
   template: `
     <angular-xyflow

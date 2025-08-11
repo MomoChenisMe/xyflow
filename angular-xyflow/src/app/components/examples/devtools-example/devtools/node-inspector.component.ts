@@ -20,8 +20,8 @@ interface NodeInfoData {
   template: `
     <div class="angular-xyflow__devtools-nodeinspector">
       @for (node of nodes(); track node.id) {
-        @let x = node.position?.x || 0;
-        @let y = node.position?.y || 0;
+        @let x = node.position.x || 0;
+        @let y = node.position.y || 0;
         @let width = node.measured?.width || node.width || 150;
         @let height = node.measured?.height || node.height || 40;
         

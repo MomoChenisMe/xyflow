@@ -25,11 +25,7 @@ import { SimpleBezierEdgeComponent } from '../components/edges/simple-bezier-edg
   imports: [
     CommonModule,
     NgComponentOutlet,
-    BezierEdgeComponent,
-    StraightEdgeComponent,
-    StepEdgeComponent,
-    SmoothStepEdgeComponent,
-    SimpleBezierEdgeComponent,
+    // 內建邊組件通過動態載入，不需要在 imports 中列出
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],

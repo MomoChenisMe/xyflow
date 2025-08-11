@@ -18,7 +18,7 @@ import { HandleComponent } from '../handle/handle.component';
     />
     
     <!-- 節點內容 - 直接輸出文字，與 React 保持一致 -->
-    {{ data()?.['label'] }}
+    {{ data()['label'] }}
   `,
   styles: [`
     :host {

@@ -251,7 +251,8 @@ import { ViewportComponent } from './viewport/viewport.component';
       .angular-xyflow__edge.selectable:focus-visible
         .angular-xyflow__edge-path {
         stroke: #555;
-        stroke-width: 2;
+        /* 與 React 版本保持一致，選中狀態不改變寬度 */
+        /* stroke-width: 2; */
       }
 
       /* Dark mode edge selected/focus color */
@@ -261,7 +262,8 @@ import { ViewportComponent } from './viewport/viewport.component';
         .angular-xyflow__edge.selectable:focus-visible
         .angular-xyflow__edge-path {
         stroke: #727272;
-        stroke-width: 2;
+        /* 與 React 版本保持一致，選中狀態不改變寬度 */
+        /* stroke-width: 2; */
       }
 
       .angular-xyflow__edge.animated path {
@@ -279,6 +281,16 @@ import { ViewportComponent } from './viewport/viewport.component';
         from {
           stroke-dashoffset: 10;
         }
+      }
+
+      /* Edge text wrapper - 與 React 版本保持一致 */
+      .angular-xyflow__edge-textwrapper {
+        pointer-events: all;
+      }
+
+      .angular-xyflow__edge-text {
+        pointer-events: none;
+        user-select: none;
       }
 
       /* ConnectionLine 現在是獨立的 SVG 層，z-index 已經通過 inline style 設定為 1001 */

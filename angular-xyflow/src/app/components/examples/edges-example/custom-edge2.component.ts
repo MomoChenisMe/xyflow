@@ -16,7 +16,15 @@ import { EdgeTextComponent } from '../../angular-xyflow/components/edges/edge-te
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <!-- 使用 BaseEdge 渲染路徑（事件由指令處理） -->
-    <svg:g angular-xyflow-base-edge [id]="id()" [path]="edgePath()" />
+    <svg:g angular-xyflow-base-edge 
+      [id]="id()" 
+      [path]="edgePath()" 
+      [selected]="selected()"
+      [animated]="animated()"
+      [style]="style()"
+      [interactionWidth]="interactionWidth()"
+      [selectable]="selectable()"
+    />
 
     <!-- 使用 EdgeText 組件顯示標籤（與 React 一致） -->
     @if (edgeText()) {

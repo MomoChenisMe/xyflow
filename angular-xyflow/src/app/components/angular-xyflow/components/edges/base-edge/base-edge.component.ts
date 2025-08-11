@@ -123,6 +123,8 @@ export class BaseEdgeComponent {
   id = input<string>();
   pathLength = input<number>();
   selectable = input<boolean>(true);
+  selected = input<boolean>(false);
+  animated = input<boolean>(false);
 
   // 輸出事件（現在由 EdgeEventDirective 處理）
   edgeClick = output<MouseEvent>();
@@ -136,9 +138,19 @@ export class BaseEdgeComponent {
   edgePathClasses = computed(() => {
     const baseClasses = ['angular-xyflow__edge-path'];
     const customClass = this.className();
+    const selected = this.selected();
+    const animated = this.animated();
+    
     if (customClass) {
       baseClasses.push(customClass);
     }
+    if (selected) {
+      baseClasses.push('selected');
+    }
+    if (animated) {
+      baseClasses.push('animated');
+    }
+    
     return baseClasses.join(' ');
   });
 
@@ -149,12 +161,27 @@ export class BaseEdgeComponent {
     return label && isNumeric(labelX) && isNumeric(labelY);
   });
 
-  // 將樣式對象轉換為 CSS 字符串
+  // 將樣式對象轉換為 CSS 字符串，處理選中狀態
   styleString = computed(() => {
-    const style = this.style();
-    if (!style) return undefined; // 不設置默認樣式，讓 CSS 類生效
+    const selected = this.selected();
+    const customStyle = this.style();
+    
+    // 默認樣式（與 React 版本保持一致）
+    const defaultStyle: Record<string, any> = {};
+    
+    // 選中狀態的樣式
+    if (selected) {
+      defaultStyle['stroke'] = '#555'; // 與其他邊組件一致
+      // 不設置 strokeWidth: 2，與 React 版本保持一致
+    }
+    
+    // 合併自定義樣式
+    const finalStyle = customStyle ? { ...defaultStyle, ...customStyle } : defaultStyle;
+    
+    // 如果沒有樣式，返回 undefined 讓 CSS 類生效
+    if (Object.keys(finalStyle).length === 0) return undefined;
 
-    return Object.entries(style)
+    return Object.entries(finalStyle)
       .map(
         ([key, value]) =>
           `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`

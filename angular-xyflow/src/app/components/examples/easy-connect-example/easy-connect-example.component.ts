@@ -21,8 +21,7 @@ import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/c
     CommonModule,
     AngularXYFlowComponent,
     ConnectionLineTemplateDirective,
-    CustomNodeComponent,
-    FloatingEdgeComponent
+    // CustomNodeComponent 和 FloatingEdgeComponent 在 nodeTypes 和 edgeTypes 中動態載入
   ],
   schemas: [NO_ERRORS_SCHEMA],
   template: `

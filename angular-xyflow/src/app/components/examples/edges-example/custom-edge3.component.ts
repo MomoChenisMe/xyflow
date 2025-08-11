@@ -40,6 +40,11 @@ import { EdgeTextComponent } from '../../angular-xyflow/components/edges/edge-te
       [path]="edgePath()"
       [className]="'angular-xyflow__edge-custom3'"
       [pathLength]="100"
+      [selected]="selected()"
+      [animated]="animated()"
+      [style]="style()"
+      [interactionWidth]="interactionWidth()"
+      [selectable]="selectable()"
     />
 
     <!-- 使用 EdgeText 組件顯示標籤（與 React 一致） -->

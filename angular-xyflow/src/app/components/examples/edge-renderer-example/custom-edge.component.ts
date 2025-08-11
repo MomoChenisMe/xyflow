@@ -23,7 +23,11 @@ import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyfl
     <svg:g angular-xyflow-base-edge 
       [id]="id()" 
       [path]="edgePath()"
-      [interactionWidth]="20"
+      [selected]="selected()"
+      [animated]="animated()"
+      [style]="style()"
+      [interactionWidth]="interactionWidth()"
+      [selectable]="selectable()"
     />
 
     <!-- 使用 EdgeLabelRenderer 渲染 HTML 內容（現在直接渲染到 HTML 層） -->

@@ -61,7 +61,8 @@ export class EdgeEventDirective implements OnInit, OnDestroy {
   handleContextMenu(event: MouseEvent): void {
     if (this.edgeWrapper) {
       event.stopPropagation();
-      event.preventDefault();
+      // 與 React Flow 保持一致：不阻止瀏覽器預設的右鍵菜單，讓開發者自行決定
+      // event.preventDefault(); // 移除以允許右鍵菜單
       const edge = this.edgeWrapper.edge();
       this.edgeWrapper.edgeContextMenu.emit({ event, edge });
     }

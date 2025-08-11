@@ -15,13 +15,21 @@ import { BaseEdgeComponent } from '../../angular-xyflow/components/edges/base-ed
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <!-- 使用 BaseEdge 渲染路徑（事件由指令處理） -->
-    <svg:g angular-xyflow-base-edge [id]="id()" [path]="edgePath()" />
+    <svg:g angular-xyflow-base-edge 
+      [id]="id()" 
+      [path]="edgePath()" 
+      [selected]="selected()"
+      [animated]="animated()"
+      [style]="style()"
+      [interactionWidth]="interactionWidth()"
+      [selectable]="selectable()"
+    />
 
     <!-- 使用 textPath 在路徑上顯示文字（與 React 一致） -->
     <svg:text>
       <svg:textPath
         [attr.href]="'#' + id()"
-        style="font-size: 12px"
+        style="font-size: 12px; pointer-events: none; user-select: none;"
         startOffset="50%"
         text-anchor="middle"
       >

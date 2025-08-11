@@ -131,12 +131,28 @@ export class FloatingEdgeComponent {
     return path;
   });
 
-  // 計算邊緣樣式 - 直接傳遞樣式，不處理 selected 狀態
+  // 計算邊緣樣式 - 處理 selected 狀態
   readonly edgeStyle = computed(() => {
     const baseStyle = this.style() || {};
+    const isSelected = this.selected();
+    
+    // 默認樣式（與其他邊組件一致）
+    const defaultStyle: Record<string, any> = {
+      stroke: '#b1b1b7',
+      strokeWidth: '1',
+    };
+    
+    // 選中狀態的樣式
+    if (isSelected) {
+      defaultStyle['stroke'] = '#555'; // 與其他邊組件一致
+      // 不設置 strokeWidth: 2，與 React 版本保持一致
+    }
+    
+    // 合併樣式
+    const finalStyle = { ...defaultStyle, ...baseStyle };
 
     // 轉換為 CSS 字串
-    return Object.entries(baseStyle)
+    return Object.entries(finalStyle)
       .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
       .join('; ');
   });
