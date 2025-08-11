@@ -183,6 +183,8 @@ export class AngularXYFlowService<
   private _colorMode = signal<ColorMode>('light');
   private _selectNodesOnDrag = signal<boolean>(false);
   private _autoPanOnNodeFocus = signal<boolean>(false);
+  private _snapToGrid = signal<boolean>(false);
+  private _snapGrid = signal<[number, number]>([15, 15]);
   private _dimensions = signal<{ width: number; height: number }>({
     width: 0,
     height: 0,
@@ -404,6 +406,12 @@ export class AngularXYFlowService<
   );
   readonly autoPanOnNodeFocus: Signal<boolean> = computed(() =>
     this._autoPanOnNodeFocus()
+  );
+  readonly snapToGrid: Signal<boolean> = computed(() =>
+    this._snapToGrid()
+  );
+  readonly snapGrid: Signal<[number, number]> = computed(() =>
+    this._snapGrid()
   );
   readonly dimensions: Signal<{ width: number; height: number }> = computed(
     () => this._dimensions()
@@ -2235,6 +2243,14 @@ export class AngularXYFlowService<
 
   setColorMode(colorMode: ColorMode) {
     this._colorMode.set(colorMode);
+  }
+
+  setSnapToGrid(snapToGrid: boolean) {
+    this._snapToGrid.set(snapToGrid);
+  }
+
+  setSnapGrid(snapGrid: [number, number]) {
+    this._snapGrid.set(snapGrid);
   }
 
   // 自動平移到節點功能 - 與 React 版本一致的行為

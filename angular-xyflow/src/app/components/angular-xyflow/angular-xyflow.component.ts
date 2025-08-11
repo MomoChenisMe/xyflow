@@ -349,6 +349,8 @@ export class AngularXYFlowComponent<
   connectionLineStyle = input<Record<string, any>>();
   edgesFocusable = input<boolean>(true);
   defaultMarkerColor = input<string>('#b1b1b7');
+  snapToGrid = input<boolean>(false);
+  snapGrid = input<[number, number]>([15, 15]);
 
   // 生成唯一的容器 ID
   flowContainerId = computed(() => {
@@ -750,6 +752,14 @@ export class AngularXYFlowComponent<
     effect(() => {
       const edgesFocusable = this.edgesFocusable();
       this._flowService.setEdgesFocusable(edgesFocusable);
+    });
+
+    // 同步 snapToGrid 和 snapGrid 到服務
+    effect(() => {
+      const snapToGrid = this.snapToGrid();
+      const snapGrid = this.snapGrid();
+      this._flowService.setSnapToGrid(snapToGrid);
+      this._flowService.setSnapGrid(snapGrid);
     });
 
     // 渲染後副作用 - 根據 Angular 20 最佳實踐

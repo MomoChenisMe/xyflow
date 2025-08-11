@@ -76,7 +76,8 @@ export interface BezierEdgeProps {
   imports: [CommonModule, BaseEdgeComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <svg:g angular-xyflow-base-edge
+    <svg:g
+      angular-xyflow-base-edge
       [id]="id()"
       [path]="edgePath()"
       [labelX]="labelX()"
@@ -98,7 +99,8 @@ export interface BezierEdgeProps {
       (edgeContextMenu)="handleEdgeContextMenu($event)"
       (edgeMouseEnter)="handleEdgeMouseEnter($event)"
       (edgeMouseLeave)="handleEdgeMouseLeave($event)"
-      (edgeMouseMove)="handleEdgeMouseMove($event)" />
+      (edgeMouseMove)="handleEdgeMouseMove($event)"
+    />
   `,
 })
 export class BezierEdgeComponent {
@@ -140,7 +142,7 @@ export class BezierEdgeComponent {
       targetX: this.targetX(),
       targetY: this.targetY(),
       targetPosition: this.targetPosition(),
-      curvature: this.pathOptions()?.curvature || 30,
+      curvature: this.pathOptions()?.curvature,
     });
   });
 
@@ -170,7 +172,6 @@ export class BezierEdgeComponent {
     };
     return { ...defaultStyle, ...this.style() };
   });
-
 
   // 注入 EdgeWrapper 以傳遞事件
   private edgeWrapper = inject(EdgeWrapperComponent, { optional: true });

@@ -35,6 +35,7 @@ import {
       [nodes]="nodes()"
       [edges]="edges()"
       [edgeTypes]="edgeTypes"
+      [snapToGrid]="true"
       (onNodesChange)="onNodesChange($event)"
       (onEdgesChange)="onEdgesChange($event)"
       (onNodeClick)="onNodeClick($event)"
@@ -48,26 +49,28 @@ import {
       <angular-xyflow-background />
     </angular-xyflow>
   `,
-  styles: [`
-    :host {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
+  styles: [
+    `
+      :host {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
 
-    angular-xyflow {
-      width: 100%;
-      height: 100%;
-    }
+      angular-xyflow {
+        width: 100%;
+        height: 100%;
+      }
 
-    :host ::ng-deep .normal-edge {
-      stroke: #b1b1b7;
-    }
+      :host ::ng-deep .normal-edge {
+        stroke: #b1b1b7;
+      }
 
-    :host ::ng-deep .angular-xyflow__edge-path {
-      stroke-width: 2;
-    }
-  `],
+      :host ::ng-deep .angular-xyflow__edge-path {
+        stroke-width: 2;
+      }
+    `,
+  ],
 })
 export class EdgeRendererExampleComponent {
   // 初始節點
