@@ -8,8 +8,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { getBezierPath, Position } from '@xyflow/system';
-import { BaseEdgeComponent } from '../../angular-xyflow/components/edges/base-edge/base-edge.component';
-import { EdgeLabelRendererComponent } from '../../angular-xyflow/edge-label-renderer/edge-label-renderer.component';
+import { BaseEdgeComponent } from '../../angular-xyflow/components/edges/base-edge.component';
+import { EdgeLabelRendererComponent } from '../../angular-xyflow/components/edge-label-renderer/edge-label-renderer.component';
 import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyflow.service';
 
 @Component({

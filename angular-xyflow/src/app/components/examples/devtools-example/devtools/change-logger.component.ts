@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NodeChange } from '../../../angular-xyflow/types';
 
@@ -16,10 +16,10 @@ interface ChangeInfoData {
   template: `
     <div class="angular-xyflow__devtools-changelogger">
       <div class="angular-xyflow__devtools-title">Change Logger</div>
-      @if (changes.length === 0) {
+      @if (changes().length === 0) {
         <div>no changes triggered</div>
       } @else {
-        @for (item of changes; track item.timestamp) {
+        @for (item of changes(); track item.timestamp) {
           <div class="change-info">
             <div>node id: {{ getNodeId(item.change) }}</div>
             <div>
@@ -96,8 +96,8 @@ interface ChangeInfoData {
   `],
 })
 export class ChangeLoggerComponent {
-  // 變更記錄列表
-  changes: ChangeInfoData[] = [];
+  // 變更記錄列表 - 使用 signal
+  changes = signal<ChangeInfoData[]>([]);
   
   // 最大記錄數
   private readonly limit = 20;
@@ -111,17 +111,23 @@ export class ChangeLoggerComponent {
   private recordChanges(newChanges: NodeChange[]): void {
     const timestamp = Date.now();
     
-    newChanges.forEach(change => {
-      // 添加到開頭
-      this.changes.unshift({
-        change,
-        timestamp: timestamp + Math.random(), // 確保唯一性
+    this.changes.update(currentChanges => {
+      const updatedChanges = [...currentChanges];
+      
+      newChanges.forEach(change => {
+        // 添加到開頭
+        updatedChanges.unshift({
+          change,
+          timestamp: timestamp + Math.random(), // 確保唯一性
+        });
       });
       
       // 限制數量
-      if (this.changes.length > this.limit) {
-        this.changes.pop();
+      if (updatedChanges.length > this.limit) {
+        return updatedChanges.slice(0, this.limit);
       }
+      
+      return updatedChanges;
     });
   }
 

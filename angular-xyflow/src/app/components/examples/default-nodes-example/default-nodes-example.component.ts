@@ -1,8 +1,8 @@
 import { Component, ChangeDetectionStrategy, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
-import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
-import { PanelComponent } from '../../angular-xyflow/panel/panel.component';
+import { AngularXYFlowComponent } from '../../angular-xyflow/container/angular-xyflow/angular-xyflow.component';
+import { BackgroundComponent } from '../../angular-xyflow/additional-components/background/background.component';
+import { PanelComponent } from '../../angular-xyflow/additional-components/panel/panel.component';
 import {
   AngularNode,
   AngularEdge,

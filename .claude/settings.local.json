@@ -4,7 +4,8 @@
       "Bash(grep:*)",
       "Bash(npm start)",
       "Bash(npm run build:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Position } from '@xyflow/system';
-import { HandleComponent } from '../../angular-xyflow/handle/handle.component';
+import { HandleComponent } from '../../angular-xyflow/components/handle/handle.component';
 
 // 自定義節點數據類型
 export interface ColorSelectorNodeData extends Record<string, unknown> {

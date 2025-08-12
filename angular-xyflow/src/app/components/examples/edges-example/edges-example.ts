@@ -1,8 +1,8 @@
 import { Component, signal } from '@angular/core';
-import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
-import { ControlsComponent } from '../../angular-xyflow/controls/controls.component';
-import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
-import { MinimapComponent } from '../../angular-xyflow/minimap/minimap.component';
+import { AngularXYFlowComponent } from '../../angular-xyflow/container/angular-xyflow/angular-xyflow.component';
+import { ControlsComponent } from '../../angular-xyflow/additional-components/controls/controls.component';
+import { BackgroundComponent } from '../../angular-xyflow/additional-components/background/background.component';
+import { MinimapComponent } from '../../angular-xyflow/additional-components/minimap/minimap.component';
 import { CustomEdgeComponent } from './custom-edge.component';
 import { CustomEdge2Component } from './custom-edge2.component';
 import { CustomEdge3Component } from './custom-edge3.component';

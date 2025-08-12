@@ -1,8 +1,8 @@
 import { Component, ChangeDetectionStrategy, inject, viewChild, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
-import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
-import { MinimapComponent } from '../../angular-xyflow/minimap/minimap.component';
+import { AngularXYFlowComponent } from '../../angular-xyflow/container/angular-xyflow/angular-xyflow.component';
+import { BackgroundComponent } from '../../angular-xyflow/additional-components/background/background.component';
+import { MinimapComponent } from '../../angular-xyflow/additional-components/minimap/minimap.component';
 import { AngularNode, AngularEdge, AngularXYFlowInstance, NodeChange, EdgeChange } from '../../angular-xyflow/types';
 import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
 import { Connection, addEdge } from '@xyflow/system';

@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
-import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
+import { AngularXYFlowComponent } from '../../angular-xyflow/container/angular-xyflow/angular-xyflow.component';
+import { BackgroundComponent } from '../../angular-xyflow/additional-components/background/background.component';
 import { AngularNode, BackgroundVariant } from '../../angular-xyflow/types';
 
 @Component({

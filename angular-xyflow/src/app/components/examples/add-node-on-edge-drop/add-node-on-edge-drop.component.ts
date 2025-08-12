@@ -9,7 +9,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
+import { AngularXYFlowComponent } from '../../angular-xyflow/container/angular-xyflow/angular-xyflow.component';
 import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyflow.service';
 import {
   AngularNode,

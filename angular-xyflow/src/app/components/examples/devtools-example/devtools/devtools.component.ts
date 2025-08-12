@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, signal, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PanelComponent, PanelPosition } from '../../../angular-xyflow/panel/panel.component';
+import { PanelComponent, PanelPosition } from '../../../angular-xyflow/additional-components/panel/panel.component';
 import { NodeInspectorComponent } from './node-inspector.component';
 import { ChangeLoggerComponent } from './change-logger.component';
 import { AngularNode } from '../../../angular-xyflow/types';

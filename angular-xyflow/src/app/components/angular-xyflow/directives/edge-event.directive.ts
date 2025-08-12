@@ -6,7 +6,7 @@ import {
   OnInit,
   input
 } from '@angular/core';
-import { EdgeWrapperComponent } from '../edge-wrapper/edge-wrapper.component';
+import { EdgeWrapperComponent } from '../components/edge-wrapper/edge-wrapper.component';
 
 /**
  * 指令用於統一處理所有 Edge 事件

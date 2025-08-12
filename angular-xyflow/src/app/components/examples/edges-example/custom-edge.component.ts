@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { getBezierPath, Position } from '@xyflow/system';
-import { BaseEdgeComponent } from '../../angular-xyflow/components/edges/base-edge/base-edge.component';
+import { BaseEdgeComponent } from '../../angular-xyflow/components/edges/base-edge.component';
 
 @Component({
   selector: 'svg:svg[app-custom-edge]',

@@ -1,8 +1,8 @@
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
-import { PanelComponent } from '../../angular-xyflow/panel/panel.component';
+import { AngularXYFlowComponent } from '../../angular-xyflow/container/angular-xyflow/angular-xyflow.component';
+import { PanelComponent } from '../../angular-xyflow/additional-components/panel/panel.component';
 import { AngularNode, AngularEdge, NodeChange, EdgeChange } from '../../angular-xyflow/types';
 import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
 import { Connection, addEdge } from '@xyflow/system';

@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Position } from '@xyflow/system';
-import { HandleComponent } from '../../angular-xyflow/handle/handle.component';
+import { HandleComponent } from '../../angular-xyflow/components/handle/handle.component';
 
 @Component({
   selector: 'app-drag-handle-node',

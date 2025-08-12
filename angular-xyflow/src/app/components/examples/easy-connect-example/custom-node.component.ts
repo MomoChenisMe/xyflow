@@ -6,7 +6,7 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HandleComponent } from '../../angular-xyflow/handle/handle.component';
+import { HandleComponent } from '../../angular-xyflow/components/handle/handle.component';
 import { Position } from '@xyflow/system';
 import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyflow.service';
 

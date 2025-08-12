@@ -1,9 +1,9 @@
 import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
-import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
-import { ControlsComponent } from '../../angular-xyflow/controls/controls.component';
-import { MinimapComponent } from '../../angular-xyflow/minimap/minimap.component';
+import { AngularXYFlowComponent } from '../../angular-xyflow/container/angular-xyflow/angular-xyflow.component';
+import { BackgroundComponent } from '../../angular-xyflow/additional-components/background/background.component';
+import { ControlsComponent } from '../../angular-xyflow/additional-components/controls/controls.component';
+import { MinimapComponent } from '../../angular-xyflow/additional-components/minimap/minimap.component';
 import { EdgeRendererCustomEdgeComponent } from './custom-edge.component';
 import { EdgeRendererCustomEdge2Component } from './custom-edge2.component';
 import {

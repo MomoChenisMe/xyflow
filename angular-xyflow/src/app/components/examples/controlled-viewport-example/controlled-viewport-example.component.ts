@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
-import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
-import { ControlsComponent } from '../../angular-xyflow/controls/controls.component';
-import { MinimapComponent } from '../../angular-xyflow/minimap/minimap.component';
-import { PanelComponent } from '../../angular-xyflow/panel/panel.component';
+import { AngularXYFlowComponent } from '../../angular-xyflow/container/angular-xyflow/angular-xyflow.component';
+import { BackgroundComponent } from '../../angular-xyflow/additional-components/background/background.component';
+import { ControlsComponent } from '../../angular-xyflow/additional-components/controls/controls.component';
+import { MinimapComponent } from '../../angular-xyflow/additional-components/minimap/minimap.component';
+import { PanelComponent } from '../../angular-xyflow/additional-components/panel/panel.component';
 import {
   AngularNode,
   AngularEdge,
