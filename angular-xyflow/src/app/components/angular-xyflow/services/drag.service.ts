@@ -2,7 +2,7 @@
 import { Injectable, signal, computed, OnDestroy, inject } from '@angular/core';
 
 // XyFlow 系統模組
-import { XYDrag, type XYDragInstance } from '@xyflow/system';
+import { XYDrag, type XYDragInstance, panBy as panBySystem } from '@xyflow/system';
 
 // 專案內部模組
 import { AngularXYFlowService } from './angular-xyflow.service';
@@ -79,6 +79,7 @@ export class AngularXYFlowDragService implements OnDestroy {
         this._dragging.set(false);
         // 清除任何剩餘的臨時狀態
         this.tempSelectedNodeIds = null;
+        
         // 調用節點的 onDragStop 回調
         const callbacks = this.dragCallbacks.get(currentNodeId);
         if (callbacks?.onDragStop) {
@@ -206,13 +207,20 @@ export class AngularXYFlowDragService implements OnDestroy {
       nodeDragThreshold: 0,
       panBy: async (delta: { x: number; y: number }) => {
         const currentViewport = this._flowService.viewport();
-        const flowInstance = this._flowService.getFlowInstance();
-        flowInstance.setViewport({
-          x: currentViewport.x + delta.x,
-          y: currentViewport.y + delta.y,
-          zoom: currentViewport.zoom
+        const dimensions = this._flowService.dimensions();
+        const panZoomInstance = this._flowService.getPanZoomInstance();
+        
+        return panBySystem({
+          delta,
+          panZoom: panZoomInstance,
+          transform: [currentViewport.x, currentViewport.y, currentViewport.zoom],
+          translateExtent: [
+            [-Infinity, -Infinity],
+            [Infinity, Infinity],
+          ],
+          width: dimensions.width,
+          height: dimensions.height,
         });
-        return true;
       },
       unselectNodesAndEdges: () => {
         // 實現取消選擇邏輯 - 對應React Flow的行為
