@@ -78,12 +78,12 @@ export type PanelPosition =
 })
 export class PanelComponent {
   // 輸入屬性
-  readonly position = input<PanelPosition>('top-left');
-  readonly className = input<string>('');
-  readonly style = input<Record<string, any>>({});
+  position = input<PanelPosition>('top-left');
+  className = input<string>('');
+  style = input<Record<string, any>>({});
   
   // 計算屬性
-  readonly panelClasses = computed(() => {
+  panelClasses = computed(() => {
     const classes = ['xy-flow__panel', 'angular-xyflow__panel', `position-${this.position()}`];
     
     const customClass = this.className();
@@ -94,7 +94,7 @@ export class PanelComponent {
     return classes.join(' ');
   });
   
-  readonly panelStyles = computed(() => {
+  panelStyles = computed(() => {
     const styles: Record<string, string> = {
       position: 'absolute',
       'z-index': '5',

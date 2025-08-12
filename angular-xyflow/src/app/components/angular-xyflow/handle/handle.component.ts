@@ -11,7 +11,6 @@ import {
   ChangeDetectionStrategy,
   OnDestroy,
   afterNextRender,
-  afterEveryRender,
   CUSTOM_ELEMENTS_SCHEMA,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -197,23 +196,6 @@ export class HandleComponent implements OnDestroy {
       }
     });
 
-    // 使用 afterEveryRender 處理後續的更新
-    let isFirstUpdate = true;
-    // afterEveryRender(() => {
-    //   // 跳過首次渲染（已由 afterNextRender 處理）
-    //   if (isFirstUpdate) {
-    //     isFirstUpdate = false;
-    //     return;
-    //   }
-
-    //   const nodeId = this.nodeId();
-    //   // 測量當前節點的 handle bounds
-    //   const bounds = this._flowService.measureNodeHandleBounds(nodeId);
-    //   if (bounds && (bounds.source.length > 0 || bounds.target.length > 0)) {
-    //     // 後續更新使用 updateNodeInternals
-    //     this._flowService.updateNodeInternals(nodeId);
-    //   }
-    // });
   }
 
   ngOnDestroy(): void {

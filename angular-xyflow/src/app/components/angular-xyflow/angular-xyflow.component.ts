@@ -19,7 +19,6 @@ import {
   HostListener,
   untracked,
   ViewContainerRef,
-  OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -310,7 +309,7 @@ import { ViewportComponent } from './viewport/viewport.component';
 export class AngularXYFlowComponent<
   NodeType extends AngularNode = AngularNode,
   EdgeType extends AngularEdge = AngularEdge
-> implements OnInit, OnDestroy
+> implements OnDestroy
 {
   // 注入依賴
   private _flowService = inject(AngularXYFlowService<NodeType, EdgeType>);
@@ -905,9 +904,6 @@ export class AngularXYFlowComponent<
     );
   }
 
-  ngOnInit() {
-    // 初始化邊標籤容器會在 afterNextRender 中進行，確保視圖已初始化
-  }
 
   ngOnDestroy() {
     // 清理 ResizeObserver 和 window resize listener

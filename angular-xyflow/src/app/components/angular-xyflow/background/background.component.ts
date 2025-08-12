@@ -86,57 +86,57 @@ export class BackgroundComponent {
   private _flowService = inject(AngularXYFlowService);
   
   // 輸入屬性
-  readonly id = input<string>();
-  readonly variant = input<BackgroundVariant>(BackgroundVariant.Dots);
-  readonly gap = input<number | [number, number]>(20);
-  readonly size = input<number>();
-  readonly lineWidth = input<number>(1);
-  readonly offset = input<number | [number, number]>(0);
-  readonly color = input<string>();
-  readonly bgColor = input<string>();
-  readonly className = input<string>();
-  readonly patternClassName = input<string>();
+  id = input<string>();
+  variant = input<BackgroundVariant>(BackgroundVariant.Dots);
+  gap = input<number | [number, number]>(20);
+  size = input<number>();
+  lineWidth = input<number>(1);
+  offset = input<number | [number, number]>(0);
+  color = input<string>();
+  bgColor = input<string>();
+  className = input<string>();
+  patternClassName = input<string>();
   
   // 常量
-  readonly backgroundVariant = BackgroundVariant;
+  backgroundVariant = BackgroundVariant;
   
-  private readonly defaultSize = {
+  private defaultSize = {
     [BackgroundVariant.Dots]: 1,
     [BackgroundVariant.Lines]: 1,
     [BackgroundVariant.Cross]: 6,
   };
   
   // 計算信號
-  readonly viewport = computed(() => this._flowService.viewport());
+  viewport = computed(() => this._flowService.viewport());
   
-  readonly patternId = computed(() => {
+  patternId = computed(() => {
     const baseId = this.id() || '';
     return `angular-xyflow-pattern-${this.variant()}-${baseId}`;
   });
   
-  readonly gapXY = computed((): [number, number] => {
+  gapXY = computed((): [number, number] => {
     const gap = this.gap();
     return Array.isArray(gap) ? gap : [gap, gap];
   });
   
-  readonly offsetXY = computed((): [number, number] => {
+  offsetXY = computed((): [number, number] => {
     const offset = this.offset();
     return Array.isArray(offset) ? offset : [offset, offset];
   });
   
-  readonly scaledGap = computed((): [number, number] => {
+  scaledGap = computed((): [number, number] => {
     const gapXY = this.gapXY();
     const zoom = this.viewport().zoom;
     return [gapXY[0] * zoom || 1, gapXY[1] * zoom || 1];
   });
   
-  readonly scaledSize = computed(() => {
+  scaledSize = computed(() => {
     const size = this.size() || this.defaultSize[this.variant()];
     const zoom = this.viewport().zoom;
     return size * zoom;
   });
   
-  readonly patternDimensions = computed(() => {
+  patternDimensions = computed(() => {
     const isCross = this.variant() === BackgroundVariant.Cross;
     const scaledGap = this.scaledGap();
     const scaledSize = this.scaledSize();
@@ -146,7 +146,7 @@ export class BackgroundComponent {
       : scaledGap;
   });
   
-  readonly scaledOffset = computed((): [number, number] => {
+  scaledOffset = computed((): [number, number] => {
     const offsetXY = this.offsetXY();
     const zoom = this.viewport().zoom;
     const patternDims = this.patternDimensions();
@@ -157,7 +157,7 @@ export class BackgroundComponent {
     ];
   });
   
-  readonly patternPosition = computed(() => {
+  patternPosition = computed(() => {
     const viewport = this.viewport();
     const scaledGap = this.scaledGap();
     
@@ -167,12 +167,12 @@ export class BackgroundComponent {
     };
   });
   
-  readonly patternTransform = computed(() => {
+  patternTransform = computed(() => {
     const scaledOffset = this.scaledOffset();
     return `translate(-${scaledOffset[0]},-${scaledOffset[1]})`;
   });
   
-  readonly linePath = computed(() => {
+  linePath = computed(() => {
     const dims = this.patternDimensions();
     const variant = this.variant();
     

@@ -52,24 +52,24 @@ import { Position } from '@xyflow/system';
 })
 export class GroupNodeComponent {
   // 節點屬性 - 與 React Flow NodeProps 對應
-  readonly id = input.required<string>();
-  readonly data = input<Record<string, unknown>>({});
-  readonly type = input<string>();
-  readonly selected = input<boolean>(false);
-  readonly dragging = input<boolean>(false);
-  readonly isConnectable = input<boolean>(true);
-  readonly sourcePosition = input<Position>(Position.Bottom);
-  readonly targetPosition = input<Position>(Position.Top);
-  readonly width = input<number>();
-  readonly height = input<number>();
-  readonly parentId = input<string>();
-  readonly zIndex = input<number>(0);
-  readonly draggable = input<boolean>(true);
-  readonly selectable = input<boolean>(true);
-  readonly deletable = input<boolean>(true);
-  readonly positionAbsoluteX = input<number>(0);
-  readonly positionAbsoluteY = input<number>(0);
-  readonly dragHandle = input<string>();
+  id = input.required<string>();
+  data = input<Record<string, unknown>>({});
+  type = input<string>();
+  selected = input<boolean>(false);
+  dragging = input<boolean>(false);
+  isConnectable = input<boolean>(true);
+  sourcePosition = input<Position>(Position.Bottom);
+  targetPosition = input<Position>(Position.Top);
+  width = input<number>();
+  height = input<number>();
+  parentId = input<string>();
+  zIndex = input<number>(0);
+  draggable = input<boolean>(true);
+  selectable = input<boolean>(true);
+  deletable = input<boolean>(true);
+  positionAbsoluteX = input<number>(0);
+  positionAbsoluteY = input<number>(0);
+  dragHandle = input<string>();
   
   // Position 枚舉供模板使用
   protected readonly Position = Position;

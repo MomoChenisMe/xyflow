@@ -1,5 +1,5 @@
 // Angular 核心模組
-import { Injectable, signal, computed, OnDestroy } from '@angular/core';
+import { Injectable, signal, computed, OnDestroy, inject } from '@angular/core';
 
 // XyFlow 系統模組
 import { XYDrag, type XYDragInstance } from '@xyflow/system';
@@ -37,7 +37,7 @@ export class AngularXYFlowDragService implements OnDestroy {
   // 公開拖拽狀態
   readonly dragging = computed(() => this._dragging());
 
-  constructor(private _flowService: AngularXYFlowService) {}
+  private _flowService = inject(AngularXYFlowService);
 
   // 初始化拖拽功能
   initializeDrag(config: DragConfig): void {

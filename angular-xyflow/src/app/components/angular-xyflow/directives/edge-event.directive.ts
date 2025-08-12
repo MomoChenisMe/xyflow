@@ -4,7 +4,6 @@ import {
   inject,
   ElementRef,
   OnInit,
-  OnDestroy,
   input
 } from '@angular/core';
 import { EdgeWrapperComponent } from '../edge-wrapper/edge-wrapper.component';
@@ -17,7 +16,7 @@ import { EdgeWrapperComponent } from '../edge-wrapper/edge-wrapper.component';
   selector: '[angular-xyflow-base-edge]',
   standalone: true
 })
-export class EdgeEventDirective implements OnInit, OnDestroy {
+export class EdgeEventDirective implements OnInit {
   // 注入 EdgeWrapper 以發出事件
   private edgeWrapper = inject(EdgeWrapperComponent, { optional: true });
   private elementRef = inject(ElementRef);
@@ -35,9 +34,6 @@ export class EdgeEventDirective implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy() {
-    // 清理工作（如果需要）
-  }
 
   @HostListener('click', ['$event'])
   handleClick(event: MouseEvent): void {

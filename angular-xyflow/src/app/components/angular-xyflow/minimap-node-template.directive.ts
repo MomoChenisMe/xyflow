@@ -1,4 +1,4 @@
-import { Directive, TemplateRef } from '@angular/core';
+import { Directive, TemplateRef, inject } from '@angular/core';
 import { MinimapNodeTemplateContext } from './types';
 
 @Directive({
@@ -6,5 +6,5 @@ import { MinimapNodeTemplateContext } from './types';
   standalone: true,
 })
 export class MinimapNodeTemplateDirective {
-  constructor(public templateRef: TemplateRef<MinimapNodeTemplateContext>) {}
+  public templateRef = inject(TemplateRef<MinimapNodeTemplateContext>);
 }

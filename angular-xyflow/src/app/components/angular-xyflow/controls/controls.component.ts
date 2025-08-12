@@ -183,38 +183,38 @@ export class ControlsComponent {
   private panZoomService = inject(AngularXYFlowPanZoomService);
   
   // 輸入屬性
-  readonly showZoom = input<boolean>(true);
-  readonly showFitView = input<boolean>(true);
-  readonly showInteractive = input<boolean>(true);
-  readonly fitViewOptions = input<any>();
-  readonly position = input<PanelPosition>('bottom-left');
-  readonly orientation = input<'vertical' | 'horizontal'>('vertical');
-  readonly style = input<Record<string, any>>({});
-  readonly className = input<string>('');
-  readonly ariaLabel = input<string>('Controls');
+  showZoom = input<boolean>(true);
+  showFitView = input<boolean>(true);
+  showInteractive = input<boolean>(true);
+  fitViewOptions = input<any>();
+  position = input<PanelPosition>('bottom-left');
+  orientation = input<'vertical' | 'horizontal'>('vertical');
+  style = input<Record<string, any>>({});
+  className = input<string>('');
+  ariaLabel = input<string>('Controls');
   
   // 輸出事件
-  readonly onZoomInClick = output<void>();
-  readonly onZoomOutClick = output<void>();
-  readonly onFitViewClick = output<void>();
-  readonly onInteractiveChange = output<boolean>();
+  onZoomInClick = output<void>();
+  onZoomOutClick = output<void>();
+  onFitViewClick = output<void>();
+  onInteractiveChange = output<boolean>();
   
   // 內部狀態 - 從服務獲取
 
   // 計算屬性
-  readonly canZoomIn = computed(() => {
+  canZoomIn = computed(() => {
     const viewport = this._flowService.viewport();
     const maxZoom = this._flowService.maxZoom();
     return viewport.zoom < maxZoom;
   });
 
-  readonly canZoomOut = computed(() => {
+  canZoomOut = computed(() => {
     const viewport = this._flowService.viewport();
     const minZoom = this._flowService.minZoom();
     return viewport.zoom > minZoom;
   });
 
-  readonly isInteractive = computed(() => {
+  isInteractive = computed(() => {
     return this._flowService.isInteractive();
   });
 

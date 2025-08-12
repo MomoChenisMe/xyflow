@@ -7,7 +7,6 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   viewChild,
   ElementRef,
-  OnInit,
   OnDestroy,
   effect,
   ViewEncapsulation,
@@ -152,7 +151,7 @@ import type { MinimapNodeTemplateContext, MinimapNodeComponentProps } from '../t
     }
   `]
 })
-export class MinimapComponent implements OnInit, OnDestroy {
+export class MinimapComponent implements OnDestroy {
   // 注入服務
   private _flowService = inject(AngularXYFlowService);
   
@@ -214,54 +213,54 @@ export class MinimapComponent implements OnInit, OnDestroy {
   }
   
   // 視圖子元素引用
-  readonly svg = viewChild<ElementRef<SVGSVGElement>>('svg');
+  svg = viewChild<ElementRef<SVGSVGElement>>('svg');
   
   // 自定義 minimap 節點模板
-  readonly customNodeTemplate = contentChild(MinimapNodeTemplateDirective);
+  customNodeTemplate = contentChild(MinimapNodeTemplateDirective);
   
   // 輸入屬性 - 基本配置
-  readonly customStyle = input<Record<string, any>>({});
-  readonly className = input<string>('');
+  customStyle = input<Record<string, any>>({});
+  className = input<string>('');
   
   // 節點相關屬性 - 不設置預設值，讓系統包的 CSS 變數處理
-  readonly nodeColor = input<string | ((node: any) => string)>();
-  readonly nodeStrokeColor = input<string | ((node: any) => string)>();
-  readonly nodeClassName = input<string | ((node: any) => string)>('');
-  readonly nodeBorderRadius = input<number>(5);
-  readonly nodeStrokeWidth = input<number>();
+  nodeColor = input<string | ((node: any) => string)>();
+  nodeStrokeColor = input<string | ((node: any) => string)>();
+  nodeClassName = input<string | ((node: any) => string)>('');
+  nodeBorderRadius = input<number>(5);
+  nodeStrokeWidth = input<number>();
   
   // 背景和遮罩屬性 - 不設置預設值，讓系統包的 CSS 變數處理
-  readonly bgColor = input<string>();
-  readonly maskColor = input<string>();
-  readonly maskStrokeColor = input<string>();
-  readonly maskStrokeWidth = input<number>();
+  bgColor = input<string>();
+  maskColor = input<string>();
+  maskStrokeColor = input<string>();
+  maskStrokeWidth = input<number>();
   
   // 位置和交互屬性
-  readonly position = input<PanelPosition>('bottom-right');
-  readonly pannable = input<boolean>(false);
-  readonly zoomable = input<boolean>(false);
-  readonly inversePan = input<boolean>(false);
-  readonly zoomStep = input<number>(10);
-  readonly offsetScale = input<number>(5);
+  position = input<PanelPosition>('bottom-right');
+  pannable = input<boolean>(false);
+  zoomable = input<boolean>(false);
+  inversePan = input<boolean>(false);
+  zoomStep = input<number>(10);
+  offsetScale = input<number>(5);
   
   // 無障礙屬性
-  readonly ariaLabel = input<string | null>('Mini Map');
+  ariaLabel = input<string | null>('Mini Map');
   
   // 事件回調
-  readonly onClick = input<((event: MouseEvent, position: XYPosition) => void) | null>(null);
-  readonly onNodeClick = input<((event: MouseEvent, node: any) => void) | null>(null);
+  onClick = input<((event: MouseEvent, position: XYPosition) => void) | null>(null);
+  onNodeClick = input<((event: MouseEvent, node: any) => void) | null>(null);
   
   // 內部狀態
   private minimapInstance: XYMinimapInstance | null = null;
   private viewScaleRef = 0;
   
   // 計算屬性
-  readonly visibleNodes = computed(() => {
+  visibleNodes = computed(() => {
     const nodes = this._flowService.nodes();
     return nodes.filter(node => !node.hidden);
   });
   
-  readonly boundingRect = computed(() => {
+  boundingRect = computed(() => {
     const viewport = this._flowService.viewport();
     const dimensions = this._flowService.dimensions();
     
@@ -291,23 +290,23 @@ export class MinimapComponent implements OnInit, OnDestroy {
     return getBoundsOfRects(nodesBounds, viewBB);
   });
   
-  readonly elementWidth = computed(() => {
+  elementWidth = computed(() => {
     const width = this.customStyle()['width'] as number;
     return width || 200;
   });
-  readonly elementHeight = computed(() => {
+  elementHeight = computed(() => {
     const height = this.customStyle()['height'] as number;
     return height || 150;
   });
   
-  readonly viewScale = computed(() => {
+  viewScale = computed(() => {
     const rect = this.boundingRect();
     const scaledWidth = rect.width / this.elementWidth();
     const scaledHeight = rect.height / this.elementHeight();
     return Math.max(scaledWidth, scaledHeight);
   });
   
-  readonly viewBox = computed(() => {
+  viewBox = computed(() => {
     const rect = this.boundingRect();
     const offset = this.offsetScale() * this.viewScale();
     const viewWidth = this.viewScale() * this.elementWidth();
@@ -320,7 +319,7 @@ export class MinimapComponent implements OnInit, OnDestroy {
     return `${x} ${y} ${width} ${height}`;
   });
   
-  readonly viewBB = computed(() => {
+  viewBB = computed(() => {
     const viewport = this._flowService.viewport();
     const dimensions = this._flowService.dimensions();
     return {
@@ -331,7 +330,7 @@ export class MinimapComponent implements OnInit, OnDestroy {
     };
   });
   
-  readonly maskPath = computed(() => {
+  maskPath = computed(() => {
     const rect = this.boundingRect();
     const offset = this.offsetScale() * this.viewScale();
     const viewWidth = this.viewScale() * this.elementWidth();
@@ -348,12 +347,12 @@ export class MinimapComponent implements OnInit, OnDestroy {
   });
   
   // 生成唯一ID - 不在 computed 中因為 Math.random() 不是純函數
-  readonly labelledBy = `angular-xyflow__minimap-desc-${Math.random().toString(36).substr(2, 9)}`;
+  labelledBy = `angular-xyflow__minimap-desc-${Math.random().toString(36).substr(2, 9)}`;
   
   // 形狀渲染模式 - 不在 computed 中因為訪問 window 不是純函數
-  readonly shapeRendering = typeof window === 'undefined' || !!(window as any).chrome ? 'crispEdges' : 'geometricPrecision';
+  shapeRendering = typeof window === 'undefined' || !!(window as any).chrome ? 'crispEdges' : 'geometricPrecision';
   
-  readonly computedStyle = computed(() => {
+  computedStyle = computed(() => {
     const baseStyle: Record<string, any> = {
       ...this.customStyle()
     };
@@ -397,10 +396,6 @@ export class MinimapComponent implements OnInit, OnDestroy {
     return baseStyle;
   });
 
-  // 生命周期方法
-  ngOnInit() {
-    // 這裡不需要做任何事情，因為effect已經在構造函數中設置了
-  }
   
   ngOnDestroy() {
     this.minimapInstance?.destroy();

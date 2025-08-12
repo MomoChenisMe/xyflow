@@ -164,26 +164,26 @@ import { builtinNodeTypes } from '../default-nodes';
 })
 export class NodeWrapperComponent implements OnDestroy {
   // 輸入屬性
-  readonly node = input.required<AngularNode>();
-  readonly selected = input<boolean>(false);
-  readonly dragging = input<boolean>(false);
-  readonly customNodeTemplates = input<readonly any[]>([]);
-  readonly nodeTypes = input<NodeTypes>();
+  node = input.required<AngularNode>();
+  selected = input<boolean>(false);
+  dragging = input<boolean>(false);
+  customNodeTemplates = input<readonly any[]>([]);
+  nodeTypes = input<NodeTypes>();
 
   // 輸出事件
-  readonly nodeClick = output<MouseEvent>();
-  readonly nodeDoubleClick = output<MouseEvent>();
-  readonly nodeContextMenu = output<MouseEvent>();
-  readonly nodeFocus = output<FocusEvent>();
-  readonly nodeDragStart = output<MouseEvent>();
-  readonly nodeDrag = output<{ event: MouseEvent; position: { x: number; y: number } }>();
-  readonly nodeDragStop = output<MouseEvent>();
-  readonly connectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target' }>();
-  readonly connectEnd = output<{ connection?: Connection; event: MouseEvent }>();
-  readonly handleClick = output<{ event: MouseEvent; nodeId: string; handleId?: string; handleType: 'source' | 'target' }>();
+  nodeClick = output<MouseEvent>();
+  nodeDoubleClick = output<MouseEvent>();
+  nodeContextMenu = output<MouseEvent>();
+  nodeFocus = output<FocusEvent>();
+  nodeDragStart = output<MouseEvent>();
+  nodeDrag = output<{ event: MouseEvent; position: { x: number; y: number } }>();
+  nodeDragStop = output<MouseEvent>();
+  connectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target' }>();
+  connectEnd = output<{ connection?: Connection; event: MouseEvent }>();
+  handleClick = output<{ event: MouseEvent; nodeId: string; handleId?: string; handleType: 'source' | 'target' }>();
   
   // 錯誤處理事件（與 React Flow 保持一致）
-  readonly onError = output<{ code: string; message: string }>();
+  onError = output<{ code: string; message: string }>();
 
   // Host 元素引用
   private readonly elementRef = inject(ElementRef<HTMLDivElement>);
@@ -193,7 +193,7 @@ export class NodeWrapperComponent implements OnDestroy {
   }
 
   // 內部狀態
-  private readonly isDragging = signal(false);
+  private isDragging = signal(false);
   private resizeObserver?: ResizeObserver;
   private _dragService = inject(AngularXYFlowDragService);
   private _flowService = inject(AngularXYFlowService);
@@ -239,7 +239,7 @@ export class NodeWrapperComponent implements OnDestroy {
   }
 
   // 計算屬性
-  readonly nodeClasses = computed(() => {
+  nodeClasses = computed(() => {
     const classes = ['xy-flow__node', 'angular-xyflow__node'];
     const nodeData = this.node();
     
@@ -285,7 +285,7 @@ export class NodeWrapperComponent implements OnDestroy {
     return classes.join(' ');
   });
 
-  readonly nodeTransform = computed(() => {
+  nodeTransform = computed(() => {
     const node = this.node();
     // 使用與 Angular Flow 服務一致的位置計算
     // 這確保與內部位置狀態保持同步，包括 NaN 值的處理
@@ -294,7 +294,7 @@ export class NodeWrapperComponent implements OnDestroy {
   });
   
   // 檢查節點是否已有尺寸（與 React Flow 的 nodeHasDimensions 一致）
-  readonly nodeHasDimensions = computed(() => {
+  nodeHasDimensions = computed(() => {
     const node = this.node();
     const internals = this._flowService.getNodeInternals(node.id);
     
@@ -317,7 +317,7 @@ export class NodeWrapperComponent implements OnDestroy {
   });
   
   // 動態元件載入 - 根據節點類型解析對應的元件（模擬 React Flow 的 nodeTypes 邏輯）
-  readonly nodeComponent = computed(() => {
+  nodeComponent = computed(() => {
     const node = this.node();
     let nodeType = node.type || 'default';
     const userNodeTypes = this.nodeTypes();
@@ -339,7 +339,7 @@ export class NodeWrapperComponent implements OnDestroy {
   });
   
   // 準備傳遞給動態元件的輸入屬性
-  readonly nodeInputs = computed(() => {
+  nodeInputs = computed(() => {
     const node = this.node();
     const resolvedNodeType = this.getResolvedNodeType();
     
@@ -372,7 +372,7 @@ export class NodeWrapperComponent implements OnDestroy {
 
   // 查找自定義模板（舊版向後兼容）
   // 只在沒有使用 nodeTypes 時才使用模板方式
-  readonly customTemplate = computed(() => {
+  customTemplate = computed(() => {
     // 如果已經使用 nodeTypes，則不使用模板方式
     if (this.nodeComponent()) {
       return null;

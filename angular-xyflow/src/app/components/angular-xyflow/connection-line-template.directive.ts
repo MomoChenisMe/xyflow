@@ -1,4 +1,4 @@
-import { Directive, TemplateRef } from '@angular/core';
+import { Directive, TemplateRef, inject } from '@angular/core';
 import { ConnectionLineTemplateContext } from './types';
 
 @Directive({
@@ -6,5 +6,5 @@ import { ConnectionLineTemplateContext } from './types';
   standalone: true,
 })
 export class ConnectionLineTemplateDirective {
-  constructor(public templateRef: TemplateRef<ConnectionLineTemplateContext>) {}
+  public templateRef = inject(TemplateRef<ConnectionLineTemplateContext>);
 }

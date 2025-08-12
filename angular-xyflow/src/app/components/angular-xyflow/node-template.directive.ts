@@ -1,4 +1,4 @@
-import { Directive, TemplateRef } from '@angular/core';
+import { Directive, TemplateRef, inject } from '@angular/core';
 import { NodeTemplateContext } from './types';
 
 @Directive({
@@ -6,5 +6,5 @@ import { NodeTemplateContext } from './types';
   standalone: true,
 })
 export class NodeTemplateDirective {
-  constructor(public templateRef: TemplateRef<NodeTemplateContext>) {}
+  public templateRef = inject(TemplateRef<NodeTemplateContext>);
 }

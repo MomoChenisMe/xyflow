@@ -229,7 +229,7 @@ export class ViewportComponent<
   // 計算 Edge 連接點
   // 注意：移除快取機制，確保節點位置變化時能正確更新
   // React 版本的做法是在每個 EdgeWrapper 內部獨立計算，這裡為了架構一致性在父組件計算
-  readonly edgeConnectionPointsMap = computed(() => {
+  edgeConnectionPointsMap = computed(() => {
     const edges = this.visibleEdges();
     const getNode = this.getNodeById();
     const getConnectionPoints = this.getEdgeConnectionPoints();

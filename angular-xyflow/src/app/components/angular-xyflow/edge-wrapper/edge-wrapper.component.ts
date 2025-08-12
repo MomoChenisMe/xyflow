@@ -99,7 +99,7 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
   };
 
   // 獲取解析後的邊類型
-  readonly resolvedEdgeType = computed(() => {
+  resolvedEdgeType = computed(() => {
     const edge = this.edge();
     let edgeType = edge.type || 'default';
     const userEdgeTypes = this.edgeTypes();
@@ -121,7 +121,7 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
   });
 
   // 動態邊組件選擇
-  readonly edgeComponent = computed(() => {
+  edgeComponent = computed(() => {
     const resolvedType = this.resolvedEdgeType();
     const userEdgeTypes = this.edgeTypes();
 
@@ -139,7 +139,7 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
 
   // 準備傳遞給邊緣組件的輸入屬性
   private lastComputedEdgeId: string | null = null;
-  readonly edgeComponentInputs = computed(() => {
+  edgeComponentInputs = computed(() => {
     const edge = this.edge();
     const resolvedEdgeType = this.resolvedEdgeType();
     
@@ -238,7 +238,7 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
   });
 
   // 計算邊是否可聚焦
-  readonly isEdgeFocusable = computed(() => {
+  isEdgeFocusable = computed(() => {
     const edge = this.edge();
     // 根據 React Flow 邏輯：edge.focusable || (edgesFocusable && typeof edge.focusable === 'undefined')
     // 這裡簡化為檢查邊自身的 focusable 屬性
