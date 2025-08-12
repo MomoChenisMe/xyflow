@@ -57,7 +57,7 @@ import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/c
 })
 export class BrokenNodesExampleComponent {
   // Controlled 模式：節點和邊的狀態管理 - 與 React 版本一致
-  readonly nodes = signal<AngularNode[]>([
+  nodes = signal<AngularNode[]>([
     {
       id: '1a',
       type: 'input',
@@ -87,7 +87,7 @@ export class BrokenNodesExampleComponent {
     },
   ]);
 
-  readonly edges = signal<AngularEdge[]>([
+  edges = signal<AngularEdge[]>([
     { id: 'e1-2', source: '1a', target: '2a', ariaLabel: undefined },
     { id: 'e1-3', source: '1a', target: '3a' },
   ]);

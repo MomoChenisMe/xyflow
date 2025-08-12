@@ -56,7 +56,7 @@ import {
 })
 export class DefaultNodesExampleComponent {
   // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
+  angularFlow = viewChild.required(AngularXYFlowComponent);
 
   // 背景變體枚舉
   readonly backgroundVariant = BackgroundVariant;

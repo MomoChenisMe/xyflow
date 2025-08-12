@@ -35,7 +35,7 @@ export class AngularXYFlowDragService implements OnDestroy {
   }>();
 
   // 公開拖拽狀態
-  readonly dragging = computed(() => this._dragging());
+  dragging = computed(() => this._dragging());
 
   private _flowService = inject(AngularXYFlowService);
 

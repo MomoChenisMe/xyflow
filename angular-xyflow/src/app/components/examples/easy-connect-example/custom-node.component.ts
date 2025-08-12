@@ -59,34 +59,34 @@ import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyfl
 })
 export class CustomNodeComponent {
   // 使用 Angular 20+ 的 input() API - 包含所有必要的節點屬性
-  readonly id = input.required<string>();
-  readonly type = input<string>();
-  readonly data = input<Record<string, unknown>>({});
-  readonly selected = input<boolean>(false);
-  readonly dragging = input<boolean>(false);
-  readonly isConnectable = input<boolean>(true);
-  readonly sourcePosition = input<Position>(Position.Right);
-  readonly targetPosition = input<Position>(Position.Left);
-  readonly width = input<number>();
-  readonly height = input<number>();
-  readonly parentId = input<string>();
-  readonly zIndex = input<number>(0);
-  readonly draggable = input<boolean>(true);
-  readonly selectable = input<boolean>(true);
-  readonly deletable = input<boolean>(true);
-  readonly positionAbsoluteX = input<number>(0);
-  readonly positionAbsoluteY = input<number>(0);
-  readonly dragHandle = input<string>();
+  id = input.required<string>();
+  type = input<string>();
+  data = input<Record<string, unknown>>({});
+  selected = input<boolean>(false);
+  dragging = input<boolean>(false);
+  isConnectable = input<boolean>(true);
+  sourcePosition = input<Position>(Position.Right);
+  targetPosition = input<Position>(Position.Left);
+  width = input<number>();
+  height = input<number>();
+  parentId = input<string>();
+  zIndex = input<number>(0);
+  draggable = input<boolean>(true);
+  selectable = input<boolean>(true);
+  deletable = input<boolean>(true);
+  positionAbsoluteX = input<number>(0);
+  positionAbsoluteY = input<number>(0);
+  dragHandle = input<string>();
 
   Position = Position;
 
   private xyflowService = inject(AngularXYFlowService);
 
   // 獲取當前連線狀態 - 直接使用 readonly signal 避免額外計算層
-  readonly connectionStateSignal = this.xyflowService.connectionState;
+  connectionStateSignal = this.xyflowService.connectionState;
 
   // 計算是否為目標節點 - 添加更嚴格的檢查避免不必要的重計算
-  readonly isTarget = computed(() => {
+  isTarget = computed(() => {
     const conn = this.connectionStateSignal();
     if (!conn.inProgress) return false;
     const fromNodeId = conn.fromNode?.id;
@@ -95,7 +95,7 @@ export class CustomNodeComponent {
   });
 
   // 根據狀態顯示不同標籤 - 使用靜態字串避免創建新對象
-  readonly label = computed(() => {
+  label = computed(() => {
     return this.isTarget() ? 'Drop here' : 'Drag to connect';
   });
 }

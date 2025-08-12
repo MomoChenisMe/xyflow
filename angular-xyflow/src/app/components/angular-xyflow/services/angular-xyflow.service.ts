@@ -344,29 +344,29 @@ export class AngularXYFlowService<
   }
 
   // 計算信號 - 唯讀訪問器
-  readonly nodes: Signal<NodeType[]> = computed(() => this._nodes());
-  readonly edges: Signal<EdgeType[]> = computed(() => this._edges());
-  readonly viewport: Signal<Viewport> = computed(() => this._viewport());
-  readonly selectedNodes: Signal<string[]> = computed(() =>
+  nodes: Signal<NodeType[]> = computed(() => this._nodes());
+  edges: Signal<EdgeType[]> = computed(() => this._edges());
+  viewport: Signal<Viewport> = computed(() => this._viewport());
+  selectedNodes: Signal<string[]> = computed(() =>
     this._selectedNodes()
   );
-  readonly selectedEdges: Signal<string[]> = computed(() =>
+  selectedEdges: Signal<string[]> = computed(() =>
     this._selectedEdges()
   );
-  readonly selectedHandles: Signal<
+  selectedHandles: Signal<
     Array<{ nodeId: string; handleId?: string; type: 'source' | 'target' }>
   > = computed(() => this._selectedHandles());
-  readonly connectionState: Signal<ConnectionState<NodeType>> =
+  connectionState: Signal<ConnectionState<NodeType>> =
     this._connectionState.asReadonly();
-  readonly initialized: Signal<boolean> = computed(() => this._initialized());
-  readonly minZoom: Signal<number> = computed(() => this._minZoom());
-  readonly maxZoom: Signal<number> = computed(() => this._maxZoom());
-  readonly connectionRadius: Signal<number> = computed(() =>
+  initialized: Signal<boolean> = computed(() => this._initialized());
+  minZoom: Signal<number> = computed(() => this._minZoom());
+  maxZoom: Signal<number> = computed(() => this._maxZoom());
+  connectionRadius: Signal<number> = computed(() =>
     this._connectionRadius()
   );
 
   // Angular 專用：檢查所有節點是否都完成三個渲染階段
-  readonly nodesInitialized: Signal<boolean> = computed(() => {
+  nodesInitialized: Signal<boolean> = computed(() => {
     const nodes = this._nodes();
 
     // 如果沒有節點，視為已初始化
@@ -389,41 +389,41 @@ export class AngularXYFlowService<
     return allInitialized;
   });
 
-  readonly nodesDraggable: Signal<boolean> = computed(() =>
+  nodesDraggable: Signal<boolean> = computed(() =>
     this._nodesDraggable()
   );
-  readonly nodesConnectable: Signal<boolean> = computed(() =>
+  nodesConnectable: Signal<boolean> = computed(() =>
     this._nodesConnectable()
   );
-  readonly elementsSelectable: Signal<boolean> = computed(() =>
+  elementsSelectable: Signal<boolean> = computed(() =>
     this._elementsSelectable()
   );
-  readonly edgesFocusable: Signal<boolean> = computed(() =>
+  edgesFocusable: Signal<boolean> = computed(() =>
     this._edgesFocusable()
   );
-  readonly selectNodesOnDrag: Signal<boolean> = computed(() =>
+  selectNodesOnDrag: Signal<boolean> = computed(() =>
     this._selectNodesOnDrag()
   );
-  readonly autoPanOnNodeFocus: Signal<boolean> = computed(() =>
+  autoPanOnNodeFocus: Signal<boolean> = computed(() =>
     this._autoPanOnNodeFocus()
   );
-  readonly snapToGrid: Signal<boolean> = computed(() =>
+  snapToGrid: Signal<boolean> = computed(() =>
     this._snapToGrid()
   );
-  readonly snapGrid: Signal<[number, number]> = computed(() =>
+  snapGrid: Signal<[number, number]> = computed(() =>
     this._snapGrid()
   );
-  readonly dimensions: Signal<{ width: number; height: number }> = computed(
+  dimensions: Signal<{ width: number; height: number }> = computed(
     () => this._dimensions()
   );
-  readonly isInteractive: Signal<boolean> = computed(
+  isInteractive: Signal<boolean> = computed(
     () =>
       this._nodesDraggable() ||
       this._nodesConnectable() ||
       this._elementsSelectable()
   );
-  readonly colorMode: Signal<ColorMode> = computed(() => this._colorMode());
-  readonly colorModeClass: Signal<ColorModeClass> = computed(() => {
+  colorMode: Signal<ColorMode> = computed(() => this._colorMode());
+  colorModeClass: Signal<ColorModeClass> = computed(() => {
     const mode = this._colorMode();
     if (mode === 'system') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -435,7 +435,7 @@ export class AngularXYFlowService<
 
   // Transform 狀態管理 - 用於 PanZoom 服務
   private _transform = signal<Transform>([0, 0, 1]);
-  readonly transform: Signal<Transform> = computed(() => this._transform());
+  transform: Signal<Transform> = computed(() => this._transform());
 
   // Transform 方法
   setTransform(transform: Transform): void {
@@ -457,7 +457,7 @@ export class AngularXYFlowService<
   }
 
   // 節點和邊的查找映射 - 效能優化的查找表
-  readonly nodeLookup: Signal<Map<string, NodeType>> = computed(() => {
+  nodeLookup: Signal<Map<string, NodeType>> = computed(() => {
     const lookup = new Map<string, NodeType>();
     const nodes = this._nodes();
     const nodeInternals = this._nodeInternals();
@@ -490,14 +490,14 @@ export class AngularXYFlowService<
     return lookup;
   });
 
-  readonly edgeLookup: Signal<Map<string, EdgeType>> = computed(() => {
+  edgeLookup: Signal<Map<string, EdgeType>> = computed(() => {
     const lookup = new Map<string, EdgeType>();
     this._edges().forEach((edge) => lookup.set(edge.id, edge));
     return lookup;
   });
 
   // 內部節點查找表 - 用於 getNodesInside 函數和 fitView
-  readonly internalNodeLookup = computed(() => {
+  internalNodeLookup = computed(() => {
     const nodes = this._nodes();
     const measuredDimensions = this._nodeMeasuredDimensions();
     const nodeInternals = this._nodeInternals();

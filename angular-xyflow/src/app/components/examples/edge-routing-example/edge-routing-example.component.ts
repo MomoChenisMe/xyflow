@@ -42,7 +42,7 @@ import {
 })
 export class EdgeRoutingExampleComponent {
   // 節點數據 - 直接從React版本轉換
-  readonly nodes = signal<AngularNode[]>([
+  nodes = signal<AngularNode[]>([
     // LTR
     {
       id: '1',
@@ -212,7 +212,7 @@ export class EdgeRoutingExampleComponent {
   ]);
 
   // 邊數據 - 直接從React版本轉換
-  readonly edges = signal<AngularEdge[]>([
+  edges = signal<AngularEdge[]>([
     {
       id: 'e1-2',
       source: '1',

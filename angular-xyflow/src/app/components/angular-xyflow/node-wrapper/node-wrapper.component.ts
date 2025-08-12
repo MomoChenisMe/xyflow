@@ -62,7 +62,7 @@ import { builtinNodeTypes } from '../default-nodes';
     <!-- Node content -->
     @if (nodeComponent()) {
       <!-- 使用動態元件載入 - 直接渲染，不包裹 -->
-      <ng-container 
+      <ng-container
         [ngComponentOutlet]="nodeComponent()"
         [ngComponentOutletInputs]="nodeInputs()"
         [ngComponentOutletInjector]="nodeInjector"
@@ -181,7 +181,7 @@ export class NodeWrapperComponent implements OnDestroy {
   connectStart = output<{ event: MouseEvent; nodeId: string; handleType: 'source' | 'target' }>();
   connectEnd = output<{ connection?: Connection; event: MouseEvent }>();
   handleClick = output<{ event: MouseEvent; nodeId: string; handleId?: string; handleType: 'source' | 'target' }>();
-  
+
   // 錯誤處理事件（與 React Flow 保持一致）
   onError = output<{ code: string; message: string }>();
 
@@ -197,10 +197,10 @@ export class NodeWrapperComponent implements OnDestroy {
   private resizeObserver?: ResizeObserver;
   private _dragService = inject(AngularXYFlowDragService);
   private _flowService = inject(AngularXYFlowService);
-  
+
   // 動態元件載入所需的 Injector
   protected readonly nodeInjector = inject(Injector);
-  
+
   // 錯誤處理器
   private readonly errorHandler = (code: ErrorCode, message: string) => {
     // 發出錯誤事件
@@ -208,13 +208,13 @@ export class NodeWrapperComponent implements OnDestroy {
     // 同時使用預設處理器輸出到 console
     defaultErrorHandler(code, message);
   };
-  
+
   // 存儲當前節點 ID 用於清理 - 避免在 ngOnDestroy 時訪問 signal
   private currentNodeId?: string;
-  
+
   // 追踪拖曳是否已初始化
   private dragInitialized = false;
-  
+
   // 追踪最後的 dragHandle 值，用於檢測變化
   private lastDragHandle?: string;
 
@@ -223,18 +223,18 @@ export class NodeWrapperComponent implements OnDestroy {
     const node = this.node();
     let nodeType = node.type || 'default';
     const userNodeTypes = this.nodeTypes();
-    
+
     // React Flow 邏輯：
     // 1. 首先查找用戶定義的 nodeTypes
     // 2. 如果沒有找到，查找內建類型
     // 3. 如果類型不存在，回退到 default
     let NodeComponent = userNodeTypes?.[nodeType] || builtinNodeTypes[nodeType];
-    
+
     if (NodeComponent === undefined) {
       // 錯誤處理：類型未找到，回退到 default
       nodeType = 'default';
     }
-    
+
     return nodeType;
   }
 
@@ -242,10 +242,10 @@ export class NodeWrapperComponent implements OnDestroy {
   nodeClasses = computed(() => {
     const classes = ['xy-flow__node', 'angular-xyflow__node'];
     const nodeData = this.node();
-    
+
     // 獲取解析後的節點類型（與 nodeComponent 計算邏輯保持一致）
     const resolvedNodeType = this.getResolvedNodeType();
-    
+
     // React Flow 行為：使用解析後的節點類型（如果未註冊則回退到 default）
     classes.push(`xy-flow__node-${resolvedNodeType}`);
 
@@ -253,13 +253,13 @@ export class NodeWrapperComponent implements OnDestroy {
     if (this._flowService.elementsSelectable()) {
       classes.push('selectable');
     }
-    
+
     // 關鍵修復：為可拖曳節點添加 nopan 類別（與 React Flow 一致）
     // 這防止了在節點上（特別是有 dragHandle 但不在 handle 上）拖曳時觸發 viewport panning
     const globalDraggable = this._flowService.nodesDraggable();
     const nodeDraggable = nodeData.draggable !== false;
     const isDraggable = globalDraggable && nodeDraggable && !nodeData.hidden;
-    
+
     if (isDraggable) {
       classes.push('nopan');
     }
@@ -292,61 +292,61 @@ export class NodeWrapperComponent implements OnDestroy {
     const pos = this._flowService.getNodeVisualPosition(node);
     return `translate(${pos.x}px, ${pos.y}px)`;
   });
-  
+
   // 檢查節點是否已有尺寸（與 React Flow 的 nodeHasDimensions 一致）
   nodeHasDimensions = computed(() => {
     const node = this.node();
     const internals = this._flowService.getNodeInternals(node.id);
-    
+
     // React Flow 的邏輯：
     // visibility 控制使用的是實際測量或明確設置的尺寸
     // initialWidth/Height 只用於 fitView 計算，不影響節點可見性
-    
+
     // 如果有測量尺寸，使用測量尺寸
     if (internals?.measured?.width !== undefined && internals?.measured?.height !== undefined) {
       return internals.measured.width > 0 && internals.measured.height > 0;
     }
-    
+
     // 如果有明確設置的 width/height，則節點可見
     if (node.width !== undefined && node.height !== undefined) {
       return node.width > 0 && node.height > 0;
     }
-    
+
     // 只有 initialWidth/Height 的節點應該被隱藏，等待測量
     return false;
   });
-  
+
   // 動態元件載入 - 根據節點類型解析對應的元件（模擬 React Flow 的 nodeTypes 邏輯）
   nodeComponent = computed(() => {
     const node = this.node();
     let nodeType = node.type || 'default';
     const userNodeTypes = this.nodeTypes();
-    
+
     // React Flow 邏輯：
     // 1. 首先查找用戶定義的 nodeTypes
     // 2. 如果沒有找到，查找內建類型
     // 3. 如果類型不存在，回退到 default
     let NodeComponent = userNodeTypes?.[nodeType] || builtinNodeTypes[nodeType];
-    
+
     if (NodeComponent === undefined) {
       // 錯誤處理：類型未找到，回退到 default（使用統一錯誤處理機制）
       this.errorHandler('error003', errorMessages.error003(nodeType));
       nodeType = 'default';
       NodeComponent = userNodeTypes?.['default'] || builtinNodeTypes['default'];
     }
-    
+
     return NodeComponent;
   });
-  
+
   // 準備傳遞給動態元件的輸入屬性
   nodeInputs = computed(() => {
     const node = this.node();
     const resolvedNodeType = this.getResolvedNodeType();
-    
+
     // 獲取節點的絕對位置
     const internals = this._flowService.getNodeInternals(node.id);
     const positionAbsolute = internals?.positionAbsolute || { x: node.position.x, y: node.position.y };
-    
+
     const inputs: Record<string, unknown> = {
       id: node.id,
       data: node.data,
@@ -377,13 +377,13 @@ export class NodeWrapperComponent implements OnDestroy {
     if (this.nodeComponent()) {
       return null;
     }
-    
+
     const templates = this.customNodeTemplates();
     if (templates.length > 0) {
       // 使用第一個模板（舊版行為）
       return templates[0];
     }
-    
+
     return null;
   });
 
@@ -409,24 +409,24 @@ export class NodeWrapperComponent implements OnDestroy {
     afterNextRender(() => {
       const nodeData = this.node();
       const element = this.nodeElement?.nativeElement;
-      
+
       if (!element || !nodeData) {
         return;
       }
 
       // 階段1：報告組件創建完成
       this._flowService.reportNodeComponentCreated(nodeData.id);
-      
+
       // 對應 React 的 disabled 邏輯
       const globalDraggable = this._flowService.nodesDraggable();
       const nodeDraggable = nodeData.draggable !== false;
       const isDraggable = globalDraggable && nodeDraggable;
       const disabled = nodeData.hidden || !isDraggable;
-      
+
       // 檢查是否需要重新初始化（配置變化）
-      const configChanged = !this.dragInitialized || 
+      const configChanged = !this.dragInitialized ||
                           this.lastDragHandle !== nodeData.dragHandle;
-      
+
       if (disabled) {
         // 如果禁用，銷毀拖曳實例
         if (this.dragInitialized) {
@@ -446,7 +446,7 @@ export class NodeWrapperComponent implements OnDestroy {
           this.initializeDragWithHandle(nodeData, element);
         }
       }
-      
+
       // 設置觀察器（只在首次）
       if (!this.resizeObserver) {
         this.setupResizeObserver();
@@ -456,7 +456,7 @@ export class NodeWrapperComponent implements OnDestroy {
       this._flowService.reportNodeDOMRendered(nodeData.id);
     });
   }
-  
+
   // 新增輔助方法，對應 React 的 xyDrag.current?.update
   private initializeDragWithHandle(nodeData: AngularNode, element: HTMLElement): void {
     // 總是先銷毀舊的實例，確保乾淨的狀態
@@ -470,7 +470,7 @@ export class NodeWrapperComponent implements OnDestroy {
       this.setupNewDragInstance(nodeData, element);
     }
   }
-  
+
   private setupNewDragInstance(nodeData: AngularNode, element: HTMLElement): void {
     // 初始化拖曳
     this._dragService.initializeDrag({
@@ -489,7 +489,7 @@ export class NodeWrapperComponent implements OnDestroy {
         this.nodeDragStop.emit(event);
       }
     });
-    
+
     this.dragInitialized = true;
     this.lastDragHandle = nodeData.dragHandle;
   }
@@ -519,9 +519,9 @@ export class NodeWrapperComponent implements OnDestroy {
         const target = entry.target as HTMLElement;
         const width = target.offsetWidth;
         const height = target.offsetHeight;
-        
+
         // 測量尺寸完成
-        
+
         // 階段3：報告尺寸測量完成（同時更新測量尺寸）
         this._flowService.reportNodeDimensionsMeasured(this.node().id, { width, height }, target);
       }
@@ -536,18 +536,18 @@ export class NodeWrapperComponent implements OnDestroy {
     if (this.isClickFromHandle(event)) {
       return;
     }
-    
+
     // 避免在拖動後觸發點擊
     if (!this.isDragging()) {
       const isSelectable = this._flowService.elementsSelectable();
-      
+
       // 根據 React Flow 邏輯：當交互被禁用時，完全阻止點擊事件
       if (!isSelectable) {
         event.preventDefault();
         event.stopPropagation();
         return;
       }
-      
+
       const globalDraggable = this._flowService.nodesDraggable();
       const nodeDraggable = this.node().draggable !== false;
       const isDraggable = globalDraggable && nodeDraggable;
@@ -581,7 +581,7 @@ export class NodeWrapperComponent implements OnDestroy {
     // 避免在拖動後觸發雙擊
     if (!this.isDragging()) {
       const isSelectable = this._flowService.elementsSelectable();
-      
+
       // 根據 React Flow 邏輯：當交互被禁用時，完全阻止雙擊事件
       if (!isSelectable) {
         event.preventDefault();
@@ -600,7 +600,7 @@ export class NodeWrapperComponent implements OnDestroy {
     }
 
     const isSelectable = this._flowService.elementsSelectable();
-    
+
     // 根據 React Flow 邏輯：當交互被禁用時，完全阻止右鍵菜單事件
     if (!isSelectable) {
       event.preventDefault();
@@ -616,9 +616,9 @@ export class NodeWrapperComponent implements OnDestroy {
   private isClickFromHandle(event: MouseEvent): boolean {
     const target = event.target as HTMLElement;
     if (!target) return false;
-    
+
     // 檢查點擊的元素或其父元素是否是 Handle
-    return target.closest('.xy-flow__handle') !== null || 
+    return target.closest('.xy-flow__handle') !== null ||
            target.classList.contains('xy-flow__handle');
   }
 
@@ -653,18 +653,18 @@ export class NodeWrapperComponent implements OnDestroy {
   // 輔助方法
   getNodeWidth(): string | undefined {
     const nodeData = this.node();
-    
+
     // 優先使用明確設定的 width
     if (nodeData.width) {
       return typeof nodeData.width === 'number' ? nodeData.width + 'px' : nodeData.width;
     }
-    
+
     // 如果沒有明確的 width，檢查 style 中的 width（與 React Flow 一致）
     if (nodeData.style?.['width']) {
       const styleWidth = nodeData.style['width'];
       return typeof styleWidth === 'number' ? styleWidth + 'px' : styleWidth;
     }
-    
+
     // 讓 CSS 後備樣式處理預設寬度
     // 當節點沒有明確指定寬度時，不設置內聯樣式
     // 這樣 CSS 中的 150px 預設寬度會生效
@@ -673,18 +673,18 @@ export class NodeWrapperComponent implements OnDestroy {
 
   getNodeHeight(): string | undefined {
     const nodeData = this.node();
-    
+
     // 優先使用明確設定的 height
     if (nodeData.height) {
       return typeof nodeData.height === 'number' ? nodeData.height + 'px' : nodeData.height;
     }
-    
+
     // 如果沒有明確的 height，檢查 style 中的 height（與 React Flow 一致）
     if (nodeData.style?.['height']) {
       const styleHeight = nodeData.style['height'];
       return typeof styleHeight === 'number' ? styleHeight + 'px' : styleHeight;
     }
-    
+
     // 讓 CSS 後備樣式處理預設高度
     return undefined;
   }
@@ -719,14 +719,14 @@ export class NodeWrapperComponent implements OnDestroy {
     if (node.style) {
       // 建立新的樣式物件，確保 fontSize 和 color 正確應用
       const styles: any = {};
-      
+
       // 處理 fontSize - 如果是數字，加上 'px' 單位
       if (node.style['fontSize'] !== undefined) {
-        styles['fontSize'] = typeof node.style['fontSize'] === 'number' 
-          ? node.style['fontSize'] + 'px' 
+        styles['fontSize'] = typeof node.style['fontSize'] === 'number'
+          ? node.style['fontSize'] + 'px'
           : node.style['fontSize'];
       }
-      
+
       // 處理其他所有樣式屬性（包括 color, background 等）
       Object.keys(node.style).forEach(key => {
         if (key !== 'fontSize' && key !== 'width' && key !== 'height') {
@@ -734,7 +734,7 @@ export class NodeWrapperComponent implements OnDestroy {
           styles[key] = node.style![key];
         }
       });
-      
+
       return styles;
     }
     return null;
@@ -744,7 +744,7 @@ export class NodeWrapperComponent implements OnDestroy {
   onColorChange(event: Event): void {
     const target = event.target as HTMLInputElement;
     const nodeData = this.node().data;
-    
+
     // 調用節點數據中的 onChange 函數（如果存在）
     if (nodeData && typeof nodeData['onChange'] === 'function') {
       nodeData['onChange'](event);
@@ -817,7 +817,7 @@ export class NodeWrapperComponent implements OnDestroy {
   onNodeFocus(event: FocusEvent): void {
     const nodeId = this.node().id;
     const isSelectable = this._flowService.elementsSelectable();
-    
+
     // 根據 React Flow 邏輯：當交互被禁用時，阻止焦點相關操作
     if (!isSelectable) {
       event.preventDefault();
@@ -843,7 +843,7 @@ export class NodeWrapperComponent implements OnDestroy {
     // 處理選擇相關的按鍵（Enter, Space, Escape）- 與 React 版本保持一致
     if (elementSelectionKeys.includes(event.key) && isSelectable) {
       const unselect = event.key === 'Escape';
-      
+
       if (unselect) {
         event.preventDefault();
         // 清除選擇

@@ -93,7 +93,7 @@ import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/c
 })
 export class ControlledUncontrolledExampleComponent {
   // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
+  angularFlow = viewChild.required(AngularXYFlowComponent);
 
   // 背景變體枚舉
   readonly backgroundVariant = BackgroundVariant;
@@ -143,8 +143,8 @@ export class ControlledUncontrolledExampleComponent {
   // 警告：這是不良實踐！不應該同時使用 controlled 和 uncontrolled 模式
   // 這個範例故意展示錯誤用法，會導致狀態衝突和意外行為（如新 edge 點擊後消失）
   // 正確做法是只選擇其中一種模式：要麼只用 [nodes]/[edges]，要麼只用 [defaultNodes]/[defaultEdges]
-  readonly nodes = signal<AngularNode[]>(this.defaultNodes);
-  readonly edges = signal<AngularEdge[]>(this.defaultEdges);
+  nodes = signal<AngularNode[]>(this.defaultNodes);
+  edges = signal<AngularEdge[]>(this.defaultEdges);
   
   // 防止無限循環的標記
   private _isProcessingBug = false;

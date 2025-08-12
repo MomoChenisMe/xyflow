@@ -96,13 +96,13 @@ import { DragNDropSidebarComponent } from './drag-n-drop-sidebar.component';
 })
 export class DragNDropExampleComponent implements AfterViewInit {
   // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
+  angularFlow = viewChild.required(AngularXYFlowComponent);
 
   // 節點原點設置為中心
   readonly nodeOrigin: [number, number] = [0.5, 0.5];
 
   // 初始節點
-  readonly nodes = signal<AngularNode[]>([
+  nodes = signal<AngularNode[]>([
     {
       id: '1',
       type: 'input',
@@ -112,7 +112,7 @@ export class DragNDropExampleComponent implements AfterViewInit {
   ]);
 
   // 初始邊
-  readonly edges = signal<AngularEdge[]>([]);
+  edges = signal<AngularEdge[]>([]);
 
   // 流實例已初始化標誌
   private flowInitialized = false;

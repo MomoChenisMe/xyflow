@@ -52,28 +52,28 @@ import { Handle } from '../types';
 })
 export class HandleComponent implements OnDestroy {
   // 輸入屬性
-  readonly type = input.required<'source' | 'target'>();
-  readonly position = input.required<Position>();
-  readonly nodeId = input.required<string>();
-  readonly handleId = input<string>();
-  readonly isConnectable = input<boolean>(true);
-  readonly isConnectableStart = input<boolean>(true); // 是否可以作為連線起點
-  readonly isConnectableEnd = input<boolean>(true);   // 是否可以作為連線終點
-  readonly selected = input<boolean>(false);
-  readonly style = input<Record<string, any>>({});
+  type = input.required<'source' | 'target'>();
+  position = input.required<Position>();
+  nodeId = input.required<string>();
+  handleId = input<string>();
+  isConnectable = input<boolean>(true);
+  isConnectableStart = input<boolean>(true); // 是否可以作為連線起點
+  isConnectableEnd = input<boolean>(true);   // 是否可以作為連線終點
+  selected = input<boolean>(false);
+  style = input<Record<string, any>>({});
 
   // 輸出事件
-  readonly connectStart = output<{
+  connectStart = output<{
     event: MouseEvent;
     nodeId: string;
     handleType: 'source' | 'target';
     handleId?: string;
   }>();
-  readonly connectEnd = output<{
+  connectEnd = output<{
     connection?: Connection;
     event: MouseEvent;
   }>();
-  readonly handleClick = output<{
+  handleClick = output<{
     event: MouseEvent;
     nodeId: string;
     handleType: 'source' | 'target';
@@ -81,19 +81,19 @@ export class HandleComponent implements OnDestroy {
   }>();
 
   // 視圖子元素
-  readonly handleElement =
+  handleElement =
     viewChild.required<ElementRef<HTMLDivElement>>('handleElement');
 
   // 內部狀態
-  private readonly isConnecting = signal(false);
-  private readonly connectionValid = signal<boolean | null>(null);
-  private readonly isHovered = signal(false);
+  private isConnecting = signal(false);
+  private connectionValid = signal<boolean | null>(null);
+  private isHovered = signal(false);
 
   // 注入服務
   private _flowService = inject(AngularXYFlowService);
 
   // 計算屬性 - 符合 React Flow 標準的 CSS 類別系統
-  readonly handleClasses = computed(() => {
+  handleClasses = computed(() => {
     const classes = ['xy-flow__handle'];
 
     // 添加位置類別 - 與 React Flow 一致
@@ -135,8 +135,8 @@ export class HandleComponent implements OnDestroy {
     return classes.join(' ');
   });
 
-  // 自定義樣式 - 合併用戶樣式但不覆蓋關鍵定位屬性
-  readonly customStyle = computed(() => {
+  // 自定義樣式 - 合併用戶樣式來不覆蓋關鍵定位屬性
+  customStyle = computed(() => {
     const userStyle = this.style();
     if (Object.keys(userStyle).length === 0) {
       return null;
@@ -174,7 +174,7 @@ export class HandleComponent implements OnDestroy {
   });
 
   // 計算是否可以連接
-  readonly canConnect = computed(() => {
+  canConnect = computed(() => {
     const globalConnectable = this._flowService.nodesConnectable();
     const handleConnectable = this.isConnectable();
     return globalConnectable && handleConnectable;

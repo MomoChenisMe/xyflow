@@ -35,27 +35,27 @@ import { EdgeProps } from '../../angular-xyflow/types';
 })
 export class CustomEdgeComponent {
   // 定義 input 屬性以接收 EdgeProps（與 React 版本一致）
-  readonly id = input<string>();
-  readonly data = input<Record<string, unknown>>();
-  readonly type = input<string>();
-  readonly selected = input<boolean>();
-  readonly sourceX = input.required<number>();
-  readonly sourceY = input.required<number>();
-  readonly targetX = input.required<number>();
-  readonly targetY = input.required<number>();
-  readonly sourcePosition = input<Position>();
-  readonly targetPosition = input<Position>();
-  readonly sourceHandleId = input<string>();
-  readonly targetHandleId = input<string>();
-  readonly markerStart = input<any>();
-  readonly markerEnd = input<any>();
-  readonly style = input<Record<string, any>>();
-  readonly animated = input<boolean>();
-  readonly hidden = input<boolean>();
-  readonly deletable = input<boolean>();
-  readonly selectable = input<boolean>();
-  readonly interactionWidth = input<number>();
-  readonly pathOptions = input<any>();
+  id = input<string>();
+  data = input<Record<string, unknown>>();
+  type = input<string>();
+  selected = input<boolean>();
+  sourceX = input.required<number>();
+  sourceY = input.required<number>();
+  targetX = input.required<number>();
+  targetY = input.required<number>();
+  sourcePosition = input<Position>();
+  targetPosition = input<Position>();
+  sourceHandleId = input<string>();
+  targetHandleId = input<string>();
+  markerStart = input<any>();
+  markerEnd = input<any>();
+  style = input<Record<string, any>>();
+  animated = input<boolean>();
+  hidden = input<boolean>();
+  deletable = input<boolean>();
+  selectable = input<boolean>();
+  interactionWidth = input<number>();
+  pathOptions = input<any>();
 
   // 計算邊顏色（基於選中狀態）
   pathStroke = computed(() => {

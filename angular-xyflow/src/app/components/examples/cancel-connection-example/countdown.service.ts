@@ -3,14 +3,14 @@ import { Injectable, signal } from '@angular/core';
 @Injectable()
 export class CountdownService {
   private interval: ReturnType<typeof setInterval> | null = null;
-  
+
   // 信號狀態
   private _remaining = signal(0);
   private _counting = signal(false);
-  
+
   // 公開只讀信號
-  readonly remaining = this._remaining.asReadonly();
-  readonly counting = this._counting.asReadonly();
+  remaining = this._remaining.asReadonly();
+  counting = this._counting.asReadonly();
 
   start(duration: number, callback: () => void): void {
     this.stop(); // 清除之前的計時器

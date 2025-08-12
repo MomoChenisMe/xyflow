@@ -32,8 +32,8 @@ export class AngularXYFlowPanZoomService {
   private destroyHandlers: (() => void)[] = [];
 
   // 對外暴露的計算屬性
-  readonly isDragging = computed(() => this._isDragging());
-  readonly isZooming = computed(() => this._isZooming());
+  isDragging = computed(() => this._isDragging());
+  isZooming = computed(() => this._isZooming());
 
   // 視窗事件回調
   private onMoveStart?: (data: {

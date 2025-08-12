@@ -106,7 +106,7 @@ export class CustomConnectionLineExampleComponent {
   readonly backgroundVariant = BackgroundVariant;
 
   // 初始節點數據
-  readonly initialNodes = signal<AngularNode[]>([
+  initialNodes = signal<AngularNode[]>([
     {
       id: '1',
       type: 'default',
@@ -116,7 +116,7 @@ export class CustomConnectionLineExampleComponent {
   ]);
 
   // 初始邊數據
-  readonly initialEdges = signal<AngularEdge[]>([]);
+  initialEdges = signal<AngularEdge[]>([]);
 
   // 連接事件處理
   // Controlled mode event handlers

@@ -41,41 +41,41 @@ import { getEdgeParams } from './utils';
 })
 export class FloatingEdgeComponent {
   // 使用 Angular 20+ Signal-based inputs
-  readonly id = input.required<string>();
-  readonly source = input.required<string>();
-  readonly target = input.required<string>();
-  readonly markerEnd = input<string>();
-  readonly markerStart = input<string>();
-  readonly style = input<any>();
-  readonly sourceX = input<number>();
-  readonly sourceY = input<number>();
-  readonly targetX = input<number>();
-  readonly targetY = input<number>();
-  readonly sourcePosition = input<any>();
-  readonly targetPosition = input<any>();
-  readonly data = input<any>();
-  readonly interactionWidth = input<number>();
-  readonly type = input<string>();
-  readonly selected = input<boolean>(false);
-  readonly sourceHandleId = input<string>();
-  readonly targetHandleId = input<string>();
-  readonly animated = input<boolean>(false);
-  readonly hidden = input<boolean>(false);
-  readonly deletable = input<boolean>();
-  readonly selectable = input<boolean>();
-  readonly label = input<string>();
-  readonly labelStyle = input<any>();
-  readonly labelShowBg = input<boolean>();
-  readonly labelBgStyle = input<any>();
-  readonly labelBgPadding = input<any>();
-  readonly labelBgBorderRadius = input<number>();
-  readonly pathOptions = input<any>();
+  id = input.required<string>();
+  source = input.required<string>();
+  target = input.required<string>();
+  markerEnd = input<string>();
+  markerStart = input<string>();
+  style = input<any>();
+  sourceX = input<number>();
+  sourceY = input<number>();
+  targetX = input<number>();
+  targetY = input<number>();
+  sourcePosition = input<any>();
+  targetPosition = input<any>();
+  data = input<any>();
+  interactionWidth = input<number>();
+  type = input<string>();
+  selected = input<boolean>(false);
+  sourceHandleId = input<string>();
+  targetHandleId = input<string>();
+  animated = input<boolean>(false);
+  hidden = input<boolean>(false);
+  deletable = input<boolean>();
+  selectable = input<boolean>();
+  label = input<string>();
+  labelStyle = input<any>();
+  labelShowBg = input<boolean>();
+  labelBgStyle = input<any>();
+  labelBgPadding = input<any>();
+  labelBgBorderRadius = input<number>();
+  pathOptions = input<any>();
 
   // 注入服務
   private readonly xyflowService = inject(AngularXYFlowService);
 
   // 計算路徑數據 - 完全匹配 React Flow FloatingEdge 實現
-  readonly pathData = computed(() => {
+  pathData = computed(() => {
     // 使用 try-catch 處理 required input 的初始化問題
     let sourceId: string;
     let targetId: string;
@@ -132,7 +132,7 @@ export class FloatingEdgeComponent {
   });
 
   // 計算邊緣樣式 - 處理 selected 狀態
-  readonly edgeStyle = computed(() => {
+  edgeStyle = computed(() => {
     const baseStyle = this.style() || {};
     const isSelected = this.selected();
     
@@ -158,14 +158,14 @@ export class FloatingEdgeComponent {
   });
 
   // 計算 marker URL（用於箭頭）
-  readonly markerEndUrl = computed(() => {
+  markerEndUrl = computed(() => {
     const marker = this.markerEnd();
     // EdgeWrapperComponent 已經將 marker 格式化為 url(#id) 格式
     // 直接返回，不需要再次包裝
     return marker;
   });
 
-  readonly markerStartUrl = computed(() => {
+  markerStartUrl = computed(() => {
     const marker = this.markerStart();
     // EdgeWrapperComponent 已經將 marker 格式化為 url(#id) 格式
     // 直接返回，不需要再次包裝

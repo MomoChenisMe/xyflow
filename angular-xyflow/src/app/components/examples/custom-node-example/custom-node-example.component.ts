@@ -116,7 +116,7 @@ import { ColorSelectorNodeComponent, ColorSelectorNodeData } from './color-selec
 })
 export class CustomNodeExampleComponent {
   // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
+  angularFlow = viewChild.required(AngularXYFlowComponent);
 
   // 背景變體枚舉
   readonly backgroundVariant = BackgroundVariant;
@@ -128,11 +128,11 @@ export class CustomNodeExampleComponent {
   readonly connectionLineStyle = { stroke: '#fff' };
 
   // 背景顏色信號
-  readonly bgColor = signal<string>(this.initBgColor);
+  bgColor = signal<string>(this.initBgColor);
 
   // 節點和邊的信號
-  readonly nodes = signal<AngularNode[]>([]);
-  readonly edges = signal<AngularEdge[]>([]);
+  nodes = signal<AngularNode[]>([]);
+  edges = signal<AngularEdge[]>([]);
   
   // 註冊自定義節點類型
   readonly nodeTypes: NodeTypes = {

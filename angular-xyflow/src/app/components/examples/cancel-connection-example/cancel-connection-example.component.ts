@@ -59,7 +59,7 @@ const CANCEL_AFTER = 5; // 秒數
 })
 export class CancelConnectionExampleComponent {
   // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
+  angularFlow = viewChild.required(AngularXYFlowComponent);
   
   // 依賴注入
   protected countdownService = inject(CountdownService);
@@ -103,8 +103,8 @@ export class CancelConnectionExampleComponent {
   ]);
 
   // 公開的只讀信號
-  readonly initialNodes = this._nodes.asReadonly();
-  readonly initialEdges = this._edges.asReadonly();
+  initialNodes = this._nodes.asReadonly();
+  initialEdges = this._edges.asReadonly();
 
 
   // 節點變化事件處理 - 對應 React 的 onNodesChange

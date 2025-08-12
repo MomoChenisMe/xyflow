@@ -100,13 +100,13 @@ import {
 })
 export class BasicExampleComponent {
   // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
+  angularFlow = viewChild.required(AngularXYFlowComponent);
 
   // 背景變體枚舉
-  readonly backgroundVariant = BackgroundVariant;
+  backgroundVariant = BackgroundVariant;
 
   // 初始節點數據
-  readonly initialNodes = signal<AngularNode[]>([
+  initialNodes = signal<AngularNode[]>([
     {
       id: '1',
       type: 'input',
@@ -146,18 +146,18 @@ export class BasicExampleComponent {
   ]);
 
   // 初始邊數據
-  readonly initialEdges = signal<AngularEdge[]>([
+  initialEdges = signal<AngularEdge[]>([
     { id: 'e1-2', source: '1', target: '2', animated: true },
     { id: 'e1-3', source: '1', target: '3' },
   ]);
 
   // FitView 選項
-  readonly fitViewOptions = signal({
+  fitViewOptions = signal({
     padding: { top: '100px', left: '0%', right: '10%', bottom: 0.1 },
   });
 
   // 默認邊選項
-  readonly defaultEdgeOptions = signal({});
+  defaultEdgeOptions = signal({});
 
   // 獲取流程實例
   private get _flow(): AngularXYFlowInstance<AngularNode, AngularEdge> {

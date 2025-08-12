@@ -56,7 +56,7 @@ import { DragHandleNodeComponent } from './drag-handle-node.component';
 })
 export class DragHandleExampleComponent {
   // 視圖子元素引用
-  readonly angularFlow = viewChild.required(AngularXYFlowComponent);
+  angularFlow = viewChild.required(AngularXYFlowComponent);
 
   // 註冊自定義節點類型
   readonly nodeTypes: NodeTypes = {
@@ -64,7 +64,7 @@ export class DragHandleExampleComponent {
   };
 
   // 初始節點數據
-  readonly initialNodes = signal<AngularNode[]>([
+  initialNodes = signal<AngularNode[]>([
     {
       id: '1',
       type: 'dragHandleNode',
@@ -76,7 +76,7 @@ export class DragHandleExampleComponent {
   ]);
 
   // 初始邊數據（空陣列）
-  readonly initialEdges = signal<AngularEdge[]>([]);
+  initialEdges = signal<AngularEdge[]>([]);
 
   // 節點點擊事件處理
   onNodeClick(data: { event: MouseEvent; node: AngularNode }): void {
