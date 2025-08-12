@@ -24,19 +24,16 @@ export interface ColorSelectorNodeData extends Record<string, unknown> {
       [style]="{ background: '#555' }"
     />
 
-    <!-- 節點內容 -->
-    <div class="color-selector-content">
-      <div>
-        Custom Color Picker Node:
-        <strong>{{ getColor() }}</strong>
-      </div>
-      <input
-        class="nodrag color-picker"
-        type="color"
-        [value]="getColor()"
-        (input)="handleColorChange($event)"
-      />
+    <!-- 節點內容 - 與 React 版本保持一致的簡潔結構 -->
+    <div>
+      Custom Color Picker Node: <strong>{{ getColor() }}</strong>
     </div>
+    <input
+      class="nodrag"
+      type="color"
+      [value]="getColor()"
+      (input)="handleColorChange($event)"
+    />
 
     <!-- Source handles (右側) -->
     <angular-xyflow-handle
@@ -58,26 +55,20 @@ export interface ColorSelectorNodeData extends Record<string, unknown> {
   `,
   styles: [`
     :host {
-      display: contents; /* 讓宿主元素不影響佈局，子元素直接參與父容器的佈局 */
-    }
-    
-    .color-selector-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      width: auto;
+      display: block;
+      position: relative;
+      /* 與 React 版本的 .react-flow__node-selectorNode 樣式保持一致 */
       font-size: 12px;
+      background: #f0f2f3;
+      border: 1px solid #555;
+      border-radius: 5px;
       text-align: center;
+      padding: 10px;
     }
 
-    .color-picker {
-      width: 50px;
-      height: 25px;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-      cursor: pointer;
-      flex-shrink: 0;
+    /* 確保 handle 的邊框色與節點背景一致 */
+    :host ::ng-deep angular-xyflow-handle {
+      border-color: #f0f2f3;
     }
 
     /* nodrag 類防止拖拽時移動節點 */

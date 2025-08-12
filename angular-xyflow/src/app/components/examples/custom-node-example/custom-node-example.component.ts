@@ -198,7 +198,7 @@ export class CustomNodeExampleComponent {
           onChange: onChange,
           color: this.initBgColor,
         } as ColorSelectorNodeData,
-        style: { border: '1px solid #777', padding: '10px' },
+        // 移除 style，讓 ColorSelectorNode 組件本身的樣式生效
         position: { x: 250, y: 50 },
       },
       {

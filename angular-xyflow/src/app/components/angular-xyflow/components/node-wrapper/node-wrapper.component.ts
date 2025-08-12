@@ -125,40 +125,9 @@ import { builtinNodeTypes } from '../nodes';
     /* 移除所有硬編碼的顏色、背景、邊框樣式 */
     /* 這些現在由 packages/system/src/styles/style.css 中的 .xy-flow 和 .xy-flow.dark 處理 */
 
-    /* 自定義顏色選擇器節點樣式 - 與React版本保持一致的垂直布局 */
-    .color-selector-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 10px;
-      width: auto;
-    }
-
-    .color-picker {
-      width: 50px;
-      height: 25px;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-      cursor: pointer;
-      /* 確保顏色選擇器不會影響文字排列 */
-      flex-shrink: 0;
-    }
-
     /* nodrag 類防止拖拽時移動節點 */
     .nodrag {
       pointer-events: auto;
-    }
-
-    /* 為 selectorNode 添加特殊樣式 - 與React版本保持一致 */
-    .xy-flow__node-selectorNode {
-      font-size: 12px;
-      background: #f0f2f3;
-      border: 1px solid #555;
-      border-radius: 5px;
-      text-align: center;
-      padding: 10px;
-      /* 移除width設定，讓內容自然撐開 */
     }
   `]
 })
