@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   AngularXYFlowComponent,
@@ -13,6 +13,7 @@ import { CustomEdgeComponent } from './custom-edge.component';
 @Component({
   selector: 'app-default-edge-overwrite-example',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     AngularXYFlowComponent,

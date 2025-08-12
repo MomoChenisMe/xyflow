@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
@@ -10,6 +10,7 @@ import { Connection, addEdge } from '@xyflow/system';
 @Component({
   selector: 'app-click-distance-example',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, FormsModule, AngularXYFlowComponent, PanelComponent],
   template: `
     <angular-xyflow

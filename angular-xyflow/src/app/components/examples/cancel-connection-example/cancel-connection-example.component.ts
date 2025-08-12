@@ -1,4 +1,4 @@
-import { Component, inject, viewChild, signal, HostListener } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, viewChild, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
 import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
@@ -14,6 +14,7 @@ const CANCEL_AFTER = 5; // 秒數
 @Component({
   selector: 'app-cancel-connection-example',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     AngularXYFlowComponent,

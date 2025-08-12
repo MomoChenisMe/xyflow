@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   AngularXYFlowComponent,
@@ -12,6 +12,7 @@ import { CustomNodeComponent } from './custom-node.component';
 @Component({
   selector: 'app-default-node-overwrite-example',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     AngularXYFlowComponent,

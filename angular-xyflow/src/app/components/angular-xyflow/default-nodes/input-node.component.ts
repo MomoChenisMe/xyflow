@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Position } from '@xyflow/system';
 import { HandleComponent } from '../handle/handle.component';
@@ -7,6 +7,7 @@ import { HandleComponent } from '../handle/handle.component';
 @Component({
   selector: 'angular-xyflow-input-node',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, HandleComponent],
   template: `
     <!-- 節點內容 - 直接輸出文字，與 React 保持一致 -->

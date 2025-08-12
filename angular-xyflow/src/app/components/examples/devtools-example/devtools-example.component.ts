@@ -1,4 +1,4 @@
-import { Component, signal, viewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Connection, addEdge } from '@xyflow/system';
 import {
@@ -15,6 +15,7 @@ import { ChangeLoggerComponent } from './devtools/change-logger.component';
 @Component({
   selector: 'app-devtools-example',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     AngularXYFlowComponent,

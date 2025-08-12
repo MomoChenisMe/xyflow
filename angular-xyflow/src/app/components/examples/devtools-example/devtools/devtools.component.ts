@@ -1,4 +1,4 @@
-import { Component, signal, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PanelComponent, PanelPosition } from '../../../angular-xyflow/panel/panel.component';
 import { NodeInspectorComponent } from './node-inspector.component';
@@ -8,6 +8,7 @@ import { AngularNode } from '../../../angular-xyflow/types';
 @Component({
   selector: 'app-devtools',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     PanelComponent,

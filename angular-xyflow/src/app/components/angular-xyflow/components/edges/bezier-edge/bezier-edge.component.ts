@@ -3,6 +3,7 @@ import {
   input,
   computed,
   inject,
+  ChangeDetectionStrategy,
   CUSTOM_ELEMENTS_SCHEMA,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -73,6 +74,7 @@ export interface BezierEdgeProps {
 @Component({
   selector: 'svg:svg[angular-xyflow-bezier-edge]',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, BaseEdgeComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `

@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
 import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
@@ -17,6 +17,7 @@ const nodeDefaults = {
 @Component({
   selector: 'app-color-mode-example',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     AngularXYFlowComponent,

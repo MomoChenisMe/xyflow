@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Position } from '@xyflow/system';
 import { HandleComponent } from '../../angular-xyflow/handle/handle.component';
@@ -12,6 +12,7 @@ export interface ColorSelectorNodeData extends Record<string, unknown> {
 @Component({
   selector: 'app-color-selector-node',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, HandleComponent],
   template: `
     <!-- Target handle (左側) -->

@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Position } from '@xyflow/system';
 // NodeProps 類型定義在 types.ts 中，但在 Angular 元件中我們使用 input() signals
@@ -6,6 +6,7 @@ import { Position } from '@xyflow/system';
 @Component({
   selector: 'angular-xyflow-group-node',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
   template: `
     <div class="angular-xyflow__group-node">

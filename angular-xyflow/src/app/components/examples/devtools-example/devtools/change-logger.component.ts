@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NodeChange } from '../../../angular-xyflow/types';
 
@@ -11,6 +11,7 @@ interface ChangeInfoData {
 @Component({
   selector: 'app-change-logger',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
   template: `
     <div class="angular-xyflow__devtools-changelogger">

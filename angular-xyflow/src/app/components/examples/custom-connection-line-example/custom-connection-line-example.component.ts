@@ -1,4 +1,4 @@
-import { Component, signal, computed, NO_ERRORS_SCHEMA } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, NO_ERRORS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
@@ -20,6 +20,7 @@ import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/c
 @Component({
   selector: 'app-custom-connection-line-example',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     AngularXYFlowComponent,

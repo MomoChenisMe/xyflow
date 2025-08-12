@@ -4,6 +4,7 @@ import {
   computed,
   output,
   CUSTOM_ELEMENTS_SCHEMA,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { isNumeric } from '@xyflow/system';
@@ -55,6 +56,7 @@ export interface BaseEdgeProps {
 @Component({
   selector: 'svg:g[angular-xyflow-base-edge]',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, EdgeTextComponent],
   hostDirectives: [
     {

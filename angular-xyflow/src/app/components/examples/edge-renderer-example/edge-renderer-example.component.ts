@@ -1,4 +1,4 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
 import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
@@ -23,6 +23,7 @@ import {
 @Component({
   selector: 'app-edge-renderer-example',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     AngularXYFlowComponent,

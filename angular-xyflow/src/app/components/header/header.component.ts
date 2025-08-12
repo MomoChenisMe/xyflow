@@ -1,4 +1,4 @@
-import { Component, effect, signal, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, effect, signal, OnDestroy } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { filter, takeUntil } from 'rxjs/operators';
@@ -8,6 +8,7 @@ import { routeList } from '../../app.routes';
 @Component({
   selector: 'app-header',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header>
       <a class="logo" href="https://github.com/xyflow/xyflow">

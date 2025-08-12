@@ -1,4 +1,4 @@
-import { Component, viewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AngularXYFlowComponent } from '../../angular-xyflow/angular-xyflow.component';
 import { BackgroundComponent } from '../../angular-xyflow/background/background.component';
@@ -13,6 +13,7 @@ import {
 @Component({
   selector: 'app-default-nodes-example',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     AngularXYFlowComponent,

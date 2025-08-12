@@ -2,6 +2,7 @@ import {
   Component,
   input,
   computed,
+  ChangeDetectionStrategy,
   CUSTOM_ELEMENTS_SCHEMA,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -11,6 +12,7 @@ import { BaseEdgeComponent } from '../../angular-xyflow/components/edges/base-ed
 @Component({
   selector: 'svg:svg[app-custom-edge]',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, BaseEdgeComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `

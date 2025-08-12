@@ -5,6 +5,7 @@ import {
   ViewChild,
   ElementRef,
   ChangeDetectorRef,
+  ChangeDetectionStrategy,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -25,6 +26,7 @@ import {
 @Component({
   selector: 'app-add-node-on-edge-drop',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, AngularXYFlowComponent],
   template: `
     <div class="wrapper" #wrapper style="height: 100vh; width: 100%;">

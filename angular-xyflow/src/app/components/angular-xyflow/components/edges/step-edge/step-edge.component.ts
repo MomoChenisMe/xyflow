@@ -1,4 +1,4 @@
-import { Component, input, computed, output, inject, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, computed, output, inject, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Position, getSmoothStepPath } from '@xyflow/system';
 import { BaseEdgeComponent } from '../base-edge/base-edge.component';
@@ -67,6 +67,7 @@ export interface StepEdgeProps {
 @Component({
   selector: 'svg:svg[angular-xyflow-step-edge]',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, BaseEdgeComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
