@@ -30,6 +30,9 @@ export class AngularXYFlowPanZoomService {
   private _isZooming = signal(false);
   private domElement: HTMLElement | null = null;
   private destroyHandlers: (() => void)[] = [];
+  
+  // 儲存當前的 PanZoom 配置
+  private currentConfig: any = {};
 
   // 對外暴露的計算屬性
   isDragging = computed(() => this._isDragging());
@@ -50,6 +53,7 @@ export class AngularXYFlowPanZoomService {
     event?: MouseEvent | TouchEvent;
     position: XYPosition;
   }) => void;
+  private onPaneContextMenu?: (event: MouseEvent) => void;
 
   constructor() {}
 
@@ -67,6 +71,7 @@ export class AngularXYFlowPanZoomService {
     preventScrolling?: boolean;
     paneClickDistance?: number;
     defaultViewport?: Viewport;
+    onPaneContextMenu?: (event: MouseEvent) => void;
   }) {
     if (this.panZoomInstance) {
       console.warn('PanZoom already initialized');
@@ -74,6 +79,9 @@ export class AngularXYFlowPanZoomService {
     }
 
     this.domElement = config.domNode;
+    
+    // 儲存回調函數
+    this.onPaneContextMenu = config.onPaneContextMenu;
 
     // 創建 PanZoom 實例
     this.panZoomInstance = XYPanZoom({
@@ -113,8 +121,8 @@ export class AngularXYFlowPanZoomService {
       },
     });
 
-    // 更新 PanZoom 的設置
-    this.panZoomInstance.update({
+    // 建立並儲存配置
+    this.currentConfig = {
       noWheelClassName: 'nowheel',
       noPanClassName: 'nopan',
       preventScrolling: config.preventScrolling ?? true,
@@ -135,7 +143,11 @@ export class AngularXYFlowPanZoomService {
           zoom: transform[2],
         });
       },
-    });
+      onPaneContextMenu: this.onPaneContextMenu, // ✅ 正確傳遞給update方法
+    };
+
+    // 更新 PanZoom 的設置
+    this.panZoomInstance.update(this.currentConfig);
 
     // 設置初始視口（如果提供）
     if (config.defaultViewport) {
@@ -236,6 +248,33 @@ export class AngularXYFlowPanZoomService {
       return { x: 0, y: 0, zoom: 1 };
     }
     return this.panZoomInstance.getViewport();
+  }
+
+  // 設置事件回調
+  setPaneContextMenuCallback(callback?: (event: MouseEvent) => void): void {
+    this.onPaneContextMenu = callback;
+    
+    // 更新現有配置
+    if (this.currentConfig && this.panZoomInstance) {
+      this.currentConfig.onPaneContextMenu = callback;
+      this.panZoomInstance.update(this.currentConfig);
+    }
+  }
+
+  // 更新用戶選擇狀態
+  updateUserSelectionActive(isActive: boolean): void {
+    if (this.currentConfig && this.panZoomInstance) {
+      this.currentConfig.userSelectionActive = isActive;
+      this.panZoomInstance.update(this.currentConfig);
+    }
+  }
+
+  // 更新縮放激活按鍵狀態
+  updateZoomActivationKeyPressed(isPressed: boolean): void {
+    if (this.currentConfig && this.panZoomInstance) {
+      this.currentConfig.zoomActivationKeyPressed = isPressed;
+      this.panZoomInstance.update(this.currentConfig);
+    }
   }
 
   // 縮放到適合視口 - 使用系統包的 fitViewport 函數
@@ -409,6 +448,23 @@ export class AngularXYFlowPanZoomService {
       x: position.x * viewport.zoom + viewport.x,
       y: position.y * viewport.zoom + viewport.y,
     };
+  }
+
+
+  // 更新平移滾輪設置
+  updatePanOnScroll(enabled: boolean): void {
+    if (this.panZoomInstance && this.currentConfig) {
+      this.currentConfig.panOnScroll = enabled;
+      this.panZoomInstance.update(this.currentConfig);
+    }
+  }
+
+  // 更新平移滾輪速度設置
+  updatePanOnScrollSpeed(speed: number): void {
+    if (this.panZoomInstance && this.currentConfig) {
+      this.currentConfig.panOnScrollSpeed = speed;
+      this.panZoomInstance.update(this.currentConfig);
+    }
   }
 
   // 銷毀服務

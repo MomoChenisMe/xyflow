@@ -110,25 +110,6 @@ import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/c
         padding: 8px;
       }
       
-      .flow-button {
-        background: #f0f0f0;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 8px 16px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s ease;
-      }
-      
-      .flow-button:hover {
-        background: #e0e0e0;
-        border-color: #ccc;
-      }
-      
-      .flow-button:active {
-        background: #d0d0d0;
-      }
-      
       /* 自定義圓形節點樣式 */
       :host ::ng-deep .custom-circle-node {
         cursor: pointer;

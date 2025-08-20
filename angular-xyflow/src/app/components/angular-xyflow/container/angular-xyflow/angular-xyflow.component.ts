@@ -37,6 +37,10 @@ import { AngularXYFlowService } from '../../services/angular-xyflow.service';
 import { AngularXYFlowDragService } from '../../services/drag.service';
 import { AngularXYFlowPanZoomService } from '../../services/panzoom.service';
 import { EdgeLabelRendererService } from '../../services/edge-label-renderer.service';
+import { KeyboardService } from '../../services/keyboard.service';
+import { SelectionService } from '../../services/selection.service';
+import { PaneComponent } from '../pane/pane.component';
+import { NodesSelectionComponent } from '../nodes-selection/nodes-selection.component';
 import {
   AngularNode,
   AngularEdge,
@@ -48,6 +52,14 @@ import {
   EdgeTypes,
   NodeChange,
   EdgeChange,
+  SelectionMode,
+  ZoomActivationKeyCode,
+  MultiSelectionKeyCode,
+  SelectionKeyCode,
+  SelectionContextMenuEvent,
+  SelectionChangeEvent,
+  SelectionStartEvent,
+  SelectionEndEvent,
 } from '../../types';
 import { ConnectionLineTemplateDirective } from '../../directives/connection-line-template.directive';
 import { NodeTemplateDirective } from '../../directives/node-template.directive';
@@ -56,11 +68,12 @@ import { ViewportComponent } from '../viewport/viewport.component';
 @Component({
   selector: 'angular-xyflow',
   standalone: true,
-  imports: [CommonModule, ViewportComponent],
+  imports: [CommonModule, ViewportComponent, PaneComponent, NodesSelectionComponent],
   providers: [
     AngularXYFlowService,
     AngularXYFlowDragService,
     AngularXYFlowPanZoomService,
+    SelectionService,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -75,10 +88,25 @@ import { ViewportComponent } from '../viewport/viewport.component';
       [style.overflow]="'hidden'"
       (click)="handlePaneClick($event)"
       (dblclick)="handlePaneDoubleClick($event)"
-      (contextmenu)="handlePaneContextMenu($event)"
     >
-      <!-- Viewport container -->
-      <angular-xyflow-viewport
+      <!-- Pane container - 處理選取事件，與 React 版本一致 -->
+      <angular-xyflow-pane
+        [isSelectionActive]="isSelectionActive()"
+        [panOnDrag]="panOnDrag()"
+        [isDragging]="false"
+        [elementsSelectable]="elementsSelectable()"
+        [selectionKeyPressed]="false"
+        [selectionOnDrag]="selectionOnDrag()"
+        [paneClickDistance]="paneClickDistance()"
+        (onPaneClick)="handlePaneClick($event)"
+        (onPaneDoubleClick)="handlePaneDoubleClick($event)"
+        (onPaneContextMenu)="handlePaneContextMenu($event)"
+        (onSelectionStart)="handleSelectionStart($event)"
+        (onSelectionEnd)="handleSelectionEnd($event)"
+        (onSelectionContextMenu)="handleSelectionContextMenu($event)"
+      >
+        <!-- Viewport container -->
+        <angular-xyflow-viewport
         #viewport
         [viewportTransform]="viewportTransform()"
         [visibleNodes]="visibleNodes()"
@@ -114,7 +142,11 @@ import { ViewportComponent } from '../viewport/viewport.component';
         (edgeContextMenu)="handleEdgeContextMenu($event.event, $event.edge)"
         (edgeFocus)="handleEdgeFocus($event.event, $event.edge)"
         (edgeKeyDown)="handleEdgeKeyDown($event.event, $event.edge)"
-      />
+        />
+        
+        <!-- NodesSelection - 選中多個節點時顯示的邊界框 -->
+        <angular-xyflow-nodes-selection />
+      </angular-xyflow-pane>
       <!-- Edge Label Renderer container - 獨立的 HTML 層用於渲染邊標籤 -->
       <div
         #edgeLabelRendererContainer
@@ -316,6 +348,8 @@ export class AngularXYFlowComponent<
   private _dragService = inject(AngularXYFlowDragService);
   private _panZoomService = inject(AngularXYFlowPanZoomService);
   private _edgeLabelService = inject(EdgeLabelRendererService);
+  private _keyboardService = inject(KeyboardService);
+  private _selectionService = inject(SelectionService<NodeType, EdgeType>);
 
   // 自定義連接線模板
   customConnectionLineTemplate = contentChild(ConnectionLineTemplateDirective);
@@ -346,10 +380,33 @@ export class AngularXYFlowComponent<
   colorMode = input<ColorMode>('light');
   paneClickDistance = input<number>(0);
   connectionLineStyle = input<Record<string, any>>();
+  nodesFocusable = input<boolean>(true);
   edgesFocusable = input<boolean>(true);
   defaultMarkerColor = input<string>('#b1b1b7');
   snapToGrid = input<boolean>(false);
   snapGrid = input<[number, number]>([15, 15]);
+  elementsSelectable = input<boolean>(true);
+
+  // 新增高級交互功能的輸入屬性
+  selectionOnDrag = input<boolean>(false);
+  selectionMode = input<SelectionMode>('full' as SelectionMode);
+  panOnScroll = input<boolean>(false);
+  panOnScrollSpeed = input<number>(0.5);
+  zoomActivationKeyCode = input<ZoomActivationKeyCode>();
+  multiSelectionKeyCode = input<MultiSelectionKeyCode>();
+  selectionKeyCode = input<SelectionKeyCode>('shift');
+
+  // 選取相關計算屬性 - 與 React 版本完全一致
+  isSelectionActive = computed(() => {
+    // React 版本邏輯：
+    // isSelecting = selectionKeyPressed || userSelectionActive || _selectionOnDrag
+    const elementsSelectable = this.elementsSelectable();
+    const selectionKeyPressed = this._keyboardService.isKeyPressed(this.selectionKeyCode());
+    const userSelectionActive = this._selectionService.isSelectionActive();
+    const _selectionOnDrag = this.selectionOnDrag() && this.panOnDrag() !== true;
+    
+    return elementsSelectable && (selectionKeyPressed || userSelectionActive || _selectionOnDrag);
+  });
 
   // 生成唯一的容器 ID
   flowContainerId = computed(() => {
@@ -376,7 +433,7 @@ export class AngularXYFlowComponent<
   // 計算最終的類別字符串
   finalClasses = computed(() => {
     return (
-      'xy-flow angular-xyflow angular-xyflow__pane ' +
+      'xy-flow angular-xyflow ' +
       this.className() +
       ' ' +
       this.viewportCursorClass() +
@@ -438,16 +495,21 @@ export class AngularXYFlowComponent<
     viewport: Viewport;
   }>();
 
-  // 選擇變化事件
+  // 選擇相關事件
   onSelectionChange = output<{ nodes: NodeType[]; edges: EdgeType[] }>();
+  onSelectionStart = output<SelectionStartEvent>();
+  onSelectionEnd = output<SelectionEndEvent<NodeType, EdgeType>>();
+  onSelectionContextMenu = output<SelectionContextMenuEvent<NodeType, EdgeType>>();
 
   // 節點鼠標事件
   onNodeDoubleClick = output<{ event: MouseEvent; node: NodeType }>();
   onNodeContextMenu = output<{ event: MouseEvent; node: NodeType }>();
+  onNodeFocus = output<{ event: FocusEvent; node: NodeType }>();
 
   // 邊線鼠標事件
   onEdgeDoubleClick = output<{ event: MouseEvent; edge: EdgeType }>();
   onEdgeContextMenu = output<{ event: MouseEvent; edge: EdgeType }>();
+  onEdgeFocus = output<{ event: FocusEvent; edge: EdgeType }>();
 
   // 背景事件
   onPaneContextMenu = output<{ event: MouseEvent }>();
@@ -489,19 +551,20 @@ export class AngularXYFlowComponent<
   // 計算信號
   visibleNodes = computed(() => {
     const controlledNodes = this.nodes();
-    const serviceNodes = this._flowService.nodes();
+    const serviceNodesWithZ = this._flowService.nodesWithZ();
     const initialized = this._flowService.initialized();
 
     // 如果提供了 controlled nodes（即使是空陣列），就使用它們
+    // 注意：controlled 模式下，z-index 提升需要由使用者手動處理
     if (controlledNodes !== undefined) {
       return controlledNodes;
     }
 
     // 在 uncontrolled 模式下：
-    // - 如果服務已初始化，使用服務內部狀態（允許動態更新）
+    // - 如果服務已初始化，使用帶有動態 z-index 的服務內部狀態
     // - 如果服務未初始化，使用 defaultNodes 作為初始值
     if (initialized) {
-      return serviceNodes;
+      return serviceNodesWithZ;
     } else {
       return this.defaultNodes();
     }
@@ -534,6 +597,8 @@ export class AngularXYFlowComponent<
       result = result.map((edge) => ({
         ...defaultOptions,
         ...edge,
+        // 確保 selected 狀態不被 defaultOptions 覆蓋
+        selected: edge.selected
       }));
     }
 
@@ -625,6 +690,17 @@ export class AngularXYFlowComponent<
     effect(() => {
       const origin = this.nodeOrigin();
       this._flowService.setNodeOrigin(origin);
+    });
+
+    // 實時監聽鍵盤狀態，更新 multiSelectionActive（對應React版本的 useGlobalKeyHandler）
+    effect(() => {
+      const multiSelectionKeyCode = this.multiSelectionKeyCode();
+      const customKeys = Array.isArray(multiSelectionKeyCode) 
+        ? multiSelectionKeyCode 
+        : multiSelectionKeyCode ? [multiSelectionKeyCode] : undefined;
+      
+      // multiSelectionActive 現在直接從鍵盤服務動態計算，不需要手動設置
+      // const isActive = this._keyboardService.shouldUseMultiSelection(customKeys);
     });
 
     // 設置事件回調
@@ -747,6 +823,12 @@ export class AngularXYFlowComponent<
       this._flowService.setColorMode(colorMode);
     });
 
+    // 同步 nodesFocusable 到服務
+    effect(() => {
+      const nodesFocusable = this.nodesFocusable();
+      this._flowService.setNodesFocusable(nodesFocusable);
+    });
+
     // 同步 edgesFocusable 到服務
     effect(() => {
       const edgesFocusable = this.edgesFocusable();
@@ -760,6 +842,69 @@ export class AngularXYFlowComponent<
       this._flowService.setSnapToGrid(snapToGrid);
       this._flowService.setSnapGrid(snapGrid);
     });
+
+    // 同步 defaultEdgeOptions 到服務
+    effect(() => {
+      const defaultEdgeOptions = this.defaultEdgeOptions();
+      this._flowService.setDefaultEdgeOptions(defaultEdgeOptions);
+    });
+
+    // 監聽縮放激活按鍵狀態變化
+    effect(() => {
+      const zoomActivationKeyCode = this.zoomActivationKeyCode();
+      const keyboardService = this._keyboardService;
+      
+      // 根據自定義按鍵或使用預設按鍵判斷是否應該激活縮放
+      const shouldActivateZoom = zoomActivationKeyCode 
+        ? keyboardService.shouldActivateZoom(zoomActivationKeyCode)
+        : keyboardService.shouldActivateZoom();
+      
+      // 更新 PanZoomService 的縮放激活狀態
+      this._panZoomService.updateZoomActivationKeyPressed(shouldActivateZoom);
+    });
+
+    // 監聽 panOnScroll 屬性變化
+    effect(() => {
+      const panOnScroll = this.panOnScroll();
+      this._panZoomService.updatePanOnScroll(panOnScroll);
+    });
+
+    // 監聽 panOnScrollSpeed 屬性變化
+    effect(() => {
+      const panOnScrollSpeed = this.panOnScrollSpeed();
+      this._panZoomService.updatePanOnScrollSpeed(panOnScrollSpeed);
+    });
+
+    // 監聽 multiSelectionKeyCode 屬性變化
+    effect(() => {
+      const multiSelectionKeyCode = this.multiSelectionKeyCode();
+      this._dragService.setMultiSelectionKeyCode(multiSelectionKeyCode);
+    });
+
+    // 監聽選擇相關屬性變化並同步到 SelectionService
+    effect(() => {
+      const selectionMode = this.selectionMode();
+      const selectionOnDrag = this.selectionOnDrag();
+      const selectionKeyCode = this.selectionKeyCode();
+      
+      this._selectionService.setSelectionMode(selectionMode);
+      this._selectionService.setSelectionOnDrag(selectionOnDrag);
+      this._selectionService.setSelectionKeyCode(selectionKeyCode);
+    });
+    
+    // 監聽用戶選擇狀態變化並同步到 PanZoom
+    effect(() => {
+      const userSelectionActive = this._flowService.userSelectionActive();
+      this._panZoomService.updateUserSelectionActive(userSelectionActive);
+    });
+    
+    // 監聽縮放激活按鍵狀態變化並同步到 PanZoom
+    effect(() => {
+      const zoomActivationKeyPressed = this._keyboardService.zoomActivationActive();
+      this._panZoomService.updateZoomActivationKeyPressed(zoomActivationKeyPressed);
+    });
+
+    // SelectionService 事件回調現在由 PaneComponent 處理
 
     // 渲染後副作用 - 根據 Angular 20 最佳實踐
     // 雖然混合讀寫不是最佳實踐，但由於 TypeScript 類型推斷限制，暫時使用簡化版本
@@ -794,6 +939,8 @@ export class AngularXYFlowComponent<
       if (!this._resizeObserverInitialized()) {
         this.setupResizeObserverForContainer(container);
       }
+
+      // SelectionService 現在由 PaneComponent 負責初始化
 
       // 處理初始 fitView
       this.safeHandleInitialFitView();
@@ -834,13 +981,16 @@ export class AngularXYFlowComponent<
       maxZoom: this.maxZoom(),
       zoomOnScroll: true,
       zoomOnPinch: true,
-      panOnScroll: false,
-      panOnScrollSpeed: 0.5,
+      panOnScroll: this.panOnScroll(),
+      panOnScrollSpeed: this.panOnScrollSpeed(),
       zoomOnDoubleClick: true,
       panOnDrag: this.panOnDrag(),
       preventScrolling: true,
       paneClickDistance: this.paneClickDistance(),
       defaultViewport: { x: 0, y: 0, zoom: 1 },
+      onPaneContextMenu: (event: MouseEvent) => {
+        this.onPaneContextMenu.emit({ event });
+      },
     });
 
     const panZoomInstance = this._panZoomService.getPanZoomInstance();
@@ -914,6 +1064,7 @@ export class AngularXYFlowComponent<
 
     this._panZoomService.destroy();
     this._dragService.destroy();
+    this._selectionService.destroy();
     this._flowService.destroy();
   }
 
@@ -956,13 +1107,16 @@ export class AngularXYFlowComponent<
       maxZoom: this.maxZoom(),
       zoomOnScroll: true, // 滑鼠滾輪縮放：以滑鼠位置為基準
       zoomOnPinch: true, // 觸控板縮放：以觸控位置為基準
-      panOnScroll: false,
-      panOnScrollSpeed: 0.5,
+      panOnScroll: this.panOnScroll(),
+      panOnScrollSpeed: this.panOnScrollSpeed(),
       zoomOnDoubleClick: true, // 雙擊縮放：以雙擊位置為基準
       panOnDrag: this.panOnDrag(),
       preventScrolling: true,
       paneClickDistance: this.paneClickDistance(),
       defaultViewport: { x: 0, y: 0, zoom: 1 },
+      onPaneContextMenu: (event: MouseEvent) => {
+        this.onPaneContextMenu.emit({ event });
+      },
     });
 
     // 設置 flowService 的 panZoom 實例
@@ -1138,16 +1292,29 @@ export class AngularXYFlowComponent<
   // 已移除不再需要的方法，現在直接計算實際 CSS handle 位置
 
   // 事件處理方法
+  // 節點點擊處理
+
   handleNodeClick(event: MouseEvent, node: NodeType) {
-    // 阻止事件冒泡，避免觸發背景點擊
+    // 阻止事件冒泡，避免觸發pane的clearSelection
     event.stopPropagation();
-
-    // 檢查是否按下 Ctrl/Cmd 鍵進行多選
-    const multiSelect = event.ctrlKey || event.metaKey;
-
+    
+    // 檢查是否允許選取元素
+    if (!this._flowService.elementsSelectable()) {
+      return;
+    }
+    
+    // 使用 KeyboardService 檢查多選鍵狀態（支持 multiSelectionKeyCode 配置）
+    const keyCode = this.multiSelectionKeyCode();
+    const keys = Array.isArray(keyCode) ? keyCode : keyCode ? [keyCode] : undefined;
+    const multiSelect = this._keyboardService.shouldUseMultiSelection(
+      keys,
+      event
+    );
+    
     // 選擇節點
     this._flowService.selectNode(node.id, multiSelect);
 
+    // 觸發事件
     this.onNodeClick.emit({ event, node });
   }
 
@@ -1165,19 +1332,10 @@ export class AngularXYFlowComponent<
     this.onNodeContextMenu.emit({ event, node });
   }
 
-  handleNodeFocus(_event: FocusEvent, node: NodeType) {
-    // 檢查是否允許選取元素
-    if (!this._flowService.elementsSelectable()) {
-      return;
-    }
-
-    // 檢查節點是否已經被選中，避免不必要的更新
-    if (node.selected) {
-      return;
-    }
-
-    // 選擇節點（focus時不進行多選）
-    this._flowService.selectNode(node.id, false);
+  handleNodeFocus(event: FocusEvent, node: NodeType) {
+    // 與 React Flow 保持一致：focus 事件不進行自動選擇
+    // 僅發出 focus 事件，保留 Tab 鍵導航功能
+    this.onNodeFocus.emit({ event, node });
   }
 
   handleEdgeClick(event: MouseEvent, edge: EdgeType) {
@@ -1189,8 +1347,13 @@ export class AngularXYFlowComponent<
       return;
     }
 
-    // 檢查是否按下 Ctrl/Cmd 鍵進行多選
-    const multiSelect = event.ctrlKey || event.metaKey;
+    // 使用 KeyboardService 檢查多選鍵狀態（支持 multiSelectionKeyCode 配置）
+    const keyCode = this.multiSelectionKeyCode();
+    const keys = Array.isArray(keyCode) ? keyCode : keyCode ? [keyCode] : undefined;
+    const multiSelect = this._keyboardService.shouldUseMultiSelection(
+      keys,
+      event
+    );
 
     // 選擇邊線
     this._flowService.selectEdge(edge.id, multiSelect);
@@ -1213,14 +1376,10 @@ export class AngularXYFlowComponent<
     this.onEdgeContextMenu.emit({ event, edge });
   }
 
-  handleEdgeFocus(_event: FocusEvent, edge: EdgeType) {
-    // 檢查是否允許選取元素
-    if (!this._flowService.elementsSelectable()) {
-      return;
-    }
-
-    // Focus時自動選擇edge（類似React版本的行為）
-    this._flowService.selectEdge(edge.id, false);
+  handleEdgeFocus(event: FocusEvent, edge: EdgeType) {
+    // 與 React Flow 保持一致：focus 事件不進行自動選擇
+    // 僅發出 focus 事件，保留 Tab 鍵導航功能
+    this.onEdgeFocus.emit({ event, edge });
   }
 
   handleEdgeKeyDown(event: KeyboardEvent, edge: EdgeType) {
@@ -1232,7 +1391,14 @@ export class AngularXYFlowComponent<
     // 空格鍵或Enter鍵觸發選擇（無障礙功能）
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
-      const multiSelect = event.ctrlKey || event.metaKey;
+      
+      // 使用 KeyboardService 檢查多選鍵狀態（支持 multiSelectionKeyCode 配置）
+      const keyCode = this.multiSelectionKeyCode();
+      const keys = Array.isArray(keyCode) ? keyCode : keyCode ? [keyCode] : undefined;
+      const multiSelect = this._keyboardService.shouldUseMultiSelection(
+        keys,
+        event as any
+      );
 
       this._flowService.selectEdge(edge.id, multiSelect);
 
@@ -1242,15 +1408,17 @@ export class AngularXYFlowComponent<
   }
 
   handlePaneClick(event: MouseEvent) {
+    // 類似 React 版本的 wrapHandler 邏輯
     // 只有當點擊的是背景元素時才清除選擇
     const target = event.target as HTMLElement;
 
-    // 檢查點擊的是否是背景元素
+    // 檢查點擊的是否是背景元素（類似 React 版本的 event.target === containerRef.current）
     if (
       target.classList.contains('angular-xyflow') ||
       target.classList.contains('xy-flow') ||
       target.classList.contains('angular-xyflow__viewport') ||
-      target.classList.contains('xy-flow__viewport')
+      target.classList.contains('xy-flow__viewport') ||
+      target === this.flowContainer().nativeElement
     ) {
       this._flowService.clearSelection();
 
@@ -1260,27 +1428,12 @@ export class AngularXYFlowComponent<
   }
 
   handlePaneContextMenu(event: MouseEvent) {
-    // 只有當右鍵點擊的是背景元素時才觸發右鍵菜單事件
-    const target = event.target as HTMLElement;
-
-    // 檢查點擊的是否是背景元素
-    if (
-      target.classList.contains('angular-xyflow') ||
-      target.classList.contains('xy-flow') ||
-      target.classList.contains('angular-xyflow__viewport') ||
-      target.classList.contains('xy-flow__viewport')
-    ) {
-      const panOnDragConfig = this.panOnDrag();
-
-      // React Flow 邏輯：只有當 panOnDrag 包含右鍵（2）時才阻止預設右鍵菜單
-      if (Array.isArray(panOnDragConfig) && panOnDragConfig.includes(2)) {
-        event.preventDefault();
-        return;
-      }
-
-      // 發出 pane 右鍵菜單事件（不阻止預設行為，除非明確配置）
-      this.onPaneContextMenu.emit({ event });
-    }
+    // 檢查是否有選擇元素的上下文菜單
+    this._selectionService.checkSelectionContextMenu(event);
+    
+    // 發出 pane 右鍵菜單事件（與 React 版本一致）
+    // 注意：panOnDrag 的檢查已經在 pane 組件中處理了
+    this.onPaneContextMenu.emit({ event });
   }
 
   handleHandleClick(
@@ -1519,6 +1672,19 @@ export class AngularXYFlowComponent<
         this._flowService.clearSelection();
       }
     }
+  }
+
+  // 選擇事件處理器 - 由 PaneComponent 觸發
+  handleSelectionStart(event: SelectionStartEvent): void {
+    this.onSelectionStart.emit(event);
+  }
+
+  handleSelectionEnd(event: any): void {
+    this.onSelectionEnd.emit(event);
+  }
+
+  handleSelectionContextMenu(event: any): void {
+    this.onSelectionContextMenu.emit(event);
   }
 
   // 清理 ResizeObserver 和 window resize listener

@@ -90,6 +90,7 @@ export interface AngularNode<T extends Record<string, unknown> = Record<string, 
   selectable?: boolean;
   connectable?: boolean;
   deletable?: boolean;
+  focusable?: boolean;
   initialWidth?: number;  // 初始寬度，用於 fitView 計算
   initialHeight?: number; // 初始高度，用於 fitView 計算
   selected?: boolean;
@@ -307,6 +308,15 @@ export interface ConnectionLineComponentProps {
   connectionLineStyle?: Record<string, any>;
 }
 
+// ConnectionInfo - 用於 connectionLookup 的連接資訊
+export interface ConnectionInfo {
+  edgeId: string;
+  connectedNode: string;
+  sourceHandle: string | null;
+  targetHandle: string | null;
+  isSource: boolean;
+}
+
 // Template context for connection line
 export interface ConnectionLineTemplateContext {
   $implicit: ConnectionLineComponentProps;
@@ -448,3 +458,74 @@ export type OnErrorHandler = (code: ErrorCode, message: string) => void;
 
 // 重新匯出從 @xyflow/system 導入的類型
 export type { Connection, Position, XYPosition, NodeOrigin, ConnectionLineType };
+
+// ===============================
+// 新增功能相關類型定義
+// ===============================
+
+// 鍵盤按鍵類型
+export type KeyboardKey = string;
+
+// 多選按鍵組合類型 - 對應 React Flow 的 multiSelectionKeyCode
+export type MultiSelectionKeyCode = KeyboardKey | KeyboardKey[];
+
+// 縮放激活按鍵類型 - 對應 React Flow 的 zoomActivationKeyCode  
+export type ZoomActivationKeyCode = KeyboardKey;
+
+// 選擇框激活按鍵類型 - 對應 React Flow 的 selectionKeyCode
+export type SelectionKeyCode = KeyboardKey;
+
+// 選擇上下文菜單事件類型
+export interface SelectionContextMenuEvent<
+  NodeType extends AngularNode = AngularNode,
+  EdgeType extends AngularEdge = AngularEdge
+> {
+  event: MouseEvent;
+  nodes: NodeType[];
+  edges: EdgeType[];
+}
+
+// 選擇變化事件類型
+export interface SelectionChangeEvent<
+  NodeType extends AngularNode = AngularNode,
+  EdgeType extends AngularEdge = AngularEdge
+> {
+  nodes: NodeType[];
+  edges: EdgeType[];
+}
+
+// 選擇開始事件類型
+export interface SelectionStartEvent {
+  event: MouseEvent;
+}
+
+// 選擇結束事件類型
+export interface SelectionEndEvent<
+  NodeType extends AngularNode = AngularNode,
+  EdgeType extends AngularEdge = AngularEdge
+> {
+  event: MouseEvent;
+  nodes: NodeType[];
+  edges: EdgeType[];
+}
+
+// 選擇框狀態接口
+export interface SelectionBox {
+  startX: number;
+  startY: number;
+  endX: number;  
+  endY: number;
+  active: boolean;
+}
+
+// 選擇框樣式接口
+export interface SelectionBoxStyle {
+  backgroundColor?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  borderStyle?: string;
+  opacity?: number;
+}
+
+// 重新導出 SelectionMode 以便使用
+export { SelectionMode, PanOnScrollMode };

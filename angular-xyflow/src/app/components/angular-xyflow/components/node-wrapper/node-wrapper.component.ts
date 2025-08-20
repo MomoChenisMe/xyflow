@@ -447,7 +447,7 @@ export class NodeWrapperComponent implements OnDestroy {
       domNode: element,
       handleSelector: nodeData.dragHandle,
       isSelectable: true,
-      nodeClickDistance: 0,
+      nodeClickDistance: 1,
       onDragStart: (event: MouseEvent) => {
         this.nodeDragStart.emit(event);
       },
@@ -532,11 +532,9 @@ export class NodeWrapperComponent implements OnDestroy {
       const selectNodesOnDrag = this._flowService.selectNodesOnDrag();
       const nodeDragThreshold = 0;    // 目前設為 0
 
-      if (isSelectable && (!selectNodesOnDrag || !isDraggable || nodeDragThreshold > 0)) {
-        // 這種情況下需要在點擊時選中節點
-        this._flowService.selectNode(this.node().id, false);
-      }
-
+      // 注意：節點選擇邏輯已移至 angular-xyflow.component.ts 的 handleNodeClick
+      // 這裡不再處理選擇邏輯，避免重複處理
+      
       this.nodeClick.emit(event);
     }
   }
@@ -610,13 +608,8 @@ export class NodeWrapperComponent implements OnDestroy {
      * 2. selectNodesOnDrag=false (因為 XYDrag 不會在這種情況下調用 onNodeMouseDown)
      * 3. 節點是可拖拽的 (只有拖拽操作才需要這個邏輯)
      */
-    if (isSelectable && !selectNodesOnDrag && isDraggable) {
-      // 檢查節點是否已經被選中
-      const currentNode = this.node();
-      if (!currentNode.selected) {
-        this._flowService.selectNode(currentNode.id, false);
-      }
-    }
+    // 注意：節點選擇邏輯已移至 angular-xyflow.component.ts 的 handleNodeClick
+    // 這裡不再處理選擇邏輯，避免重複處理
   }
 
   // 輔助方法
@@ -742,15 +735,21 @@ export class NodeWrapperComponent implements OnDestroy {
   // A11y 相關方法
   getTabIndex(): number {
     const nodeData = this.node();
-    const globalSelectable = this._flowService.elementsSelectable();
+    const globalNodesFocusable = this._flowService.nodesFocusable();
 
     // 檢查是否有自定義的 tabIndex
     if (nodeData.domAttributes && typeof nodeData.domAttributes['tabIndex'] === 'number') {
       return nodeData.domAttributes['tabIndex'];
     }
 
-    // 如果節點可選擇，設為 0 讓它可以被鍵盤聚焦
-    return globalSelectable ? 0 : -1;
+    // 與 React 版本一致：檢查節點的 focusable 屬性和全局 nodesFocusable 設定
+    // node.focusable || (nodesFocusable && typeof node.focusable === 'undefined')
+    const isFocusable = !!(
+      nodeData.focusable ||
+      (globalNodesFocusable && typeof nodeData.focusable === 'undefined')
+    );
+
+    return isFocusable ? 0 : -1;
   }
 
   getNodeRole(): string {

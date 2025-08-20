@@ -77,37 +77,6 @@ import { ChangeLoggerComponent } from './devtools/change-logger.component';
       width: 100%;
       height: 100%;
     }
-    
-    .devtool-button {
-      background: white;
-      border: none;
-      padding: 5px 15px;
-      color: #222;
-      font-weight: bold;
-      font-size: 12px;
-      cursor: pointer;
-      font-family: monospace, sans-serif;
-      background-color: #f4f4f4;
-    }
-
-    .devtool-button:hover {
-      background: rgba(238, 58, 115, 1);
-      color: white;
-    }
-
-    .devtool-button.active {
-      background: rgba(238, 58, 115, 1);
-      color: white;
-    }
-
-    .devtool-button:first-child {
-      border-radius: 4px 0 0 4px;
-      border-right: 1px solid #ddd;
-    }
-
-    .devtool-button:last-child {
-      border-radius: 0 4px 4px 0;
-    }
   `],
 })
 export class DevToolsExampleComponent {

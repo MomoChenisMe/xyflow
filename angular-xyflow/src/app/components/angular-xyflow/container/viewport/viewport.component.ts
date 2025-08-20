@@ -168,6 +168,28 @@ export interface EdgeConnectionPoints {
         height: 100%;
       }
 
+      .angular-xyflow__pane {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        cursor: default;
+      }
+
+      .angular-xyflow__pane.draggable {
+        cursor: grab;
+      }
+
+      .angular-xyflow__pane.dragging {
+        cursor: grabbing;
+      }
+
+      .angular-xyflow__pane.selection {
+        cursor: crosshair;
+      }
+
       .angular-xyflow__edges {
         position: absolute;
         top: 0;

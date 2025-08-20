@@ -39,6 +39,7 @@ export class EdgeEventDirective implements OnInit {
   handleClick(event: MouseEvent): void {
     if (this.selectable() && this.edgeWrapper) {
       event.stopPropagation();
+      event.preventDefault(); // 也阻止默認行為
       const edge = this.edgeWrapper.edge();
       this.edgeWrapper.edgeClick.emit({ event, edge });
     }

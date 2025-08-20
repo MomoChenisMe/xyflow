@@ -1,5 +1,5 @@
 // Angular 核心模組
-import { Injectable, signal, computed, Signal, effect } from '@angular/core';
+import { Injectable, signal, computed, Signal, effect, inject } from '@angular/core';
 
 // XyFlow 系統模組
 import {
@@ -12,7 +12,6 @@ import {
   Position,
   ColorMode,
   ColorModeClass,
-  addEdge as systemAddEdge,
   getNodesInside,
   getNodePositionWithOrigin,
   updateNodeInternals as systemUpdateNodeInternals,
@@ -40,13 +39,24 @@ import {
   EdgeRemoveChange,
   NodeAddChange,
   EdgeAddChange,
+  ConnectionInfo,
 } from '../types';
+
+// 確保類型導入正確
+type ConnectionInfoType = ConnectionInfo;
+
+import { AngularFlowStore, createInitialStore } from '../types/store';
+import { applyNodeChanges, applyEdgeChanges } from '../utils/changes';
+import { KeyboardService } from './keyboard.service';
 
 @Injectable()
 export class AngularXYFlowService<
   NodeType extends AngularNode = AngularNode,
   EdgeType extends AngularEdge = AngularEdge
 > {
+  // 注入鍵盤服務
+  private _keyboardService = inject(KeyboardService);
+
   // 持久化存储节点的 handle 位置，类似 React Flow 的行为
   private nodeHandleBounds: Map<string, { source: any[]; target: any[] }> =
     new Map();
@@ -153,12 +163,20 @@ export class AngularXYFlowService<
   // 核心信號狀態
   private _nodes = signal<NodeType[]>([]);
   private _edges = signal<EdgeType[]>([]);
+  private _defaultEdgeOptions = signal<Partial<EdgeType> | undefined>(undefined);
   private _viewport = signal<Viewport>({ x: 0, y: 0, zoom: 1 });
   private _selectedNodes = signal<string[]>([]);
   private _selectedEdges = signal<string[]>([]);
   private _selectedHandles = signal<
     Array<{ nodeId: string; handleId?: string; type: 'source' | 'target' }>
   >([]);
+  
+  // NodesSelection 相關狀態
+  private _nodesSelectionActive = signal<boolean>(false);
+  private _userSelectionActive = signal<boolean>(false);
+  private _noPanClassName = signal<string>('nopan');
+  private _disableKeyboardA11y = signal<boolean>(false);
+  private _onSelectionContextMenu = signal<((event: any) => void) | undefined>(undefined);
   private _connectionState = signal<ConnectionState<NodeType>>({
     inProgress: false,
   } as NoConnection);
@@ -179,12 +197,14 @@ export class AngularXYFlowService<
   private _nodesDraggable = signal<boolean>(true);
   private _nodesConnectable = signal<boolean>(true);
   private _elementsSelectable = signal<boolean>(true);
+  private _nodesFocusable = signal<boolean>(true);
   private _edgesFocusable = signal<boolean>(true);
   private _colorMode = signal<ColorMode>('light');
   private _selectNodesOnDrag = signal<boolean>(false);
   private _autoPanOnNodeFocus = signal<boolean>(false);
   private _snapToGrid = signal<boolean>(false);
   private _snapGrid = signal<[number, number]>([15, 15]);
+  private _elevateNodesOnSelect = signal<boolean>(true);
   private _dimensions = signal<{ width: number; height: number }>({
     width: 0,
     height: 0,
@@ -288,21 +308,74 @@ export class AngularXYFlowService<
     }
   }
 
+  // 循環保護標記
+  private _applyingNodeChanges = false;
+
   // 觸發節點變更事件
   triggerNodeChanges(changes: NodeChange<NodeType>[]) {
     if (changes.length === 0) return;
+    
+    // 防止無限循環
+    if (this._applyingNodeChanges) {
+      return;
+    }
 
-    if (this._onNodesChange) {
-      this._onNodesChange(changes);
+    this._applyingNodeChanges = true;
+    try {
+      // 總是應用變更到內部狀態
+      const currentNodes = this._nodes();
+      const newNodes = this.applyNodeChanges(changes, currentNodes);
+      this._nodes.set(newNodes);
+
+      // CRITICAL FIX: Update _selectedNodes signal after applying selection changes
+      // Check if any of the changes are selection changes
+      const hasSelectionChanges = changes.some(change => change.type === 'select');
+      if (hasSelectionChanges) {
+        // Recalculate selected nodes from the updated node array
+        const selectedNodeIds = newNodes
+          .filter(node => node.selected)
+          .map(node => node.id);
+        this._selectedNodes.set(selectedNodeIds);
+        
+        // 注意：不要在這裡自動更新 nodesSelectionActive
+        // React Flow 只在框選結束時或明確設置時才更新 nodesSelectionActive
+        // 單擊節點時會通過 handleNodeClick 設置為 false
+      }
+
+      // 如果有外部回調，也要觸發它
+      if (this._onNodesChange) {
+        this._onNodesChange(changes);
+      }
+    } finally {
+      this._applyingNodeChanges = false;
     }
   }
+
+  // 循環保護標記  
+  private _applyingEdgeChanges = false;
 
   // 觸發邊變更事件
   triggerEdgeChanges(changes: EdgeChange<EdgeType>[]) {
     if (changes.length === 0) return;
+    
+    // 防止無限循環
+    if (this._applyingEdgeChanges) {
+      return;
+    }
 
-    if (this._onEdgesChange) {
-      this._onEdgesChange(changes);
+    this._applyingEdgeChanges = true;
+    try {
+      // 總是應用變更到內部狀態
+      const currentEdges = this._edges();
+      const newEdges = this.applyEdgeChanges(changes, currentEdges);
+      this._edges.set(newEdges);
+
+      // 如果有外部回調，也要觸發它
+      if (this._onEdgesChange) {
+        this._onEdgesChange(changes);
+      }
+    } finally {
+      this._applyingEdgeChanges = false;
     }
   }
 
@@ -330,6 +403,26 @@ export class AngularXYFlowService<
     return !this._hasDefaultNodes() && !this._hasDefaultEdges();
   }
 
+  // 檢查是否有外部節點變更處理器（controlled 模式）
+  private _hasExternalNodeChanges(): boolean {
+    return !!this._onNodesChange;
+  }
+
+  // 檢查是否有外部邊變更處理器（controlled 模式）
+  private _hasExternalEdgeChanges(): boolean {
+    return !!this._onEdgesChange;
+  }
+
+  // 內部方法：應用節點變更到內部狀態
+  private applyNodeChanges(changes: NodeChange<NodeType>[], nodes: NodeType[]): NodeType[] {
+    return applyNodeChanges(changes, nodes);
+  }
+
+  // 內部方法：應用邊變更到內部狀態
+  private applyEdgeChanges(changes: EdgeChange<EdgeType>[], edges: EdgeType[]): EdgeType[] {
+    return applyEdgeChanges(changes, edges);
+  }
+
   // 內部方法：更新狀態而不觸發事件（用於 controlled 模式同步）
   syncNodesFromControlled(nodes: NodeType[]) {
     this._nodes.set([...nodes]);
@@ -346,9 +439,12 @@ export class AngularXYFlowService<
   // 計算信號 - 唯讀訪問器
   nodes: Signal<NodeType[]> = computed(() => this._nodes());
   edges: Signal<EdgeType[]> = computed(() => this._edges());
+  defaultEdgeOptions: Signal<Partial<EdgeType> | undefined> = computed(() => 
+    this._defaultEdgeOptions()
+  );
   viewport: Signal<Viewport> = computed(() => this._viewport());
   selectedNodes: Signal<string[]> = computed(() =>
-    this._selectedNodes()
+    this._nodes().filter(node => node.selected).map(node => node.id)
   );
   selectedEdges: Signal<string[]> = computed(() =>
     this._selectedEdges()
@@ -398,11 +494,32 @@ export class AngularXYFlowService<
   elementsSelectable: Signal<boolean> = computed(() =>
     this._elementsSelectable()
   );
+  nodesFocusable: Signal<boolean> = computed(() =>
+    this._nodesFocusable()
+  );
   edgesFocusable: Signal<boolean> = computed(() =>
     this._edgesFocusable()
   );
   selectNodesOnDrag: Signal<boolean> = computed(() =>
     this._selectNodesOnDrag()
+  );
+  multiSelectionActive: Signal<boolean> = computed(() =>
+    this._keyboardService.multiSelectionActive()
+  );
+  nodesSelectionActive: Signal<boolean> = computed(() =>
+    this._nodesSelectionActive()
+  );
+  userSelectionActive: Signal<boolean> = computed(() =>
+    this._userSelectionActive()
+  );
+  noPanClassName: Signal<string> = computed(() =>
+    this._noPanClassName()
+  );
+  disableKeyboardA11y: Signal<boolean> = computed(() =>
+    this._disableKeyboardA11y()
+  );
+  onSelectionContextMenu: Signal<((event: any) => void) | undefined> = computed(() =>
+    this._onSelectionContextMenu()
   );
   autoPanOnNodeFocus: Signal<boolean> = computed(() =>
     this._autoPanOnNodeFocus()
@@ -412,6 +529,9 @@ export class AngularXYFlowService<
   );
   snapGrid: Signal<[number, number]> = computed(() =>
     this._snapGrid()
+  );
+  elevateNodesOnSelect: Signal<boolean> = computed(() =>
+    this._elevateNodesOnSelect()
   );
   dimensions: Signal<{ width: number; height: number }> = computed(
     () => this._dimensions()
@@ -496,6 +616,40 @@ export class AngularXYFlowService<
     return lookup;
   });
 
+  // 連接查找表 - 用於高效查找節點相連的邊
+  connectionLookup: Signal<Map<string, Map<string, ConnectionInfoType>>> = computed(() => {
+    const edges = this._edges();
+    const lookup = new Map<string, Map<string, ConnectionInfoType>>();
+    
+    edges.forEach(edge => {
+      // 為 source 節點添加連接
+      if (!lookup.has(edge.source)) {
+        lookup.set(edge.source, new Map());
+      }
+      lookup.get(edge.source)!.set(edge.id, {
+        edgeId: edge.id,
+        connectedNode: edge.target,
+        sourceHandle: edge.sourceHandle || null,
+        targetHandle: edge.targetHandle || null,
+        isSource: true
+      });
+      
+      // 為 target 節點添加連接
+      if (!lookup.has(edge.target)) {
+        lookup.set(edge.target, new Map());
+      }
+      lookup.get(edge.target)!.set(edge.id, {
+        edgeId: edge.id,
+        connectedNode: edge.source,
+        sourceHandle: edge.sourceHandle || null,
+        targetHandle: edge.targetHandle || null,
+        isSource: false
+      });
+    });
+    
+    return lookup;
+  });
+
   // 內部節點查找表 - 用於 getNodesInside 函數和 fitView
   internalNodeLookup = computed(() => {
     const nodes = this._nodes();
@@ -535,6 +689,7 @@ export class AngularXYFlowService<
             y: node.position.y,
           },
           handleBounds: handleBounds || undefined,
+          userNode: node, // 保存原始用戶節點的引用
         },
       });
     });
@@ -1251,18 +1406,8 @@ export class AngularXYFlowService<
       ];
 
       // 在 controlled 模式下，只發出事件，不更新內部狀態
-      if (this.isControlledMode()) {
-        this.triggerEdgeChanges(changes);
-      } else {
-        // 在 uncontrolled 模式下，更新內部狀態並發出事件
-        const currentEdges = this._edges();
-        const newEdges = systemAddEdge(
-          newEdge as any,
-          currentEdges as any
-        ) as EdgeType[];
-        this._edges.set(newEdges);
-        this.triggerEdgeChanges(changes);
-      }
+      // 在 uncontrolled 模式下，triggerEdgeChanges 會處理內部狀態更新
+      this.triggerEdgeChanges(changes);
     }
   }
 
@@ -1323,105 +1468,81 @@ export class AngularXYFlowService<
   }
 
   // 節點選擇 - 支援單選和多選
+  // 🔥 FIXED VERSION - 使用 NodeChange 機制
   selectNode(nodeId: string, multiSelect = false): void {
     const currentNodes = this._nodes();
-    const currentEdges = this._edges();
-    const currentSelected = this._selectedNodes();
-    const nodeChanges: NodeChange<NodeType>[] = [];
-    const edgeChanges: EdgeChange<EdgeType>[] = [];
-
-    let newSelectedNodes: string[];
+    const changes: NodeChange<NodeType>[] = [];
 
     if (multiSelect) {
-      // 多選模式：切換選擇狀態
-      const isSelected = currentSelected.includes(nodeId);
-      newSelectedNodes = isSelected
-        ? currentSelected.filter((id) => id !== nodeId)
-        : [...currentSelected, nodeId];
-
-      // 只為目標節點創建 change
-      nodeChanges.push({
-        type: 'select',
-        id: nodeId,
-        selected: !isSelected,
-      });
+      // 多選模式：如果目標節點未選中，選中它（其他已選中的節點保持選中）
+      const targetNode = currentNodes.find(n => n.id === nodeId);
+      if (targetNode && !targetNode.selected) {
+        // 立即更新節點的 selected 屬性
+        targetNode.selected = true;
+        changes.push({ type: 'select', id: nodeId, selected: true });
+      }
     } else {
-      // 單選模式：取消其他選擇
-      newSelectedNodes = [nodeId];
-
-      // 為所有節點創建 changes
-      currentNodes.forEach((node) => {
-        const shouldBeSelected = node.id === nodeId;
-        if (node.selected !== shouldBeSelected) {
-          nodeChanges.push({
-            type: 'select',
-            id: node.id,
-            selected: shouldBeSelected,
-          });
+      // 單選模式：只選中目標節點，取消其他所有選中的節點
+      currentNodes.forEach(node => {
+        if (node.id === nodeId && !node.selected) {
+          // 選中目標節點
+          node.selected = true;
+          changes.push({ type: 'select', id: node.id, selected: true });
+        } else if (node.id !== nodeId && node.selected) {
+          // 取消選中其他節點
+          node.selected = false;
+          changes.push({ type: 'select', id: node.id, selected: false });
         }
       });
-
-      // 清除所有邊的選擇
-      currentEdges.forEach((edge) => {
-        if (edge.selected) {
-          edgeChanges.push({
-            type: 'select',
-            id: edge.id,
-            selected: false,
-          });
-        }
-      });
-
-      this._selectedEdges.set([]);
     }
 
-    // 更新選中節點列表
-    this._selectedNodes.set(newSelectedNodes);
+    // 立即更新 _nodes signal 使變更生效
+    if (changes.length > 0) {
+      this._nodes.set([...currentNodes]); // 觸發 signal 更新
+      this.triggerNodeChanges(changes);
+    }
+  }
+
+  // 取消節點選擇
+  unselectNode(nodeId: string): void {
+    const currentSelected = this._selectedNodes();
+    
+    // 如果節點沒有被選中，直接返回
+    if (!currentSelected.includes(nodeId)) {
+      return;
+    }
+
+    // 🔧 立即修改節點的 selected 屬性
+    const currentNodes = this._nodes();
+    const targetNode = currentNodes.find(n => n.id === nodeId);
+    if (targetNode) {
+      targetNode.selected = false;
+    }
+
+    const nodeChanges: NodeChange<NodeType>[] = [{
+      type: 'select',
+      id: nodeId,
+      selected: false,
+    }];
 
     // 在 controlled 模式下，只發出事件，不更新狀態
     if (this.isControlledMode()) {
       this.triggerNodeChanges(nodeChanges);
-      if (edgeChanges.length > 0) {
-        this.triggerEdgeChanges(edgeChanges);
-      }
     } else {
       // 在 uncontrolled 模式下，更新內部狀態並發出事件
-      if (nodeChanges.length > 0) {
-        this._nodes.update((nodes) =>
-          nodes.map((node) => {
-            const change = nodeChanges.find(
-              (c) => c.type === 'select' && c.id === node.id
-            ) as NodeSelectionChange | undefined;
-            if (change) {
-              return { ...node, selected: change.selected };
-            }
-            return node;
-          })
-        );
-        this.triggerNodeChanges(nodeChanges);
-      }
-
-      if (edgeChanges.length > 0) {
-        this._edges.update((edges) =>
-          edges.map((edge) => {
-            const change = edgeChanges.find(
-              (c) => c.type === 'select' && c.id === edge.id
-            ) as EdgeSelectionChange | undefined;
-            if (change) {
-              return { ...edge, selected: change.selected };
-            }
-            return edge;
-          })
-        );
-        this.triggerEdgeChanges(edgeChanges);
-      }
+      this._nodes.update((nodes) =>
+        nodes.map((node) => 
+          node.id === nodeId ? { ...node, selected: false } : node
+        )
+      );
+      this.triggerNodeChanges(nodeChanges);
     }
 
     // 觸發選擇變化事件
     this.triggerSelectionChange();
   }
 
-  // 邊選擇 - 支援單選和多選
+  // 邊選擇 - 支援單選和多選（與 React Flow 的 addSelectedEdges 邏輯一致）
   selectEdge(edgeId: string, multiSelect = false): void {
     const currentEdges = this._edges();
     const currentNodes = this._nodes();
@@ -1432,7 +1553,7 @@ export class AngularXYFlowService<
     let newSelectedEdges: string[];
 
     if (multiSelect) {
-      // 多選模式：切換選擇狀態
+      // 多選模式：只切換目標邊的選擇狀態，不影響節點和其他邊
       const isSelected = currentSelected.includes(edgeId);
       newSelectedEdges = isSelected
         ? currentSelected.filter((id) => id !== edgeId)
@@ -1445,10 +1566,10 @@ export class AngularXYFlowService<
         selected: !isSelected,
       });
     } else {
-      // 單選模式：取消其他選擇
+      // 單選模式：根據 React Flow 的 addSelectedEdges 邏輯
       newSelectedEdges = [edgeId];
 
-      // 為所有邊創建 changes
+      // 為所有邊創建 changes（清除其他邊的選擇，選中目標邊）
       currentEdges.forEach((edge) => {
         const shouldBeSelected = edge.id === edgeId;
         if (edge.selected !== shouldBeSelected) {
@@ -1460,7 +1581,7 @@ export class AngularXYFlowService<
         }
       });
 
-      // 清除所有節點的選擇
+      // 清除所有節點的選擇（React Flow 行為）
       currentNodes.forEach((node) => {
         if (node.selected) {
           nodeChanges.push({
@@ -1587,6 +1708,14 @@ export class AngularXYFlowService<
           id: node.id,
           selected: false,
         });
+        
+        // 讓節點失去焦點，類似 React 版本的 blur() 處理
+        requestAnimationFrame(() => {
+          const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`) as HTMLElement;
+          if (nodeElement && nodeElement.blur) {
+            nodeElement.blur();
+          }
+        });
       }
     });
 
@@ -1597,6 +1726,14 @@ export class AngularXYFlowService<
           type: 'select',
           id: edge.id,
           selected: false,
+        });
+        
+        // 讓邊失去焦點
+        requestAnimationFrame(() => {
+          const edgeElement = document.querySelector(`[data-edge-id="${edge.id}"]`) as HTMLElement;
+          if (edgeElement && edgeElement.blur) {
+            edgeElement.blur();
+          }
         });
       }
     });
@@ -1633,6 +1770,9 @@ export class AngularXYFlowService<
 
     // 觸發選擇變化事件
     this.triggerSelectionChange();
+    
+    // 對應 React Flow Pane/index.tsx:108 邏輯：點擊空白處清除選擇時隱藏 NodesSelection
+    this._nodesSelectionActive.set(false);
   }
 
   // 取得選中的節點
@@ -2231,6 +2371,12 @@ export class AngularXYFlowService<
     this._elementsSelectable.set(selectable);
   }
 
+  // setMultiSelectionActive 已移除，現在直接從鍵盤服務獲取狀態
+
+  setNodesFocusable(focusable: boolean) {
+    this._nodesFocusable.set(focusable);
+  }
+
   setEdgesFocusable(focusable: boolean) {
     this._edgesFocusable.set(focusable);
   }
@@ -2251,6 +2397,10 @@ export class AngularXYFlowService<
 
   setSnapGrid(snapGrid: [number, number]) {
     this._snapGrid.set(snapGrid);
+  }
+
+  setElevateNodesOnSelect(elevateNodesOnSelect: boolean) {
+    this._elevateNodesOnSelect.set(elevateNodesOnSelect);
   }
 
   // 自動平移到節點功能 - 與 React 版本一致的行為
@@ -2715,4 +2865,124 @@ export class AngularXYFlowService<
       isFullyInitialized: fullyComplete === total,
     };
   }
+
+  /**
+   * 設置預設邊線選項
+   */
+  setDefaultEdgeOptions(options: Partial<EdgeType> | undefined): void {
+    this._defaultEdgeOptions.set(options);
+  }
+
+  // ===== NodesSelection 相關方法 =====
+
+  /**
+   * 設置用戶選擇狀態（正在進行選擇框操作時為 true）
+   */
+  setUserSelectionActive(active: boolean): void {
+    this._userSelectionActive.set(active);
+  }
+
+  /**
+   * 設置 NodesSelection 激活狀態
+   * 與 React Flow 的 setNodesSelectionActive 一致
+   */
+  setNodesSelectionActive(active: boolean): void {
+    this._nodesSelectionActive.set(active);
+  }
+
+  /**
+   * 更新 NodesSelection 激活狀態
+   * 僅在框選結束時調用，根據選中節點數量決定是否顯示 NodesSelection
+   * 對應 React Flow 的 Pane/index.tsx:249 邏輯
+   */
+  updateNodesSelectionActive(): void {
+    const selectedNodeIds = this._selectedNodes();
+    // 修正：與 React Flow 一致 - 任何選中的節點都會激活 NodesSelection
+    // React Flow: nodesSelectionActive: selectedNodeIds.current.size > 0
+    const hasAnySelected = selectedNodeIds.length > 0;
+    
+    // 只在框選結束時根據選中節點數量設置
+    // 這個方法應該只被 selection.service 在框選結束時調用
+    this._nodesSelectionActive.set(hasAnySelected);
+  }
+
+  /**
+   * 更新節點位置
+   */
+  updateNodes(updatedNodes: NodeType[]): void {
+    const currentNodes = this._nodes();
+    const nodeMap = new Map(currentNodes.map(node => [node.id, node]));
+    
+    // 更新節點位置
+    updatedNodes.forEach(updatedNode => {
+      nodeMap.set(updatedNode.id, updatedNode);
+    });
+    
+    this._nodes.set(Array.from(nodeMap.values()));
+  }
+
+  /**
+   * 處理節點點擊邏輯
+   * 整合原先 handle-node-click.ts 的功能，符合 Angular 服務設計模式
+   */
+  handleNodeClick(nodeId: string, options: { unselect?: boolean } = {}): void {
+    const { unselect = false } = options;
+    
+    const node = this.nodeLookup().get(nodeId);
+    const multiSelectionActive = this.multiSelectionActive();
+
+    if (!node) {
+      console.error(`Node with id "${nodeId}" not found`);
+      return;
+    }
+
+    // 重置節點選擇框狀態（對應 React 版本的 nodesSelectionActive）
+    // 與 React 版本一致：單擊節點時隱藏 NodesSelection
+    this.setNodesSelectionActive(false);
+
+    if (!node.selected) {
+      // 選擇節點
+      if (multiSelectionActive) {
+        // 多選模式：添加到現有選擇
+        this.selectNode(nodeId, true);
+      } else {
+        // 單選模式：清除其他選擇，只選擇此節點
+        this.clearSelection();
+        this.selectNode(nodeId, true);
+      }
+    } else if (unselect || (node.selected && multiSelectionActive)) {
+      // 取消選擇節點
+      this.unselectNode(nodeId);
+    } else {
+      // 節點已選中，且不是多選模式：切換為只選中此節點
+      this.clearSelection();
+      this.selectNode(nodeId, true);
+    }
+  }
+
+  // Z-index 計算函數 - 模擬 React Flow 的 calculateZ 函數行為
+  private calculateZ(node: NodeType, selectedNodeIds: string[], elevateOnSelect: boolean): number {
+    // 與 NodeWrapper 保持一致，預設值為 1
+    const baseZIndex = node.zIndex || 1;
+    
+    if (elevateOnSelect && selectedNodeIds.includes(node.id)) {
+      // 選中的節點獲得 +1000 的 z-index 提升，與 React Flow 一致
+      return baseZIndex + 1000;
+    }
+    
+    return baseZIndex;
+  }
+
+  // 帶有動態 z-index 的節點計算信號
+  nodesWithZ: Signal<NodeType[]> = computed(() => {
+    const nodes = this._nodes();
+    const selectedNodeIds = this._selectedNodes();
+    const elevateOnSelect = this._elevateNodesOnSelect();
+
+    return nodes.map(node => ({
+      ...node,
+      zIndex: this.calculateZ(node, selectedNodeIds, elevateOnSelect)
+    }));
+  });
+
 }

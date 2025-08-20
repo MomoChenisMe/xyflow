@@ -5,8 +5,14 @@
       "Bash(npm start)",
       "Bash(npm run build:*)",
       "Bash(find:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "mcp__context7__get-library-docs",
+      "WebFetch(domain:reactflow.dev)",
+      "mcp__context7__resolve-library-id",
+      "mcp__playwright__browser_navigate",
+      "WebSearch"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

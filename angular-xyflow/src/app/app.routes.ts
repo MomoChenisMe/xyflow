@@ -23,6 +23,8 @@ import { EdgeRendererExampleComponent } from './components/examples/edge-rendere
 import { EdgeRoutingExampleComponent } from './components/examples/edge-routing-example/edge-routing-example.component';
 import { EdgesExample } from './components/examples/edges-example/edges-example';
 import { EdgeTypesComponent } from './components/examples/edge-types/edge-types';
+import { EmptyExampleComponent } from './components/examples/empty-example/empty-example.component';
+import { FigmaExampleComponent } from './components/examples/figma-example/figma-example.component';
 
 export interface IRoute {
   name: string;
@@ -137,9 +139,19 @@ export const routeList: IRoute[] = [
     component: EdgeRendererExampleComponent,
   },
   {
+    name: 'Empty',
+    path: 'empty',
+    component: EmptyExampleComponent,
+  },
+  {
     name: 'Edge Routing',
     path: 'edge-routing',
     component: EdgeRoutingExampleComponent,
+  },
+  {
+    name: 'Figma',
+    path: 'figma',
+    component: FigmaExampleComponent,
   },
   {
     name: 'Edges',
@@ -163,20 +175,37 @@ export const routes: Routes = [
   { path: 'cancel-connection', component: CancelConnectionExampleComponent },
   { path: 'click-distance', component: ClickDistanceExampleComponent },
   { path: 'color-mode', component: ColorModeExampleComponent },
-  { path: 'controlled-uncontrolled', component: ControlledUncontrolledExampleComponent },
-  { path: 'controlled-viewport', component: ControlledViewportExampleComponent },
-  { path: 'custom-connection-line', component: CustomConnectionLineExampleComponent },
+  {
+    path: 'controlled-uncontrolled',
+    component: ControlledUncontrolledExampleComponent,
+  },
+  {
+    path: 'controlled-viewport',
+    component: ControlledViewportExampleComponent,
+  },
+  {
+    path: 'custom-connection-line',
+    component: CustomConnectionLineExampleComponent,
+  },
   { path: 'custom-minimap-node', component: CustomMinimapNodeExampleComponent },
   { path: 'custom-node', component: CustomNodeExampleComponent },
   { path: 'default-nodes', component: DefaultNodesExampleComponent },
-  { path: 'default-node-overwrite', component: DefaultNodeOverwriteExampleComponent },
-  { path: 'default-edge-overwrite', component: DefaultEdgeOverwriteExampleComponent },
+  {
+    path: 'default-node-overwrite',
+    component: DefaultNodeOverwriteExampleComponent,
+  },
+  {
+    path: 'default-edge-overwrite',
+    component: DefaultEdgeOverwriteExampleComponent,
+  },
   { path: 'devtools', component: DevToolsExampleComponent },
   { path: 'drag-handle', component: DragHandleExampleComponent },
   { path: 'drag-n-drop', component: DragNDropExampleComponent },
   { path: 'easy-connect', component: EasyConnectExampleComponent },
   { path: 'edge-renderer', component: EdgeRendererExampleComponent },
   { path: 'edge-routing', component: EdgeRoutingExampleComponent },
+  { path: 'empty', component: EmptyExampleComponent },
+  { path: 'figma', component: FigmaExampleComponent },
   { path: 'edges', component: EdgesExample },
   { path: 'edge-types', component: EdgeTypesComponent },
 ];
