@@ -111,12 +111,28 @@ export class AngularXYFlowService<
           height: measured.height,
         };
 
-        // 計算絕對位置（考慮節點特定的 origin 或全局 origin）
+        // 計算絕對位置 - 需要考慮 parentId 邏輯
         const nodeOrigin = node.origin || this._nodeOrigin();
-        const positionAbsolute = getNodePositionWithOrigin(
-          nodeWithMeasured,
-          nodeOrigin
-        );
+        let positionAbsolute: XYPosition;
+        
+        if (node.parentId) {
+          // 子節點：需要基於父節點的絕對位置計算
+          const parentNode = nodes.find(n => n.id === node.parentId);
+          if (parentNode) {
+            // 遞迴計算父節點的絕對位置（處理多層巢狀）
+            const parentAbsolute = this.calculateNodeAbsolutePosition(parentNode, nodes, nodeOrigin);
+            positionAbsolute = {
+              x: parentAbsolute.x + node.position.x,
+              y: parentAbsolute.y + node.position.y
+            };
+          } else {
+            // 找不到父節點，使用相對位置
+            positionAbsolute = getNodePositionWithOrigin(nodeWithMeasured, nodeOrigin);
+          }
+        } else {
+          // 根節點：使用正常的位置計算
+          positionAbsolute = getNodePositionWithOrigin(nodeWithMeasured, nodeOrigin);
+        }
 
         // 獲取 handle bounds（與 React Flow 一致）
         const handleBounds = this.getNodeHandleBounds(node.id);
@@ -1040,6 +1056,38 @@ export class AngularXYFlowService<
   getNodePositionAbsolute(nodeId: string): XYPosition | null {
     const internals = this._nodeInternals().get(nodeId);
     return internals ? internals.positionAbsolute : null;
+  }
+
+  /**
+   * 遞迴計算節點的絕對位置（處理 parentId 關係）
+   * 與 React Flow 的邏輯一致
+   */
+  private calculateNodeAbsolutePosition(
+    node: NodeType, 
+    allNodes: NodeType[], 
+    nodeOrigin: [number, number]
+  ): XYPosition {
+    if (node.parentId) {
+      // 找到父節點
+      const parentNode = allNodes.find(n => n.id === node.parentId);
+      if (parentNode) {
+        // 遞迴計算父節點的絕對位置
+        const parentAbsolute = this.calculateNodeAbsolutePosition(parentNode, allNodes, nodeOrigin);
+        // 子節點的絕對位置 = 父節點絕對位置 + 子節點相對位置
+        return {
+          x: parentAbsolute.x + node.position.x,
+          y: parentAbsolute.y + node.position.y
+        };
+      }
+    }
+    
+    // 根節點或找不到父節點：使用正常的位置計算
+    const nodeWithMeasured = {
+      ...node,
+      position: node.position || { x: 0, y: 0 },
+      measured: node.measured || { width: 150, height: 36 }
+    };
+    return getNodePositionWithOrigin(nodeWithMeasured, nodeOrigin);
   }
 
   /**

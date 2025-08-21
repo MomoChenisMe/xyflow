@@ -94,7 +94,7 @@ export class HandleComponent implements OnDestroy {
 
   // 計算屬性 - 符合 React Flow 標準的 CSS 類別系統
   handleClasses = computed(() => {
-    const classes = ['xy-flow__handle'];
+    const classes = ['xy-flow__handle', 'react-flow__handle'];
 
     // 添加位置類別 - 與 React Flow 一致
     const position = this.position();

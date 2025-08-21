@@ -25,6 +25,7 @@ import { EdgesExample } from './components/examples/edges-example/edges-example'
 import { EdgeTypesComponent } from './components/examples/edge-types/edge-types';
 import { EmptyExampleComponent } from './components/examples/empty-example/empty-example.component';
 import { FigmaExampleComponent } from './components/examples/figma-example/figma-example.component';
+import { FloatingEdgesComponent } from './components/examples/floating-edges/floating-edges.component';
 
 export interface IRoute {
   name: string;
@@ -154,6 +155,11 @@ export const routeList: IRoute[] = [
     component: FigmaExampleComponent,
   },
   {
+    name: 'Floating Edges',
+    path: 'floating-edges',
+    component: FloatingEdgesComponent,
+  },
+  {
     name: 'Edges',
     path: 'edges',
     component: EdgesExample,
@@ -206,6 +212,7 @@ export const routes: Routes = [
   { path: 'edge-routing', component: EdgeRoutingExampleComponent },
   { path: 'empty', component: EmptyExampleComponent },
   { path: 'figma', component: FigmaExampleComponent },
+  { path: 'floating-edges', component: FloatingEdgesComponent },
   { path: 'edges', component: EdgesExample },
   { path: 'edge-types', component: EdgeTypesComponent },
 ];
