@@ -8,7 +8,7 @@ import {
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
-import { Connection, addEdge, Position } from '@xyflow/system';
+import { Position } from '@xyflow/system';
 
 // 專案內部模組
 import {
@@ -51,7 +51,6 @@ import {
       [nodeDragThreshold]="0"
       [panOnDrag]="true"
       className="angular-xyflow-basic-example"
-      (onConnect)="onConnect($event)"
       (onNodeClick)="onNodeClick($event)"
       (onNodeDragStart)="onNodeDragStart($event)"
       (onNodeDrag)="onNodeDrag($event)"
@@ -164,11 +163,7 @@ export class BasicExampleComponent {
     return this.angularFlow().getFlow();
   }
 
-  // 事件處理方法
-  onConnect(connection: Connection): void {
-    console.log('onConnect', connection);
-    this._flow.setEdges((edges: AngularEdge[]) => addEdge(connection, edges));
-  }
+  // 事件處理方法 - 在 uncontrolled 模式下，連接由服務自動處理
 
   onNodeClick(data: { event: MouseEvent; node: AngularNode }): void {
     console.log('click', data.node);

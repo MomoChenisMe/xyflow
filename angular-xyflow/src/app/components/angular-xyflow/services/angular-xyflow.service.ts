@@ -1476,13 +1476,13 @@ export class AngularXYFlowService<
       return false;
     }
 
-    // 檢查是否已存在相同連接
-    const existingEdge = this._edges().find(
+    // 檢查是否已存在相同連接 - 使用與 @xyflow/system 相同的邏輯
+    const existingEdge = this._edges().some(
       (edge) =>
         edge.source === source &&
         edge.target === target &&
-        edge.sourceHandle === sourceHandle &&
-        edge.targetHandle === targetHandle
+        (edge.sourceHandle === sourceHandle || (!edge.sourceHandle && !sourceHandle)) &&
+        (edge.targetHandle === targetHandle || (!edge.targetHandle && !targetHandle))
     );
 
     if (existingEdge) {
@@ -1497,8 +1497,11 @@ export class AngularXYFlowService<
 
   // 從連接創建邊
   private createEdgeFromConnection(connection: Connection): EdgeType {
+    // 使用與 @xyflow/system 相同的 ID 生成模式
+    const edgeId = `xy-edge__${connection.source}${connection.sourceHandle || ''}-${connection.target}${connection.targetHandle || ''}`;
+    
     return {
-      id: `e${connection.source}-${connection.target}`,
+      id: edgeId,
       source: connection.source,
       target: connection.target,
       sourceHandle: connection.sourceHandle,
@@ -1519,7 +1522,9 @@ export class AngularXYFlowService<
   // 🔥 FIXED VERSION - 使用 NodeChange 機制
   selectNode(nodeId: string, multiSelect = false): void {
     const currentNodes = this._nodes();
-    const changes: NodeChange<NodeType>[] = [];
+    const currentEdges = this._edges();
+    const nodeChanges: NodeChange<NodeType>[] = [];
+    const edgeChanges: EdgeChange<EdgeType>[] = [];
 
     if (multiSelect) {
       // 多選模式：如果目標節點未選中，選中它（其他已選中的節點保持選中）
@@ -1527,27 +1532,48 @@ export class AngularXYFlowService<
       if (targetNode && !targetNode.selected) {
         // 立即更新節點的 selected 屬性
         targetNode.selected = true;
-        changes.push({ type: 'select', id: nodeId, selected: true });
+        nodeChanges.push({ type: 'select', id: nodeId, selected: true });
       }
     } else {
-      // 單選模式：只選中目標節點，取消其他所有選中的節點
+      // 單選模式：只選中目標節點，取消其他所有選中的節點和邊
       currentNodes.forEach(node => {
         if (node.id === nodeId && !node.selected) {
           // 選中目標節點
           node.selected = true;
-          changes.push({ type: 'select', id: node.id, selected: true });
+          nodeChanges.push({ type: 'select', id: node.id, selected: true });
         } else if (node.id !== nodeId && node.selected) {
           // 取消選中其他節點
           node.selected = false;
-          changes.push({ type: 'select', id: node.id, selected: false });
+          nodeChanges.push({ type: 'select', id: node.id, selected: false });
         }
       });
+
+      // 在單選模式下，也要清除所有邊的選擇（符合 React Flow 行為）
+      currentEdges.forEach(edge => {
+        if (edge.selected) {
+          edgeChanges.push({
+            type: 'select',
+            id: edge.id,
+            selected: false,
+          });
+        }
+      });
+
+      // 清除邊的選擇列表
+      this._selectedEdges.set([]);
     }
 
-    // 立即更新 _nodes signal 使變更生效
-    if (changes.length > 0) {
+    // 立即更新 signals 使變更生效
+    if (nodeChanges.length > 0) {
       this._nodes.set([...currentNodes]); // 觸發 signal 更新
-      this.triggerNodeChanges(changes);
+      this.triggerNodeChanges(nodeChanges);
+    }
+
+    if (edgeChanges.length > 0) {
+      this._edges.update(edges =>
+        edges.map(edge => ({ ...edge, selected: false }))
+      );
+      this.triggerEdgeChanges(edgeChanges);
     }
   }
 
@@ -1584,6 +1610,45 @@ export class AngularXYFlowService<
         )
       );
       this.triggerNodeChanges(nodeChanges);
+    }
+
+    // 觸發選擇變化事件
+    this.triggerSelectionChange();
+  }
+
+  // 取消邊選擇
+  unselectEdge(edgeId: string): void {
+    const currentSelected = this._selectedEdges();
+    
+    // 如果邊沒有被選中，直接返回
+    if (!currentSelected.includes(edgeId)) {
+      return;
+    }
+
+    // 🔧 立即修改邊的 selected 屬性
+    const currentEdges = this._edges();
+    const targetEdge = currentEdges.find(e => e.id === edgeId);
+    if (targetEdge) {
+      targetEdge.selected = false;
+    }
+
+    const edgeChanges: EdgeChange<EdgeType>[] = [{
+      type: 'select',
+      id: edgeId,
+      selected: false,
+    }];
+
+    // 在 controlled 模式下，只發出事件，不更新狀態
+    if (this.isControlledMode()) {
+      this.triggerEdgeChanges(edgeChanges);
+    } else {
+      // 在 uncontrolled 模式下，更新內部狀態並發出事件
+      this._edges.update((edges) =>
+        edges.map((edge) => 
+          edge.id === edgeId ? { ...edge, selected: false } : edge
+        )
+      );
+      this.triggerEdgeChanges(edgeChanges);
     }
 
     // 觸發選擇變化事件
@@ -2996,7 +3061,7 @@ export class AngularXYFlowService<
       } else {
         // 單選模式：清除其他選擇，只選擇此節點
         this.clearSelection();
-        this.selectNode(nodeId, true);
+        this.selectNode(nodeId, false);
       }
     } else if (unselect || (node.selected && multiSelectionActive)) {
       // 取消選擇節點
@@ -3004,7 +3069,55 @@ export class AngularXYFlowService<
     } else {
       // 節點已選中，且不是多選模式：切換為只選中此節點
       this.clearSelection();
-      this.selectNode(nodeId, true);
+      this.selectNode(nodeId, false);
+    }
+  }
+
+  /**
+   * 處理邊點擊邏輯
+   * 實現與 React Flow 一致的邊選擇行為
+   */
+  handleEdgeClick(edgeId: string, options: { unselect?: boolean } = {}): void {
+    const { unselect = false } = options;
+    
+    const edge = this.edgeLookup().get(edgeId);
+    const multiSelectionActive = this.multiSelectionActive();
+
+    if (!edge) {
+      console.error(`Edge with id "${edgeId}" not found`);
+      return;
+    }
+
+    // 檢查邊是否可選擇
+    const defaultEdgeOptions = this.defaultEdgeOptions();
+    const edgesSelectable = defaultEdgeOptions?.selectable ?? true;
+    const isEdgeSelectable = edge.selectable ?? edgesSelectable;
+
+    if (!isEdgeSelectable) {
+      return;
+    }
+
+    // 重置節點選擇框狀態
+    // 與 React 版本一致：單擊邊時隱藏 NodesSelection
+    this.setNodesSelectionActive(false);
+
+    if (!edge.selected) {
+      // 選擇邊
+      if (multiSelectionActive) {
+        // 多選模式：添加到現有選擇
+        this.selectEdge(edgeId, true);
+      } else {
+        // 單選模式：清除其他選擇，只選擇此邊
+        this.clearSelection();
+        this.selectEdge(edgeId, false);
+      }
+    } else if (unselect || (edge.selected && multiSelectionActive)) {
+      // 取消選擇邊
+      this.unselectEdge(edgeId);
+    } else {
+      // 邊已選中，且不是多選模式：切換為只選中此邊
+      this.clearSelection();
+      this.selectEdge(edgeId, false);
     }
   }
 

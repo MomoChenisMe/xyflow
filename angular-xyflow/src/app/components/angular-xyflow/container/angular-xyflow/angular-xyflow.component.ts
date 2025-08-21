@@ -1341,22 +1341,14 @@ export class AngularXYFlowComponent<
   handleEdgeClick(event: MouseEvent, edge: EdgeType) {
     // 阻止事件冒泡，避免觸發背景點擊
     event.stopPropagation();
-
+    
     // 檢查是否允許選取元素
     if (!this._flowService.elementsSelectable()) {
       return;
     }
-
-    // 使用 KeyboardService 檢查多選鍵狀態（支持 multiSelectionKeyCode 配置）
-    const keyCode = this.multiSelectionKeyCode();
-    const keys = Array.isArray(keyCode) ? keyCode : keyCode ? [keyCode] : undefined;
-    const multiSelect = this._keyboardService.shouldUseMultiSelection(
-      keys,
-      event
-    );
-
-    // 選擇邊線
-    this._flowService.selectEdge(edge.id, multiSelect);
+    
+    // 使用服務的 handleEdgeClick 方法處理選擇邏輯
+    this._flowService.handleEdgeClick(edge.id);
 
     // 觸發 edge 點擊事件
     this.onEdgeClick.emit({ event, edge });
@@ -1413,7 +1405,10 @@ export class AngularXYFlowComponent<
     const target = event.target as HTMLElement;
 
     // 檢查點擊的是否是背景元素（類似 React 版本的 event.target === containerRef.current）
+    // 重要：包含 pane 元素本身的檢查
     if (
+      target.classList.contains('angular-xyflow__pane') ||
+      target.classList.contains('xy-flow__pane') ||
       target.classList.contains('angular-xyflow') ||
       target.classList.contains('xy-flow') ||
       target.classList.contains('angular-xyflow__viewport') ||
@@ -1535,15 +1530,15 @@ export class AngularXYFlowComponent<
       // 在 uncontrolled 模式下，檢查父組件是否已經處理了 edges
       const currentEdgeCount = this._flowService.edges().length;
 
-      // 使用 setTimeout 確保父組件的事件處理完成後再檢查
-      setTimeout(() => {
+      // 使用 requestAnimationFrame 確保所有同步更新和微任務完成後再檢查
+      requestAnimationFrame(() => {
         const newEdgeCount = this._flowService.edges().length;
 
         // 如果父組件沒有添加新的 edge，則使用默認邏輯創建
         if (newEdgeCount === currentEdgeCount) {
           this._flowService.onConnect(eventData.connection!);
         }
-      }, 0);
+      });
     }
   }
 

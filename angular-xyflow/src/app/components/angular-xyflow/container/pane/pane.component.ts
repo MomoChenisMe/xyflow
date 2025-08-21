@@ -15,6 +15,7 @@ import { CommonModule } from '@angular/common';
 import { SelectionBoxComponent } from '../selection-box/selection-box.component';
 import { SelectionService } from '../../services/selection.service';
 import { KeyboardService } from '../../services/keyboard.service';
+import { AngularXYFlowService } from '../../services/angular-xyflow.service';
 import {
   AngularNode,
   AngularEdge,
@@ -125,6 +126,7 @@ export class PaneComponent<
   // 服務注入
   protected selectionService = inject(SelectionService<NodeType, EdgeType>);
   private keyboardService = inject(KeyboardService);
+  private flowService = inject(AngularXYFlowService<NodeType, EdgeType>);
 
   // 計算屬性
   isDraggable = computed(() => {
@@ -171,6 +173,8 @@ export class PaneComponent<
     
     // 只有當點擊目標是 pane 容器本身時才觸發事件
     if (event.target === this.paneContainer().nativeElement) {
+      // 直接在這裡清除選擇，確保點擊空白處時清除選擇
+      this.flowService.clearSelection();
       this.onPaneClick.emit(event);
     }
   }
