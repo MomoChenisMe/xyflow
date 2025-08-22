@@ -76,6 +76,8 @@ export class SelectionService<
 
   // 選擇狀態
   private isSelecting = false;
+  private selectionInProgress = false; // 與 React 版本一致：防止點擊事件
+  private selectionStarted = false; // 與 React 版本一致：標記選擇已開始
   private startPosition: XYPosition = { x: 0, y: 0 };
   private containerElement?: HTMLElement; // pane元素（用於事件監聽）
   private flowContainerElement?: HTMLElement; // 最外層容器（用於坐標計算）
@@ -208,6 +210,8 @@ export class SelectionService<
 
     this.startPosition = { x, y };
     this.isSelecting = true;
+    this.selectionStarted = true; // 與 React 版本一致
+    this.selectionInProgress = false; // 與 React 版本一致
 
     // 設置選擇框初始狀態
     this._selectionBox.set({
@@ -231,6 +235,8 @@ export class SelectionService<
   private handleMouseMove(event: MouseEvent): void {
     if (!this.isSelecting || !this.containerElement) return;
 
+    this.selectionInProgress = true; // 與 React 版本一致：標記正在進行選擇
+
     // 獲取相對於最外層容器的位置（與React版本一致）
     const rect = this.flowContainerElement!.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -250,6 +256,10 @@ export class SelectionService<
   // 處理鼠標釋放事件
   private handleMouseUp(event: MouseEvent): void {
     if (!this.isSelecting) return;
+
+    // 防止事件冒泡到 pane 和其他元素，避免觸發點擊清空選擇
+    event.preventDefault();
+    event.stopPropagation();
 
     this.isSelecting = false;
 
@@ -305,6 +315,17 @@ export class SelectionService<
         edges: finalSelectedEdges,
       });
     }
+
+    // 與 React 版本一致：只有在特定條件下才重置 selectionInProgress
+    // 注意：不要在這裡重置 selectionInProgress，讓 PaneComponent 來處理
+    // 這樣可以防止點擊事件冒泡導致的選擇被清空
+    
+    this.selectionStarted = false; // 與 React 版本一致
+  }
+
+  // 檢查是否正在進行選擇（供 PaneComponent 使用）
+  isSelectionInProgress(): boolean {
+    return this.selectionInProgress;
   }
 
   // 檢查是否應該開始選擇 - 與 React 版本邏輯保持一致

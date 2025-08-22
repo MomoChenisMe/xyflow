@@ -18,11 +18,11 @@ import { getInternalNodesBounds, isNumeric } from '@xyflow/system';
 import { AngularXYFlowService } from '../../services/angular-xyflow.service';
 import { KeyboardService } from '../../services/keyboard.service';
 import { AngularXYFlowDragService } from '../../services/drag.service';
-import { 
-  AngularNode, 
+import {
+  AngularNode,
   AngularEdge,
   SelectionContextMenuEvent,
-  Viewport 
+  Viewport
 } from '../../types';
 
 @Component({
@@ -42,7 +42,6 @@ import {
           [tabindex]="tabIndex()"
           [style.width.px]="selectionBounds().width"
           [style.height.px]="selectionBounds().height"
-          (click)="onClick($event)"
           (contextmenu)="onContextMenu($event)"
           (keydown)="onKeyDown($event)"
         ></div>
@@ -62,26 +61,28 @@ import {
         pointer-events: none;
         z-index: 3;
       }
-      
+
       .xy-flow__nodesselection {
         position: absolute;
         z-index: 3;
         pointer-events: none;
         transform-origin: left top;
       }
-      
+
       .xy-flow__nodesselection-rect {
+        position: absolute;
         background: var(--xy-selection-background-color, var(--xy-selection-background-color-default));
         border: var(--xy-selection-border, var(--xy-selection-border-default));
         border-radius: 2px;
         pointer-events: all;
+        cursor: grab;
       }
-      
+
       .xy-flow__nodesselection-rect:focus,
       .xy-flow__nodesselection-rect:focus-visible {
         outline: none;
       }
-      
+
       .xy-flow__container {
         /* Ensure proper container behavior */
         box-sizing: border-box;
@@ -112,7 +113,7 @@ export class NodesSelectionComponent<
   // 計算選中節點的邊界框
   selectionBounds = computed(() => {
     const internalNodeLookup = this._flowService.internalNodeLookup();
-    
+
     if (internalNodeLookup.size === 0) {
       return { width: null, height: null, x: 0, y: 0 };
     }
@@ -133,7 +134,7 @@ export class NodesSelectionComponent<
   transformString = computed(() => {
     const viewport = this._flowService.viewport();
     const bounds = this.selectionBounds();
-    
+
     // 與 React Flow 一致的 transform 計算
     // translate(viewport.x, viewport.y) scale(viewport.zoom) translate(bounds.x, bounds.y)
     return `translate(${viewport.x}px,${viewport.y}px) scale(${viewport.zoom}) translate(${bounds.x}px,${bounds.y}px)`;
@@ -144,10 +145,20 @@ export class NodesSelectionComponent<
     const nodesSelectionActive = this._flowService.nodesSelectionActive();
     const userSelectionActive = this._flowService.userSelectionActive();
     const bounds = this.selectionBounds();
-    
+
     // 與 React Flow 的條件完全一致
-    return nodesSelectionActive && !userSelectionActive && bounds.width && bounds.height;
+    // React: if (userSelectionActive || !width || !height) return null;
+    // 使用 isNumeric 檢查，與 React 版本的 selector 邏輯一致
+    const width = this.isNumeric(bounds.width) ? bounds.width : null;
+    const height = this.isNumeric(bounds.height) ? bounds.height : null;
+
+    return nodesSelectionActive && !userSelectionActive && width && height;
   });
+
+  // 實作與 @xyflow/system 一致的 isNumeric 函數
+  private isNumeric(n: any): n is number {
+    return !isNaN(n) && isFinite(n);
+  }
 
   // tabindex 計算
   tabIndex = computed(() => {
@@ -155,77 +166,22 @@ export class NodesSelectionComponent<
     return disableKeyboardA11y ? undefined : -1;
   });
 
-  // 點擊事件處理：檢查是否點擊到節點
-  onClick(event: MouseEvent): void {
-    console.log('[NodesSelection] onClick - checking for node at position:', event.clientX, event.clientY);
-    
-    // 隱藏 NodesSelection rect 以獲取底下的元素
-    const rect = this.nodeRef()?.nativeElement;
-    if (!rect) return;
-    
-    // 暫時隱藏 rect 以進行 hit testing
-    const originalPointerEvents = rect.style.pointerEvents;
-    rect.style.pointerEvents = 'none';
-    
-    try {
-      // 獲取點擊位置的元素
-      const elementBelow = document.elementFromPoint(event.clientX, event.clientY);
-      console.log('[NodesSelection] Element below:', elementBelow?.tagName, elementBelow?.className);
-      
-      if (elementBelow) {
-        // 檢查是否點擊到節點（檢查元素本身以及向上查找）
-        let nodeElement = elementBelow.closest('.xy-flow__node');
-        
-        // 如果沒找到，也檢查元素本身是否是節點
-        if (!nodeElement && elementBelow.classList?.contains('xy-flow__node')) {
-          nodeElement = elementBelow;
-        }
-        
-        console.log('[NodesSelection] Node element found:', nodeElement);
-        
-        if (nodeElement) {
-          // 正確的屬性名稱是 data-node-id，不是 data-id
-          const nodeId = nodeElement.getAttribute('data-node-id');
-          console.log('[NodesSelection] Found node ID:', nodeId);
-          
-          if (nodeId) {
-            console.log('[NodesSelection] Calling handleNodeClick for node:', nodeId);
-            // 使用服務的 handleNodeClick 方法
-            this._flowService.handleNodeClick(nodeId, { unselect: false });
-            return;
-          }
-        }
-        
-        // 詳細輸出調試信息
-        console.log('[NodesSelection] Element classList:', elementBelow.classList?.toString());
-        console.log('[NodesSelection] Element attributes:', Array.from(elementBelow.attributes || []).map(attr => `${attr.name}="${attr.value}"`));
-      }
-      
-      // 如果沒有點擊到節點，隱藏 NodesSelection
-      console.log('[NodesSelection] No node clicked, hiding NodesSelection');
-      this._flowService.setNodesSelectionActive(false);
-      
-    } finally {
-      // 恢復 pointer events
-      rect.style.pointerEvents = originalPointerEvents;
-    }
-  }
 
   // 右鍵菜單事件處理
   onContextMenu(event: MouseEvent): void {
     const onSelectionContextMenu = this._flowService.onSelectionContextMenu();
-    
+
     if (onSelectionContextMenu) {
       event.preventDefault();
       const selectedNodes = this._flowService.getSelectedNodes();
       const selectedEdges = this._flowService.getSelectedEdges();
-      
+
       const selectionEvent: SelectionContextMenuEvent<NodeType, EdgeType> = {
         event,
         nodes: selectedNodes,
         edges: selectedEdges,
       };
-      
+
       onSelectionContextMenu(selectionEvent);
     }
   }
@@ -245,10 +201,10 @@ export class NodesSelectionComponent<
 
     if (arrowKeyDiffs[event.key]) {
       event.preventDefault();
-      
+
       const factor = event.shiftKey ? 4 : 1;
       const direction = arrowKeyDiffs[event.key];
-      
+
       // 移動選中的節點
       this.moveSelectedNodes({
         direction,
@@ -258,9 +214,9 @@ export class NodesSelectionComponent<
   }
 
   // 移動選中節點的邏輯
-  private moveSelectedNodes({ direction, factor }: { 
-    direction: { x: number; y: number }; 
-    factor: number 
+  private moveSelectedNodes({ direction, factor }: {
+    direction: { x: number; y: number };
+    factor: number
   }): void {
     const selectedNodes = this._flowService.getSelectedNodes();
     const deltaX = direction.x * factor;
@@ -284,7 +240,7 @@ export class NodesSelectionComponent<
     effect(() => {
       const shouldRender = this.shouldRenderNodesSelection();
       const disableKeyboardA11y = this._flowService.disableKeyboardA11y();
-      
+
       if (shouldRender && !disableKeyboardA11y) {
         // 延遲聚焦以確保元素已渲染
         setTimeout(() => {

@@ -166,8 +166,13 @@ export class PaneComponent<
   }
 
   handleClick(event: MouseEvent): void {
-    // 如果選取正在進行中，不觸發點擊事件
-    if (this.selectionService.isSelectionActive()) {
+    // 與 React 版本一致：防止選擇進行中或連接進行中時的點擊事件
+    const connectionInProgress = this.flowService.connectionState().inProgress;
+    
+    if (this.selectionService.isSelectionInProgress() || connectionInProgress) {
+      // 重置 selectionInProgress 狀態（與 React 版本一致）
+      this.selectionService['selectionInProgress'] = false;
+      // 不發出任何事件，完全阻止點擊
       return;
     }
     

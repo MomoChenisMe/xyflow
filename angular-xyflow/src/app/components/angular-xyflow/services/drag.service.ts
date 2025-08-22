@@ -402,7 +402,9 @@ export class AngularXYFlowDragService implements OnDestroy {
       getStoreItems: () => this.getStoreItems(),
       // onNodeMouseDown: 不需要處理，因為是 NodesSelection 不是單個節點
       onNodeMouseDown: () => {
-        // NodesSelection 拖曳不需要處理節點選擇
+        // 關鍵修正：模仿 React Flow 的行為
+        // 當 NodesSelection 被點擊時，隱藏 NodesSelection（與 React useDrag 行為一致）
+        this._flowService.setNodesSelectionActive(false);
       },
       // 當拖曳開始時
       onDragStart: (event: MouseEvent) => {

@@ -1808,6 +1808,9 @@ export class AngularXYFlowService<
 
   // 清除選擇 - 重置所有選擇狀態
   clearSelection(): void {
+    console.log('[AngularXYFlowService] clearSelection called');
+    console.trace(); // 顯示調用堆疊
+    
     const currentNodes = this._nodes();
     const currentEdges = this._edges();
     const nodeChanges: NodeChange<NodeType>[] = [];

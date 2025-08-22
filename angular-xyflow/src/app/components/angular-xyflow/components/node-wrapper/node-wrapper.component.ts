@@ -42,7 +42,7 @@ import { builtinNodeTypes } from '../nodes';
     '[attr.aria-label]': 'getAriaLabel()',
     '[style.position]': '"absolute"',
     '[style.transform]': 'nodeTransform()',
-    '[style.z-index]': 'node().zIndex || 1',
+    '[style.z-index]': 'node().zIndex || 5',
     '[style.width]': 'getNodeWidth()',
     '[style.height]': 'getNodeHeight()',
     '[style.user-select]': '"none"',

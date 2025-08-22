@@ -143,7 +143,7 @@ import { ViewportComponent } from '../viewport/viewport.component';
         (edgeFocus)="handleEdgeFocus($event.event, $event.edge)"
         (edgeKeyDown)="handleEdgeKeyDown($event.event, $event.edge)"
         />
-        
+
         <!-- NodesSelection - 選中多個節點時顯示的邊界框 -->
         <angular-xyflow-nodes-selection />
       </angular-xyflow-pane>
@@ -404,7 +404,7 @@ export class AngularXYFlowComponent<
     const selectionKeyPressed = this._keyboardService.isKeyPressed(this.selectionKeyCode());
     const userSelectionActive = this._selectionService.isSelectionActive();
     const _selectionOnDrag = this.selectionOnDrag() && this.panOnDrag() !== true;
-    
+
     return elementsSelectable && (selectionKeyPressed || userSelectionActive || _selectionOnDrag);
   });
 
@@ -695,10 +695,10 @@ export class AngularXYFlowComponent<
     // 實時監聽鍵盤狀態，更新 multiSelectionActive（對應React版本的 useGlobalKeyHandler）
     effect(() => {
       const multiSelectionKeyCode = this.multiSelectionKeyCode();
-      const customKeys = Array.isArray(multiSelectionKeyCode) 
-        ? multiSelectionKeyCode 
+      const customKeys = Array.isArray(multiSelectionKeyCode)
+        ? multiSelectionKeyCode
         : multiSelectionKeyCode ? [multiSelectionKeyCode] : undefined;
-      
+
       // multiSelectionActive 現在直接從鍵盤服務動態計算，不需要手動設置
       // const isActive = this._keyboardService.shouldUseMultiSelection(customKeys);
     });
@@ -853,12 +853,12 @@ export class AngularXYFlowComponent<
     effect(() => {
       const zoomActivationKeyCode = this.zoomActivationKeyCode();
       const keyboardService = this._keyboardService;
-      
+
       // 根據自定義按鍵或使用預設按鍵判斷是否應該激活縮放
-      const shouldActivateZoom = zoomActivationKeyCode 
+      const shouldActivateZoom = zoomActivationKeyCode
         ? keyboardService.shouldActivateZoom(zoomActivationKeyCode)
         : keyboardService.shouldActivateZoom();
-      
+
       // 更新 PanZoomService 的縮放激活狀態
       this._panZoomService.updateZoomActivationKeyPressed(shouldActivateZoom);
     });
@@ -886,18 +886,18 @@ export class AngularXYFlowComponent<
       const selectionMode = this.selectionMode();
       const selectionOnDrag = this.selectionOnDrag();
       const selectionKeyCode = this.selectionKeyCode();
-      
+
       this._selectionService.setSelectionMode(selectionMode);
       this._selectionService.setSelectionOnDrag(selectionOnDrag);
       this._selectionService.setSelectionKeyCode(selectionKeyCode);
     });
-    
+
     // 監聽用戶選擇狀態變化並同步到 PanZoom
     effect(() => {
       const userSelectionActive = this._flowService.userSelectionActive();
       this._panZoomService.updateUserSelectionActive(userSelectionActive);
     });
-    
+
     // 監聽縮放激活按鍵狀態變化並同步到 PanZoom
     effect(() => {
       const zoomActivationKeyPressed = this._keyboardService.zoomActivationActive();
@@ -1203,8 +1203,8 @@ export class AngularXYFlowComponent<
     // 檢查節點是否已完全初始化
     const internalSourceNode = sourceNode as any;
     const internalTargetNode = targetNode as any;
-    
-    
+
+
     // 如果節點還沒有 handleBounds，表示還未初始化完成，使用備用計算
     if (
       !internalSourceNode.internals?.handleBounds ||
@@ -1225,7 +1225,7 @@ export class AngularXYFlowComponent<
         // Silently handle edge position errors
       },
     });
-    
+
     // 如果 getEdgePosition 返回 null，則使用備用計算
     if (!edgePosition) {
       return this.getFallbackEdgePosition(sourceNode, targetNode);
@@ -1297,12 +1297,12 @@ export class AngularXYFlowComponent<
   handleNodeClick(event: MouseEvent, node: NodeType) {
     // 阻止事件冒泡，避免觸發pane的clearSelection
     event.stopPropagation();
-    
+
     // 檢查是否允許選取元素
     if (!this._flowService.elementsSelectable()) {
       return;
     }
-    
+
     // 使用 KeyboardService 檢查多選鍵狀態（支持 multiSelectionKeyCode 配置）
     const keyCode = this.multiSelectionKeyCode();
     const keys = Array.isArray(keyCode) ? keyCode : keyCode ? [keyCode] : undefined;
@@ -1310,7 +1310,7 @@ export class AngularXYFlowComponent<
       keys,
       event
     );
-    
+
     // 選擇節點
     this._flowService.selectNode(node.id, multiSelect);
 
@@ -1341,12 +1341,12 @@ export class AngularXYFlowComponent<
   handleEdgeClick(event: MouseEvent, edge: EdgeType) {
     // 阻止事件冒泡，避免觸發背景點擊
     event.stopPropagation();
-    
+
     // 檢查是否允許選取元素
     if (!this._flowService.elementsSelectable()) {
       return;
     }
-    
+
     // 使用服務的 handleEdgeClick 方法處理選擇邏輯
     this._flowService.handleEdgeClick(edge.id);
 
@@ -1383,7 +1383,7 @@ export class AngularXYFlowComponent<
     // 空格鍵或Enter鍵觸發選擇（無障礙功能）
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
-      
+
       // 使用 KeyboardService 檢查多選鍵狀態（支持 multiSelectionKeyCode 配置）
       const keyCode = this.multiSelectionKeyCode();
       const keys = Array.isArray(keyCode) ? keyCode : keyCode ? [keyCode] : undefined;
@@ -1400,32 +1400,32 @@ export class AngularXYFlowComponent<
   }
 
   handlePaneClick(event: MouseEvent) {
-    // 類似 React 版本的 wrapHandler 邏輯
-    // 只有當點擊的是背景元素時才清除選擇
-    const target = event.target as HTMLElement;
+    // 與 React 版本一致：檢查是否正在進行選擇或連接
+    const selectionInProgress = this._selectionService.isSelectionInProgress();
+    const connectionInProgress = this._flowService.connectionState().inProgress;
 
-    // 檢查點擊的是否是背景元素（類似 React 版本的 event.target === containerRef.current）
-    // 重要：包含 pane 元素本身的檢查
-    if (
-      target.classList.contains('angular-xyflow__pane') ||
-      target.classList.contains('xy-flow__pane') ||
-      target.classList.contains('angular-xyflow') ||
-      target.classList.contains('xy-flow') ||
-      target.classList.contains('angular-xyflow__viewport') ||
-      target.classList.contains('xy-flow__viewport') ||
-      target === this.flowContainer().nativeElement
-    ) {
-      this._flowService.clearSelection();
+    console.log('[AngularXYFlowComponent] handlePaneClick - check conditions:', {
+      selectionInProgress,
+      connectionInProgress,
+      target: event.target
+    });
 
-      // 發出 pane 點擊事件
-      this.onPaneClick.emit({ event });
+    if (selectionInProgress || connectionInProgress) {
+      console.log('[AngularXYFlowComponent] Preventing pane click - selection/connection in progress');
+      // 重置 selectionInProgress 狀態（與 React 版本一致）
+      this._selectionService['selectionInProgress'] = false;
+      return;
     }
+
+    // 注意：pane 點擊邏輯現在完全由 PaneComponent 處理
+    // 這裡不需要重複處理，避免事件重複發送
+    // PaneComponent 已經處理了：selectionInProgress 檢查、clearSelection、onPaneClick 事件
   }
 
   handlePaneContextMenu(event: MouseEvent) {
     // 檢查是否有選擇元素的上下文菜單
     this._selectionService.checkSelectionContextMenu(event);
-    
+
     // 發出 pane 右鍵菜單事件（與 React 版本一致）
     // 注意：panOnDrag 的檢查已經在 pane 組件中處理了
     this.onPaneContextMenu.emit({ event });
