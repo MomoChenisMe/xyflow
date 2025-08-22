@@ -29,6 +29,40 @@
 
 ### Guidelines for ANGULAR
 
+#### REACT_TO_ANGULAR_CONVERSION_WORKFLOW
+
+**重要規則：React 到 Angular 轉換工作流程**
+
+當處理任何 React 到 Angular 的轉換任務時，必須遵循以下工作流程：
+
+1. **強制使用 SubAgent 分析階段**
+   - 對於所有涉及 React 程式碼轉換到 Angular 的任務，**必須**先使用 `react-to-angular-converter` SubAgent
+   - SubAgent 負責分析需求、理解現有程式碼結構，並提供詳細的實作計劃
+   - **絕不**直接開始編碼或修改程式，必須等待 SubAgent 完成分析
+
+2. **等待分析結果**
+   - SubAgent 會提供：
+     - 轉換分析（原始 React 模式識別）
+     - 實作計劃（詳細的步驟指南）
+     - 遷移注意事項（重大變更和解決方案）
+     - 最佳實踐檢查清單
+   
+3. **基於計劃執行**
+   - 收到 SubAgent 的詳細計劃後，才開始實際的程式碼實作
+   - 嚴格遵循 SubAgent 提供的架構設計和實作步驟
+   - 確保所有轉換都符合 Angular 20+ 的最佳實踐
+
+**範例工作流程：**
+```
+使用者：「將這個 React 組件轉換為 Angular」
+助理：「我會使用 react-to-angular-converter agent 來分析這個轉換需求」
+→ 調用 SubAgent 進行分析
+→ 等待 SubAgent 返回詳細計劃
+→ 基於計劃開始實作
+```
+
+此規則確保所有 React 到 Angular 的轉換都經過專業分析，避免直接機械式轉換，保證產出高品質的 Angular 程式碼。
+
 #### ANGULAR_CODING_STANDARDS
 
 - Use standalone components, directives, and pipes instead of NgModules.
