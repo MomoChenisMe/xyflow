@@ -1,3 +1,127 @@
+# Angular XYFlow 專案工作流程
+
+**CRITICAL RULE:** 任何涉及 Angular XYFlow 專案的新增、修改、刪除操作，都必須嚴格遵循以下標準化工作流程。
+
+## 標準化工作流程概覽
+
+**六階段標準化流程：**
+1. **建立專案上下文檔案** - 使用標準化命名格式創建包含專案資訊的上下文檔案
+2. **委派任務給專業 SubAgent** - 將任務委派給 `react-to-angular-converter` SubAgent 進行分析
+3. **讀取 SubAgent 建立的計劃檔案** - 仔細讀取並理解 SubAgent 創建的詳細計劃
+4. **基於計劃執行實際實作** - 嚴格按照計劃執行程式碼實作和修正
+5. **驗證實作結果** - 確保實作符合計劃要求和品質標準
+6. **清理上下文和計劃檔案** - 完成後清除臨時檔案
+
+---
+
+## 階段 1：建立專案上下文檔案
+
+**MANDATORY FIRST STEP:** 任何 Angular XYFlow 專案操作前，必須先建立上下文檔案
+
+**標準化檔案命名格式：**
+- **專案上下文**：`context_[project-name]_[timestamp].md`
+- **任務描述**：`task_[task-type]_[component-name]_[timestamp].md`
+- **需求規格**：`requirements_[feature-name]_[timestamp].md`
+
+**上下文檔案必須包含：**
+- 專案基本資訊（名稱、版本、架構）
+- React 原始程式碼結構和功能描述（如適用）
+- Angular 目標架構和實作要求
+- 相關依賴和第三方庫資訊
+- 已知的技術限制和考量事項
+- 性能和相容性要求
+
+**檔案建立標準：**
+- 使用 ISO 8601 時間戳格式：`YYYYMMDD_HHMMSS`
+- 檔案名稱使用 kebab-case 格式
+- 所有檔案放置在 `.claude/context/` 目錄下
+- 每個任務建立獨立的上下文檔案
+
+---
+
+## 階段 2：委派任務給專業 SubAgent
+
+**CRITICAL:** Angular XYFlow 專案的任何新增、修改、刪除都必須委派給 `react-to-angular-converter` SubAgent
+
+**必須委派的情況：**
+
+### Angular XYFlow 專案操作
+- **新增組件或功能**：任何新的 Angular XYFlow 組件開發
+- **修改現有組件**：對既有 Angular XYFlow 組件的任何修改
+- **刪除或重構**：移除或重構 Angular XYFlow 相關程式碼
+- **React 到 Angular 轉換**：將 React Flow 範例轉換為 Angular XYFlow
+- **性能優化**：Angular XYFlow 的性能改善和優化
+
+### 實作失敗和異常情況
+- **實作失敗**：當程式碼實作失敗或無法正常運作時
+- **測試失敗**：當單元測試、整合測試或 E2E 測試失敗時
+- **功能異常**：當功能行為與預期不符時
+- **性能問題**：當實作性能不符合要求時
+- **使用者回報錯誤**：當使用者回報問題時
+
+### 技術疑問和架構決策
+- **理解困難**：當不理解 React 原始程式碼的邏輯或意圖時
+- **技術疑問**：當不確定如何實作特定功能時
+- **架構決策**：當面臨複雜的架構選擇時
+- **最佳實踐疑慮**：當不確定實作方法是否符合最佳實踐時
+
+**SubAgent 職責：**
+- 深度分析需求和現有程式碼結構
+- 研究最新的框架最佳實踐
+- 制定詳細的轉換策略和實作計劃
+- 創建結構化的計劃文檔
+
+---
+
+## 階段 3：讀取 SubAgent 建立的計劃檔案
+
+**標準化計劃檔案命名格式：**
+- **轉換計劃**：`plan_conversion_[component-name]_[timestamp].md`
+- **修復計劃**：`plan_fix_[issue-type]_[timestamp].md`
+- **分析報告**：`analysis_[analysis-type]_[timestamp].md`
+- **策略文檔**：`strategy_[strategy-type]_[timestamp].md`
+
+**檔案位置：** 所有計劃檔案放置在 `.claude/context/` 目錄下
+
+**必須仔細閱讀並理解：**
+- **轉換分析報告**：原始模式識別和對應方案
+- **實作計劃文檔**：詳細的步驟指南和架構設計
+- **風險評估**：潛在挑戰和解決方案
+- **最佳實踐檢查清單**：Angular 20+ 特性採用指南
+
+---
+
+## 階段 4：基於計劃執行實際實作
+
+**嚴格遵循計劃**：
+- 按照 SubAgent 提供的實作計劃進行程式碼開發
+- 遵循計劃中的架構設計和實作順序
+- 確保所有實作都符合 Angular 20+ 的現代最佳實踐
+
+**實作過程中的原則**：
+- 如遇到計劃外的問題，優先參考計劃文檔中的風險評估和解決方案
+- 如遇到計劃未涵蓋的複雜問題，立即重新委派給 SubAgent 進行分析
+
+---
+
+## 階段 5：驗證實作結果
+
+**品質檢查**：
+- 確保實作符合計劃要求
+- 執行相關測試驗證功能正確性
+- 確認符合 Angular 編碼標準和最佳實踐
+
+---
+
+## 階段 6：清理上下文和計劃檔案
+
+**清理標準**：
+- 實作完成並驗證功能正常後，**必須**刪除 `.claude/context/` 中的臨時檔案
+- 保留重要的技術決策和解決方案到專案文檔中
+- 更新專案進度追蹤，標記任務完成狀態
+
+---
+
 ## CODING_PRACTICES
 
 ### Guidelines for SUPPORT_LEVEL
@@ -28,66 +152,6 @@
 ## FRONTEND
 
 ### Guidelines for ANGULAR
-
-#### REACT_TO_ANGULAR_CONVERSION_WORKFLOW
-
-**重要規則：React 到 Angular 轉換工作流程**
-
-當處理任何 React 到 Angular 的轉換任務時，必須嚴格遵循以下四階段工作流程：
-
-## 階段 1：委派任務給專業 SubAgent
-
-- 對於所有涉及 React 程式碼轉換到 Angular 的任務，**必須**先委派給 `react-to-angular-converter` SubAgent
-- **絕不**直接開始編碼或修改程式，必須等待 SubAgent 完成專業分析
-- SubAgent 負責：
-  - 深度分析需求和現有程式碼結構
-  - 研究最新的框架最佳實踐
-  - 制定詳細的轉換策略和實作計劃
-  - 創建結構化的計劃文檔
-
-## 階段 2：讀取 SubAgent 建立的計劃檔案
-
-- SubAgent 完成分析後會創建以下計劃檔案：
-  - **轉換分析報告**：原始 React 模式識別和 Angular 對應方案
-  - **實作計劃文檔**：詳細的步驟指南和架構設計
-  - **遷移注意事項**：重大變更、風險評估和解決方案
-  - **最佳實踐檢查清單**：Angular 20+ 特性採用指南
-- **必須**仔細閱讀所有計劃檔案，確保完全理解轉換策略
-
-## 階段 3：基於計劃執行實際實作
-
-- 嚴格依照 SubAgent 提供的實作計劃進行程式碼開發
-- 遵循計劃中的架構設計和實作順序
-- 確保所有轉換都符合 Angular 20+ 的現代最佳實踐
-- 在實作過程中如遇到計劃外的問題，優先參考計劃文檔中的風險評估和解決方案
-
-## 階段 4：完成後清理計劃檔案
-
-- 實作完成並驗證功能正常後，**必須**刪除臨時計劃檔案
-- 保留必要的文檔檔案作為專案記錄
-- 更新專案進度追蹤，標記任務完成狀態
-- 確保工作環境整潔，避免累積過期的計劃檔案
-
-**標準工作流程範例：**
-
-```
-使用者：「將這個 React 組件轉換為 Angular」
-
-助理：「我會遵循標準的 React 到 Angular 轉換工作流程」
-
-階段 1 → 委派給 react-to-angular-converter SubAgent 進行專業分析
-階段 2 → 讀取 SubAgent 創建的轉換計劃和實作指南
-階段 3 → 基於計劃執行 Angular 程式碼實作
-階段 4 → 完成實作後清理臨時計劃檔案
-```
-
-**工作流程保證：**
-
-此四階段工作流程確保：
-- 所有轉換都經過專業的 SubAgent 分析
-- 避免直接機械式轉換，保證高品質的 Angular 程式碼
-- 實作過程有明確的指導和品質控制
-- 維持工作環境的整潔和組織性
 
 #### ANGULAR_CODING_STANDARDS
 
@@ -1519,41 +1583,11 @@ The xyflow monorepo manages multiple packages that create highly customizable no
 
 ### Common Commands
 
-#### Development
 ```bash
-# Install dependencies
 pnpm install
-
-# Start all examples in development mode
-pnpm dev
-
-# Start React examples only
-pnpm dev:react
-
-# Build all packages
-pnpm build:all    # Everything including examples
-pnpm build        # Just the packages
-
-# Lint and typecheck packages
-pnpm lint
-pnpm typecheck
-```
-
-#### Testing
-```bash
-# Run React E2E tests
-pnpm test:react      # React tests
-pnpm test:react:ui   # React tests with UI
-```
-
-#### React Package Commands
-```bash
-# Work on React package
-cd packages/react
-pnpm dev        # Watch mode with CSS rebuild
-pnpm build      # Production build
-pnpm lint       # ESLint
-pnpm typecheck  # TypeScript check
+pnpm dev            # Start development
+pnpm build          # Build packages
+pnpm test:react     # Run E2E tests
 ```
 
 ### Development Workflow
@@ -1600,66 +1634,13 @@ Angular XYFlow (`angular-xyflow/`) is a standalone Angular project that converts
 
 ### Common Commands
 
-#### Development
 ```bash
-# Navigate to Angular project
 cd angular-xyflow
-
-# Install dependencies
 npm install
-
-# Start development server
-npm start           # Runs on http://localhost:4200
-npm run dev         # Alternative development command
-
-# Build for production
-npm run build       # Production build with optimization
-```
-
-#### Testing
-```bash
-# Unit tests
-npm test            # Run unit tests with Karma
-npm run test:watch  # Run tests in watch mode
-
-# E2E tests
-npm run e2e         # Run Playwright E2E tests
-npm run e2e:ui      # Run Playwright tests with UI mode
-```
-
-#### Code Quality
-```bash
-# Linting
-npm run lint        # Run ESLint and Angular linting
-
-# Type checking
-npm run typecheck   # TypeScript type checking
-
-# Format code
-npm run format      # Format code with Prettier
-npm run format:fix  # Auto-fix formatting issues
-```
-
-#### Angular-specific Commands
-```bash
-# Generate components
-ng generate component components/my-component
-ng g c components/my-component --standalone
-
-# Generate services
-ng generate service services/my-service
-ng g s services/my-service
-
-# Generate directives
-ng generate directive directives/my-directive
-ng g d directives/my-directive --standalone
-
-# Analyze bundle size
-npm run analyze     # Webpack bundle analyzer
-
-# Update Angular dependencies
-ng update           # Check for Angular updates
-ng update @angular/core @angular/cli
+npm start           # Dev server (http://localhost:4200)
+npm run build       # Production build
+npm test            # Unit tests
+npm run e2e         # E2E tests
 ```
 
 ### Code Organization
