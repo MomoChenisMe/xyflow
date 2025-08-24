@@ -207,6 +207,15 @@ export class NodeWrapperComponent implements OnDestroy {
   }
 
   // 計算屬性
+  
+  // 🔑 關鍵修正：添加與 React Flow 完全一致的 isSelectable 計算
+  // React Flow 邏輯：node.selectable || (elementsSelectable && typeof node.selectable === 'undefined')
+  isSelectable = computed(() => {
+    const node = this.node();
+    const elementsSelectable = this._flowService.elementsSelectable();
+    return !!(node.selectable || (elementsSelectable && typeof node.selectable === 'undefined'));
+  });
+  
   nodeClasses = computed(() => {
     const classes = ['xy-flow__node', 'angular-xyflow__node'];
     const nodeData = this.node();
@@ -217,16 +226,16 @@ export class NodeWrapperComponent implements OnDestroy {
     // React Flow 行為：使用解析後的節點類型（如果未註冊則回退到 default）
     classes.push(`xy-flow__node-${resolvedNodeType}`);
 
-    // 添加 selectable 類以啟用 hover 和 focus 樣式
-    if (this._flowService.elementsSelectable()) {
+    // 🔑 修正：使用正確的 isSelectable 計算結果
+    if (this.isSelectable()) {
       classes.push('selectable');
     }
 
     // 關鍵修復：為可拖曳節點添加 nopan 類別（與 React Flow 一致）
     // 這防止了在節點上（特別是有 dragHandle 但不在 handle 上）拖曳時觸發 viewport panning
     const globalDraggable = this._flowService.nodesDraggable();
-    const nodeDraggable = nodeData.draggable !== false;
-    const isDraggable = globalDraggable && nodeDraggable && !nodeData.hidden;
+    // 🔧 關鍵修復：使用與 React Flow 完全一致的邏輯
+    const isDraggable = !!(nodeData.draggable || (globalDraggable && typeof nodeData.draggable === 'undefined')) && !nodeData.hidden;
 
     if (isDraggable) {
       classes.push('nopan');
@@ -386,10 +395,11 @@ export class NodeWrapperComponent implements OnDestroy {
       // 階段1：報告組件創建完成
       this._flowService.reportNodeComponentCreated(nodeData.id);
 
-      // 對應 React 的 disabled 邏輯
+      // 對應 React 的 disabled 邏輯 - 修復與 React Flow 完全一致的拖拽條件判斷
       const globalDraggable = this._flowService.nodesDraggable();
-      const nodeDraggable = nodeData.draggable !== false;
-      const isDraggable = globalDraggable && nodeDraggable;
+      // 🔧 關鍵修復：使用與 React Flow 完全一致的邏輯
+      // React: const isDraggable = !!(node.draggable || (nodesDraggable && typeof node.draggable === 'undefined'));
+      const isDraggable = !!(nodeData.draggable || (globalDraggable && typeof nodeData.draggable === 'undefined'));
       const disabled = nodeData.hidden || !isDraggable;
 
       // 檢查是否需要重新初始化（配置變化）
@@ -508,18 +518,16 @@ export class NodeWrapperComponent implements OnDestroy {
 
     // 避免在拖動後觸發點擊
     if (!this.isDragging()) {
-      const isSelectable = this._flowService.elementsSelectable();
-
-      // 根據 React Flow 邏輯：當交互被禁用時，完全阻止點擊事件
-      if (!isSelectable) {
+      // 🔑 關鍵修正：使用 React Flow 式的 isSelectable 計算結果
+      if (!this.isSelectable()) {
         event.preventDefault();
         event.stopPropagation();
         return;
       }
 
       const globalDraggable = this._flowService.nodesDraggable();
-      const nodeDraggable = this.node().draggable !== false;
-      const isDraggable = globalDraggable && nodeDraggable;
+      // 🔧 關鍵修復：使用與 React Flow 完全一致的邏輯
+      const isDraggable = !!(this.node().draggable || (globalDraggable && typeof this.node().draggable === 'undefined'));
 
       /*
        * 根據 React Flow 邏輯：
@@ -532,10 +540,11 @@ export class NodeWrapperComponent implements OnDestroy {
       const selectNodesOnDrag = this._flowService.selectNodesOnDrag();
       const nodeDragThreshold = 0;    // 目前設為 0
 
-      // 注意：節點選擇邏輯已移至 angular-xyflow.component.ts 的 handleNodeClick
-      // 這裡不再處理選擇邏輯，避免重複處理
-      
-      this.nodeClick.emit(event);
+      // 🔑 修正：只有在滿足選擇條件時才發出點擊事件
+      // 與 React Flow 保持一致的選擇邏輯
+      if (!selectNodesOnDrag || !isDraggable || nodeDragThreshold > 0) {
+        this.nodeClick.emit(event);
+      }
     }
   }
 
@@ -547,10 +556,8 @@ export class NodeWrapperComponent implements OnDestroy {
 
     // 避免在拖動後觸發雙擊
     if (!this.isDragging()) {
-      const isSelectable = this._flowService.elementsSelectable();
-
-      // 根據 React Flow 邏輯：當交互被禁用時，完全阻止雙擊事件
-      if (!isSelectable) {
+      // 🔑 關鍵修正：使用 React Flow 式的 isSelectable 計算結果
+      if (!this.isSelectable()) {
         event.preventDefault();
         event.stopPropagation();
         return;
@@ -566,10 +573,8 @@ export class NodeWrapperComponent implements OnDestroy {
       return;
     }
 
-    const isSelectable = this._flowService.elementsSelectable();
-
-    // 根據 React Flow 邏輯：當交互被禁用時，完全阻止右鍵菜單事件
-    if (!isSelectable) {
+    // 🔑 關鍵修正：使用 React Flow 式的 isSelectable 計算結果
+    if (!this.isSelectable()) {
       event.preventDefault();
       event.stopPropagation();
       return;
@@ -595,11 +600,16 @@ export class NodeWrapperComponent implements OnDestroy {
     if (this.isClickFromHandle(event)) {
       return;
     }
+    
+    // 🔑 關鍵修正：使用 React Flow 式的 isSelectable 計算結果
+    if (!this.isSelectable()) {
+      return; // 當不可選擇時，直接返回，不處理任何 mousedown 邏輯
+    }
+    
     // 檢查是否需要在 mousedown 時選中節點
-    const isSelectable = this._flowService.elementsSelectable();
     const globalDraggable = this._flowService.nodesDraggable();
-    const nodeDraggable = this.node().draggable !== false;
-    const isDraggable = globalDraggable && nodeDraggable;
+    // 🔧 關鍵修復：使用與 React Flow 完全一致的邏輯
+    const isDraggable = !!(this.node().draggable || (globalDraggable && typeof this.node().draggable === 'undefined'));
     const selectNodesOnDrag = this._flowService.selectNodesOnDrag();
 
     /*
@@ -664,10 +674,11 @@ export class NodeWrapperComponent implements OnDestroy {
   getCursor(): string {
     const node = this.node();
     const globalDraggable = this._flowService.nodesDraggable();
-    const nodeDraggable = node.draggable !== false;
+    // 🔧 關鍵修復：使用與 React Flow 完全一致的邏輯
+    const isDraggable = !!(node.draggable || (globalDraggable && typeof node.draggable === 'undefined'));
 
-    // 只有在全局和節點都允許拖動時才顯示拖動游標
-    if (!globalDraggable || !nodeDraggable) {
+    // 只有在節點允許拖動時才顯示拖動游標
+    if (!isDraggable) {
       return 'default';
     }
     return this.isDragging() ? 'grabbing' : 'grab';
@@ -784,10 +795,9 @@ export class NodeWrapperComponent implements OnDestroy {
 
   onNodeFocus(event: FocusEvent): void {
     const nodeId = this.node().id;
-    const isSelectable = this._flowService.elementsSelectable();
 
-    // 根據 React Flow 邏輯：當交互被禁用時，阻止焦點相關操作
-    if (!isSelectable) {
+    // 🔑 關鍵修正：使用 React Flow 式的 isSelectable 計算結果
+    if (!this.isSelectable()) {
       event.preventDefault();
       return;
     }
@@ -806,10 +816,10 @@ export class NodeWrapperComponent implements OnDestroy {
 
   onNodeKeyDown(event: KeyboardEvent): void {
     const nodeId = this.node().id;
-    const isSelectable = this._flowService.elementsSelectable();
 
     // 處理選擇相關的按鍵（Enter, Space, Escape）- 與 React 版本保持一致
-    if (elementSelectionKeys.includes(event.key) && isSelectable) {
+    // 🔑 關鍵修正：使用 React Flow 式的 isSelectable 計算結果
+    if (elementSelectionKeys.includes(event.key) && this.isSelectable()) {
       const unselect = event.key === 'Escape';
 
       if (unselect) {
