@@ -1,6 +1,7 @@
-import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NodeChange } from '../../../angular-xyflow/types';
+import { NodeChange } from '../../types';
+import { AngularXYFlowService } from '../../services/angular-xyflow.service';
 
 // 變更資訊組件接口
 interface ChangeInfoData {
@@ -9,7 +10,7 @@ interface ChangeInfoData {
 }
 
 @Component({
-  selector: 'app-change-logger',
+  selector: 'angular-xyflow-change-logger',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
@@ -96,18 +97,89 @@ interface ChangeInfoData {
   `],
 })
 export class ChangeLoggerComponent {
+  // 注入服務
+  private _flowService = inject(AngularXYFlowService);
+  
   // 變更記錄列表 - 使用 signal
   changes = signal<ChangeInfoData[]>([]);
   
-  // 最大記錄數
+  // 最大記錄數  
   private readonly limit = 20;
   
-  // 接收變更事件
-  onNodesChange(changes: NodeChange[]): void {
-    this.recordChanges(changes);
+  // 前一次的節點狀態，用於比較變化
+  private previousNodes: any[] = [];
+  
+  constructor() {
+    // 監聽節點變化 - 對應 React 版本的 onNodesChange 政截機制
+    effect(() => {
+      const currentNodes = this._flowService.nodes();
+      if (this.previousNodes.length > 0) {
+        const changes = this.detectNodeChanges(this.previousNodes, currentNodes);
+        if (changes.length > 0) {
+          this.recordChanges(changes);
+        }
+      }
+      this.previousNodes = JSON.parse(JSON.stringify(currentNodes)); // 深度複製
+    });
   }
   
-  // 記錄變更
+  // 檢測節點變化 - 對應 React 版本的變化檢測邏輯
+  private detectNodeChanges(prevNodes: any[], currentNodes: any[]): NodeChange[] {
+    const changes: NodeChange[] = [];
+    
+    // 檢查新增的節點
+    currentNodes.forEach(node => {
+      const prevNode = prevNodes.find(n => n.id === node.id);
+      if (!prevNode) {
+        changes.push({ type: 'add', item: node } as NodeChange);
+        return;
+      }
+      
+      // 檢查位置變化
+      if (prevNode.position.x !== node.position.x || prevNode.position.y !== node.position.y) {
+        changes.push({
+          type: 'position',
+          id: node.id,
+          position: { x: node.position.x, y: node.position.y }
+        } as NodeChange);
+      }
+      
+      // 檢查尺寸變化
+      const prevWidth = prevNode.measured?.width || prevNode.width;
+      const prevHeight = prevNode.measured?.height || prevNode.height;
+      const currentWidth = node.measured?.width || node.width;
+      const currentHeight = node.measured?.height || node.height;
+      
+      if (prevWidth !== currentWidth || prevHeight !== currentHeight) {
+        changes.push({
+          type: 'dimensions',
+          id: node.id,
+          dimensions: { width: currentWidth, height: currentHeight }
+        } as NodeChange);
+      }
+      
+      // 檢查選擇狀態變化
+      if (prevNode.selected !== node.selected) {
+        changes.push({
+          type: 'select',
+          id: node.id,
+          selected: node.selected
+        } as NodeChange);
+      }
+    });
+    
+    // 檢查刪除的節點
+    prevNodes.forEach(prevNode => {
+      const currentNode = currentNodes.find(n => n.id === prevNode.id);
+      if (!currentNode) {
+        changes.push({ type: 'remove', id: prevNode.id } as NodeChange);
+      }
+    });
+    
+    return changes;
+  }
+  
+  // 記錄變更 - 對應 React 版本的記錄機制
   private recordChanges(newChanges: NodeChange[]): void {
     const timestamp = Date.now();
     
@@ -115,14 +187,14 @@ export class ChangeLoggerComponent {
       const updatedChanges = [...currentChanges];
       
       newChanges.forEach(change => {
-        // 添加到開頭
+        // 添加到開頭，新記錄在前
         updatedChanges.unshift({
           change,
-          timestamp: timestamp + Math.random(), // 確保唯一性
+          timestamp: timestamp + Math.random(),
         });
       });
       
-      // 限制數量
+      // 限制數量，與 React 版本一致
       if (updatedChanges.length > this.limit) {
         return updatedChanges.slice(0, this.limit);
       }

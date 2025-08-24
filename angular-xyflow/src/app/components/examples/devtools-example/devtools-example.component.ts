@@ -1,16 +1,13 @@
-import { Component, ChangeDetectionStrategy, signal, viewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Connection, addEdge } from '@xyflow/system';
 import {
   AngularXYFlowComponent,
   AngularNode,
   AngularEdge,
-  PanelComponent,
-  ViewportPortalDirective,
+  DevToolsComponent,
   NodeChange,
 } from '../../angular-xyflow';
-import { NodeInspectorComponent } from './devtools/node-inspector.component';
-import { ChangeLoggerComponent } from './devtools/change-logger.component';
 
 @Component({
   selector: 'app-devtools-example',
@@ -19,10 +16,7 @@ import { ChangeLoggerComponent } from './devtools/change-logger.component';
   imports: [
     CommonModule,
     AngularXYFlowComponent,
-    PanelComponent,
-    ViewportPortalDirective,
-    NodeInspectorComponent,
-    ChangeLoggerComponent,
+    DevToolsComponent,
   ],
   template: `
     <angular-xyflow
@@ -33,37 +27,8 @@ import { ChangeLoggerComponent } from './devtools/change-logger.component';
       (onConnect)="onConnect($event)"
       [fitView]="true"
     >
-      <!-- DevTools Panel -->
-      <angular-xyflow-panel position="top-left">
-        <button
-          class="devtool-button"
-          [class.active]="nodeInspectorActive()"
-          (click)="toggleNodeInspector()"
-          title="Toggle Node Inspector"
-        >
-          Node Inspector
-        </button>
-        <button
-          class="devtool-button"
-          [class.active]="changeLoggerActive()"
-          (click)="toggleChangeLogger()"
-          title="Toggle Change Logger"
-        >
-          Change Logger
-        </button>
-      </angular-xyflow-panel>
-      
-      <!-- Change Logger (outside viewport) -->
-      @if (changeLoggerActive()) {
-        <app-change-logger #changeLogger />
-      }
-      
-      <!-- Node Inspector (inside viewport) -->
-      <div viewportPortal>
-        @if (nodeInspectorActive()) {
-          <app-node-inspector [nodes]="nodes()" />
-        }
-      </div>
+      <!-- 🔑 統一的 DevTools 組件 -->
+      <angular-xyflow-devtools position="top-left" />
     </angular-xyflow>
   `,
   styles: [`
@@ -80,12 +45,6 @@ import { ChangeLoggerComponent } from './devtools/change-logger.component';
   `],
 })
 export class DevToolsExampleComponent {
-  // 控制工具的顯示狀態
-  nodeInspectorActive = signal(false);
-  changeLoggerActive = signal(false);
-  
-  // 取得 ChangeLogger 組件參考
-  changeLogger = viewChild(ChangeLoggerComponent);
   // 初始節點資料
   private readonly initNodes: AngularNode[] = [
     {
@@ -123,11 +82,7 @@ export class DevToolsExampleComponent {
 
   // 處理節點變更
   onNodesChange(changes: NodeChange[]): void {
-    // 如果 ChangeLogger 存在，將變更傳遞給它
-    const logger = this.changeLogger();
-    if (logger) {
-      logger.onNodesChange(changes);
-    }
+    // 統一的 DevTools 組件會自動處理變更記錄
     
     // 套用節點變更
     const updatedNodes = changes.reduce((acc, change) => {
@@ -187,15 +142,5 @@ export class DevToolsExampleComponent {
   // 處理連接事件
   onConnect(connection: Connection): void {
     this.edges.update((edges) => addEdge(connection, edges));
-  }
-  
-  // 切換 Node Inspector
-  toggleNodeInspector(): void {
-    this.nodeInspectorActive.update((active) => !active);
-  }
-
-  // 切換 Change Logger
-  toggleChangeLogger(): void {
-    this.changeLoggerActive.update((active) => !active);
   }
 }

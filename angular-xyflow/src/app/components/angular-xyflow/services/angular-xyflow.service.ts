@@ -1530,8 +1530,6 @@ export class AngularXYFlowService<
       // 多選模式：如果目標節點未選中，選中它（其他已選中的節點保持選中）
       const targetNode = currentNodes.find(n => n.id === nodeId);
       if (targetNode && !targetNode.selected) {
-        // 立即更新節點的 selected 屬性
-        targetNode.selected = true;
         nodeChanges.push({ type: 'select', id: nodeId, selected: true });
       }
     } else {
@@ -1539,11 +1537,9 @@ export class AngularXYFlowService<
       currentNodes.forEach(node => {
         if (node.id === nodeId && !node.selected) {
           // 選中目標節點
-          node.selected = true;
           nodeChanges.push({ type: 'select', id: node.id, selected: true });
         } else if (node.id !== nodeId && node.selected) {
           // 取消選中其他節點
-          node.selected = false;
           nodeChanges.push({ type: 'select', id: node.id, selected: false });
         }
       });
@@ -1563,17 +1559,32 @@ export class AngularXYFlowService<
       this._selectedEdges.set([]);
     }
 
-    // 立即更新 signals 使變更生效
-    if (nodeChanges.length > 0) {
-      this._nodes.set([...currentNodes]); // 觸發 signal 更新
-      this.triggerNodeChanges(nodeChanges);
-    }
+    // 在 controlled 模式下，只發出事件，不更新狀態
+    if (this.isControlledMode()) {
+      if (nodeChanges.length > 0) {
+        this.triggerNodeChanges(nodeChanges);
+      }
+      if (edgeChanges.length > 0) {
+        this.triggerEdgeChanges(edgeChanges);
+      }
+    } else {
+      // 在 uncontrolled 模式下，更新內部狀態並發出事件
+      if (nodeChanges.length > 0) {
+        this._nodes.update(nodes =>
+          nodes.map(node => {
+            const change = nodeChanges.find(c => c.type === 'select' && c.id === node.id) as { type: 'select'; id: string; selected: boolean } | undefined;
+            return change ? { ...node, selected: change.selected } : node;
+          })
+        );
+        this.triggerNodeChanges(nodeChanges);
+      }
 
-    if (edgeChanges.length > 0) {
-      this._edges.update(edges =>
-        edges.map(edge => ({ ...edge, selected: false }))
-      );
-      this.triggerEdgeChanges(edgeChanges);
+      if (edgeChanges.length > 0) {
+        this._edges.update(edges =>
+          edges.map(edge => ({ ...edge, selected: false }))
+        );
+        this.triggerEdgeChanges(edgeChanges);
+      }
     }
   }
 
@@ -3125,9 +3136,9 @@ export class AngularXYFlowService<
   }
 
   // Z-index 計算函數 - 模擬 React Flow 的 calculateZ 函數行為
-  private calculateZ(node: NodeType, selectedNodeIds: string[], elevateOnSelect: boolean): number {
-    // 與 NodeWrapper 保持一致，預設值為 1
-    const baseZIndex = node.zIndex || 1;
+  private calculateZ(node: NodeType, nodeIndex: number, selectedNodeIds: string[], elevateOnSelect: boolean): number {
+    // React Flow 邏輯：基礎 z-index = node.zIndex || nodeIndex
+    const baseZIndex = node.zIndex !== undefined ? node.zIndex : nodeIndex;
     
     if (elevateOnSelect && selectedNodeIds.includes(node.id)) {
       // 選中的節點獲得 +1000 的 z-index 提升，與 React Flow 一致
@@ -3137,15 +3148,20 @@ export class AngularXYFlowService<
     return baseZIndex;
   }
 
+  // 公開的 z-index 計算方法，供 controlled 模式使用
+  calculateNodeZIndex(node: NodeType, nodeIndex: number, selectedNodeIds: string[], elevateOnSelect: boolean): number {
+    return this.calculateZ(node, nodeIndex, selectedNodeIds, elevateOnSelect);
+  }
+
   // 帶有動態 z-index 的節點計算信號
   nodesWithZ: Signal<NodeType[]> = computed(() => {
     const nodes = this._nodes();
     const selectedNodeIds = this._selectedNodes();
     const elevateOnSelect = this._elevateNodesOnSelect();
 
-    return nodes.map(node => ({
+    return nodes.map((node, index) => ({
       ...node,
-      zIndex: this.calculateZ(node, selectedNodeIds, elevateOnSelect)
+      zIndex: this.calculateZ(node, index, selectedNodeIds, elevateOnSelect)
     }));
   });
 

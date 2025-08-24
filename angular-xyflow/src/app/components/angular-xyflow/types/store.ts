@@ -160,7 +160,7 @@ export function createInitialStore<
     edgesReconnectable: false,
     elementsSelectable: true,
     selectNodesOnDrag: true,
-    elevateNodesOnSelect: false,
+    elevateNodesOnSelect: true,
     elevateEdgesOnSelect: false,
     
     // 多選和選擇狀態

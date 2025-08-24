@@ -42,13 +42,12 @@ import { builtinNodeTypes } from '../nodes';
     '[attr.aria-label]': 'getAriaLabel()',
     '[style.position]': '"absolute"',
     '[style.transform]': 'nodeTransform()',
-    '[style.z-index]': 'node().zIndex || 5',
+    '[style.z-index]': 'node().zIndex || 0',
     '[style.width]': 'getNodeWidth()',
     '[style.height]': 'getNodeHeight()',
     '[style.user-select]': '"none"',
     '[style.pointer-events]': '"auto"',
     '[style.visibility]': 'nodeHasDimensions() ? "visible" : "hidden"',
-    '[style.opacity]': 'node().hidden ? 0 : 1',
     '[style.cursor]': 'getCursor()',
     '[style]': 'getNodeStyles()',
     '(click)': 'onNodeClick($event)',
@@ -261,6 +260,7 @@ export class NodeWrapperComponent implements OnDestroy {
     const pos = this._flowService.getNodeVisualPosition(node);
     return `translate(${pos.x}px, ${pos.y}px)`;
   });
+
 
   // 檢查節點是否已有尺寸（與 React Flow 的 nodeHasDimensions 一致）
   nodeHasDimensions = computed(() => {

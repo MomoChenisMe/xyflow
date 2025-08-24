@@ -19,6 +19,10 @@ import {
   HostListener,
   untracked,
   ViewContainerRef,
+  ComponentRef,
+  EmbeddedViewRef,
+  TemplateRef,
+  Injector,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -39,6 +43,7 @@ import { AngularXYFlowPanZoomService } from '../../services/panzoom.service';
 import { EdgeLabelRendererService } from '../../services/edge-label-renderer.service';
 import { KeyboardService } from '../../services/keyboard.service';
 import { SelectionService } from '../../services/selection.service';
+import { ViewportPortalService } from '../../services/viewport-portal.service';
 import { PaneComponent } from '../pane/pane.component';
 import { NodesSelectionComponent } from '../nodes-selection/nodes-selection.component';
 import {
@@ -160,13 +165,6 @@ import { ViewportComponent } from '../viewport/viewport.component';
       >
         <ng-container #edgeLabelContainer></ng-container>
       </div>
-      <!-- Viewport portal content projection - rendered as overlay -->
-      <div
-        class="angular-xyflow__viewport-portal"
-        [style.transform]="viewportTransform()"
-      >
-        <ng-content select="[viewportPortal]"></ng-content>
-      </div>
       <!-- Content projection for background, controls, etc. -->
       <ng-content />
     </div>
@@ -208,21 +206,6 @@ import { ViewportComponent } from '../viewport/viewport.component';
 
       .angular-xyflow__pane--selection {
         cursor: pointer;
-      }
-
-      .angular-xyflow__viewport-portal {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        transform-origin: 0 0;
-        z-index: 10;
-      }
-
-      .angular-xyflow__viewport-portal > * {
-        pointer-events: none;
       }
 
       .angular-xyflow__viewport {
@@ -350,6 +333,8 @@ export class AngularXYFlowComponent<
   private _edgeLabelService = inject(EdgeLabelRendererService);
   private _keyboardService = inject(KeyboardService);
   private _selectionService = inject(SelectionService<NodeType, EdgeType>);
+  private _portalService = inject(ViewportPortalService);
+  private _injector = inject(Injector);
 
   // 自定義連接線模板
   customConnectionLineTemplate = contentChild(ConnectionLineTemplateDirective);
@@ -372,7 +357,7 @@ export class AngularXYFlowComponent<
   selectNodesOnDrag = input<boolean>(false);
   nodeOrigin = input<[number, number]>([0, 0]);
   elevateEdgesOnSelect = input<boolean>(true);
-  elevateNodesOnSelect = input<boolean>(false);
+  elevateNodesOnSelect = input<boolean>(true);
   defaultEdgeOptions = input<Partial<EdgeType>>();
   nodeDragThreshold = input<number>(0);
   autoPanOnNodeFocus = input<boolean>(true);
@@ -554,10 +539,17 @@ export class AngularXYFlowComponent<
     const serviceNodesWithZ = this._flowService.nodesWithZ();
     const initialized = this._flowService.initialized();
 
-    // 如果提供了 controlled nodes（即使是空陣列），就使用它們
-    // 注意：controlled 模式下，z-index 提升需要由使用者手動處理
+    // 在 controlled 模式下，需要將用戶提供的節點與動態 z-index 計算結合
     if (controlledNodes !== undefined) {
-      return controlledNodes;
+      const selectedNodeIds = this._flowService.selectedNodes();
+      const elevateOnSelect = this._flowService.elevateNodesOnSelect();
+      
+      // 為 controlled nodes 應用動態 z-index 計算並同步 selected 狀態
+      return controlledNodes.map((node, index) => ({
+        ...node,
+        selected: selectedNodeIds.includes(node.id), // 🔑 關鍵修正：同步選中狀態
+        zIndex: this._flowService.calculateNodeZIndex(node, index, selectedNodeIds, elevateOnSelect)
+      }));
     }
 
     // 在 uncontrolled 模式下：
@@ -657,6 +649,15 @@ export class AngularXYFlowComponent<
       const container = this.edgeLabelContainer();
       if (container) {
         this._edgeLabelService.setContainer(container);
+      }
+    });
+
+    // 初始化 ViewportPortal 動態內容渲染 - 使用 ViewportComponent 中的容器
+    afterNextRender(() => {
+      const viewportComponent = this.viewportComponent();
+      const dynamicContainer = viewportComponent.viewportPortalDynamic();
+      if (dynamicContainer) {
+        this._setupPortalRendering(dynamicContainer);
       }
     });
 
@@ -1054,8 +1055,94 @@ export class AngularXYFlowComponent<
     );
   }
 
+  // ========================================
+  // ViewportPortal 動態內容管理
+  // ========================================
+
+  // 動態內容渲染容器管理
+  private _portalViewRefs = new Map<string, ComponentRef<any> | EmbeddedViewRef<any>>();
+
+  /**
+   * 設置 ViewportPortal 動態內容渲染
+   * @param container ViewContainerRef 容器
+   */
+  private _setupPortalRendering(container: ViewContainerRef): void {
+    // 監聽 portal 服務的活躍內容變化，使用 injector 選項
+    effect(() => {
+      const activeItems = this._portalService.activeItems();
+      this._renderPortalItems(container, activeItems);
+    }, { injector: this._injector });
+  }
+
+  /**
+   * 渲染 portal 項目到容器
+   * @param container ViewContainerRef 容器
+   * @param items 要渲染的項目列表
+   */
+  private _renderPortalItems(container: ViewContainerRef, items: any[]): void {
+    // 清除所有現有的動態內容
+    this._clearPortalViews(container);
+
+    // 渲染新的內容項目
+    items.forEach((item) => {
+      try {
+        if (item.content instanceof TemplateRef) {
+          // 渲染模板
+          const viewRef = container.createEmbeddedView(item.content, {
+            $implicit: item.data,
+            data: item.data,
+          });
+          this._portalViewRefs.set(item.id, viewRef);
+        } else if (typeof item.content === 'function') {
+          // 渲染組件
+          const componentRef = container.createComponent(item.content);
+          
+          // 如果組件有 data 屬性，設置數據
+          if (item.data && componentRef.instance && typeof componentRef.instance === 'object' && 'data' in componentRef.instance) {
+            (componentRef.instance as any).data = item.data;
+          }
+
+          this._portalViewRefs.set(item.id, componentRef);
+        }
+      } catch (error) {
+        console.error('ViewportPortal 渲染錯誤:', error, item);
+      }
+    });
+
+    // 手動觸發變更檢測（ViewContainerRef 沒有 detectChanges 方法，會由 Angular 自動檢測）
+    // container.detectChanges?.();
+  }
+
+  /**
+   * 清除所有 portal 視圖
+   * @param container ViewContainerRef 容器
+   */
+  private _clearPortalViews(container: ViewContainerRef): void {
+    // 銷毀所有視圖引用
+    this._portalViewRefs.forEach((viewRef, id) => {
+      try {
+        if ('destroy' in viewRef) {
+          viewRef.destroy();
+        }
+      } catch (error) {
+        console.warn('清除 Portal 視圖時發生錯誤:', error);
+      }
+    });
+    
+    // 清空容器和映射
+    container.clear();
+    this._portalViewRefs.clear();
+  }
+
 
   ngOnDestroy() {
+    // 清理 ViewportPortal 動態內容 - 使用 ViewportComponent 中的容器
+    const viewportComponent = this.viewportComponent();
+    const container = viewportComponent.viewportPortalDynamic();
+    if (container) {
+      this._clearPortalViews(container);
+    }
+
     // 清理 ResizeObserver 和 window resize listener
     this.cleanupResizeObserver();
 

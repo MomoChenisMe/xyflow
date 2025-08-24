@@ -8,6 +8,8 @@ import {
   TemplateRef,
   inject,
   computed,
+  ViewContainerRef,
+  effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Position } from '@xyflow/system';
@@ -23,6 +25,7 @@ import { NodeWrapperComponent } from '../../components/node-wrapper/node-wrapper
 import { EdgeWrapperComponent } from '../../components/edge-wrapper/edge-wrapper.component';
 import { ConnectionLineComponent } from '../../components/connection-line/connection-line.component';
 import { AngularXYFlowService } from '../../services/angular-xyflow.service';
+import { ViewportPortalService } from '../../services/viewport-portal.service';
 import { MarkerDefinitionsComponent } from '../edge-renderer/marker-definitions.component';
 
 // 連接狀態類型定義
@@ -79,7 +82,7 @@ export interface EdgeConnectionPoints {
 
       <!-- Edges layer -->
       <div class="xy-flow__edges angular-xyflow__edges">
-        @for (edge of visibleEdges(); track edge.id) { @let connectionPoints =
+        @for (edge of visibleEdgesFiltered(); track edge.id) { @let connectionPoints =
         edgeConnectionPointsMap().get(edge.id); @if (connectionPoints) {
         <angular-xyflow-edge-wrapper
           [edge]="edge"
@@ -128,9 +131,8 @@ export interface EdgeConnectionPoints {
         [style.left]="'0'"
         [style.width]="'100%'"
         [style.height]="'100%'"
-        [style.z-index]="'2'"
       >
-        @for (node of visibleNodes(); track node.id) {
+        @for (node of visibleNodesFiltered(); track node.id) {
         <angular-xyflow-node
           [node]="node"
           [selected]="node.selected || false"
@@ -155,6 +157,24 @@ export interface EdgeConnectionPoints {
           (handleClick)="handleClick.emit($event)"
         />
         }
+      </div>
+
+      <!-- 🔑 關鍵修正：Viewport Portal 容器在 viewport 內部，自動繼承變換 -->
+      <div 
+        #viewportPortalContainer
+        class="angular-xyflow__viewport-portal"
+        [style.position]="'absolute'"
+        [style.top]="'0'"
+        [style.left]="'0'"
+        [style.width]="'100%'"
+        [style.height]="'100%'"
+        [style.pointer-events]="'none'"
+        [style.z-index]="'10'"
+      >
+        <!-- 靜態內容投影 -->
+        <ng-content select="[viewportPortal]"></ng-content>
+        <!-- 動態內容容器 -->
+        <ng-container #viewportPortalDynamic></ng-container>
       </div>
     </div>
   `,
@@ -197,7 +217,6 @@ export interface EdgeConnectionPoints {
         width: 100%;
         height: 100%;
         pointer-events: none;
-        z-index: 1;
       }
 
       .angular-xyflow__nodes {
@@ -206,7 +225,21 @@ export interface EdgeConnectionPoints {
         left: 0;
         width: 100%;
         height: 100%;
-        z-index: 2;
+      }
+
+      /* Viewport Portal 樣式 - 在 viewport 內部，自動繼承變換 */
+      .angular-xyflow__viewport-portal {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .angular-xyflow__viewport-portal > * {
+        pointer-events: auto; /* 允許子元素接收事件 */
       }
     `,
   ],
@@ -248,6 +281,11 @@ export class ViewportComponent<
       (edge: any, position: 'start' | 'end', marker: EdgeMarker) => string
     >();
 
+  // 過濾掉隱藏的節點，實現與 React Flow 完全一致的 DOM 結構
+  visibleNodesFiltered = computed(() => 
+    this.visibleNodes().filter(node => !node.hidden)
+  );
+
   // 計算 Edge 連接點
   // 注意：移除快取機制，確保節點位置變化時能正確更新
   // React 版本的做法是在每個 EdgeWrapper 內部獨立計算，這裡為了架構一致性在父組件計算
@@ -272,6 +310,32 @@ export class ViewportComponent<
       }
     });
     return connectionPointsMap;
+  });
+
+  // 過濾掉隱藏的邊緣，包含完整的 React Flow 邏輯
+  visibleEdgesFiltered = computed(() => {
+    const edges = this.visibleEdges();
+    const connectionPointsMap = this.edgeConnectionPointsMap();
+    
+    return edges.filter(edge => {
+      // React Flow 邏輯：檢查邊緣隱藏狀態
+      if (edge.hidden) {
+        return false;
+      }
+      
+      const connectionPoints = connectionPointsMap.get(edge.id);
+      if (!connectionPoints) {
+        return false;
+      }
+      
+      // React Flow 邏輯：檢查座標有效性
+      const { sourceX, sourceY, targetX, targetY } = connectionPoints;
+      if (sourceX === null || sourceY === null || targetX === null || targetY === null) {
+        return false;
+      }
+      
+      return true;
+    });
   });
 
   // 輸出事件
@@ -302,9 +366,11 @@ export class ViewportComponent<
 
   // 視圖子元素
   viewportElement = viewChild.required<ElementRef<HTMLDivElement>>('viewport');
+  viewportPortalDynamic = viewChild('viewportPortalDynamic', { read: ViewContainerRef });
 
   // 注入服務
   private _flowService = inject(AngularXYFlowService);
+  private _portalService = inject(ViewportPortalService);
 
   // 計算信號 - 判斷邊是否可聚焦（類似 React 版本的邏輯）
   isEdgeFocusable = computed(() => {
@@ -318,5 +384,26 @@ export class ViewportComponent<
     };
   });
 
-  // 常數
+  constructor() {
+    // 🔑 關鍵修復：監聽 ViewportPortalService 並渲染動態內容
+    effect(() => {
+      const container = this.viewportPortalDynamic();
+      const activeItems = this._portalService.activeItems();
+      
+      if (container) {
+        // 清空現有內容
+        container.clear();
+        
+        // 渲染所有活躍的 portal 項目
+        activeItems.forEach(item => {
+          if (item.content instanceof TemplateRef) {
+            container.createEmbeddedView(item.content, { 
+              $implicit: item.data,
+              data: item.data 
+            });
+          }
+        });
+      }
+    });
+  }
 }

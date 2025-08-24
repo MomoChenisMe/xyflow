@@ -3,6 +3,7 @@ export { AngularXYFlowComponent } from './container/angular-xyflow/angular-xyflo
 export { AngularXYFlowService } from './services/angular-xyflow.service';
 export { AngularXYFlowDragService } from './services/drag.service';
 export { AngularXYFlowPanZoomService } from './services/panzoom.service';
+export { ViewportPortalService } from './services/viewport-portal.service';
 
 // Core components
 export { NodeWrapperComponent } from './components/node-wrapper/node-wrapper.component';
@@ -10,6 +11,7 @@ export { HandleComponent } from './components/handle/handle.component';
 export { EdgeLabelRendererComponent } from './components/edge-label-renderer/edge-label-renderer.component';
 export { ConnectionLineComponent } from './components/connection-line/connection-line.component';
 export { ViewportComponent } from './container/viewport/viewport.component';
+export { ViewportPortalComponent } from './components/viewport-portal/viewport-portal.component';
 
 // Directives
 export { ConnectionLineTemplateDirective } from './directives/connection-line-template.directive';
@@ -22,6 +24,9 @@ export { BackgroundComponent } from './additional-components/background/backgrou
 export { ControlsComponent } from './additional-components/controls/controls.component';
 export { PanelComponent } from './additional-components/panel/panel.component';
 export { MinimapComponent } from './additional-components/minimap/minimap.component';
+export { DevToolsComponent } from './additional-components/devtools/devtools.component';
+export { NodeInspectorComponent } from './additional-components/devtools/node-inspector.component';
+export { ChangeLoggerComponent } from './additional-components/devtools/change-logger.component';
 
 // Default node components
 export {

@@ -9,25 +9,24 @@
 }
 
 .angular-xyflow__devtools .devtool-button {
-  background: white;
-  border: none;
+  background-color: #f4f4f4 !important;
+  border: none !important;
   padding: 5px 15px;
-  color: #222;
+  color: #222 !important;
   font-weight: bold;
   font-size: 12px;
   cursor: pointer;
   font-family: var(--font);
-  background-color: #f4f4f4;
 }
 
 .angular-xyflow__devtools .devtool-button:hover {
-  background: var(--highlight-color);
-  color: white;
+  background: var(--highlight-color) !important;
+  color: white !important;
 }
 
 .angular-xyflow__devtools .devtool-button.active {
-  background: var(--highlight-color);
-  color: white;
+  background: var(--highlight-color) !important;
+  color: white !important;
 }
 
 .angular-xyflow__devtools .devtool-button:first-child {
@@ -45,6 +44,14 @@
   top: 50px;
   left: 20px;
   font-family: var(--font);
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .angular-xyflow__devtools-title {
@@ -59,5 +66,42 @@
 }
 
 .angular-xyflow__devtools-nodeinfo {
-  top: 5px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  padding: 5px;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
+.angular-xyflow__devtools-nodeinfo div {
+  margin-bottom: 2px;
+}
+
+.angular-xyflow__devtools-nodeinfo div:last-child {
+  margin-bottom: 0;
+}
+
+/* Change Logger 項目樣式 */
+.change-info {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.change-info:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.change-info div {
+  margin-bottom: 2px;
+}
+
+.change-info pre {
+  margin: 0;
+  font-size: 10px;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
