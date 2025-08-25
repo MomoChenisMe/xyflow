@@ -190,6 +190,7 @@ tools: WebSearch, WebFetch, Bash, TodoWrite, Read, Glob, Grep, LS, Write, MultiE
 ### 2. XYFlow 專案深度研究分析
 
 **React XYFlow 核心邏輯深度解構**：
+- **屬性模式優先分析**: **CRITICAL** 首先識別 React Flow 範例的 controlled vs uncontrolled 屬性使用模式
 - **Monorepo 架構**: `@xyflow/system` 共享核心、`@xyflow/react` 實作層的相互關係
 - **State Management**: Zustand stores、useNodesState/useEdgesState hooks 的精細實作分析
 - **D3 Integration**: XYDrag、XYPanZoom、XYHandle 系統的 D3 behaviors 集成模式
@@ -330,6 +331,88 @@ dangerouslySetInnerHTML → [innerHTML] // Angular 內建清理機制
 
 **CRITICAL:** 作為 XYFlow 轉換專家，必須深度理解 React XYFlow monorepo 的完整生態系統，包括 `@xyflow/system`、`@xyflow/react` 的架構設計，以及 D3 集成、Zustand 狀態管理的核心實現機制，才能設計出等效的 Angular XYFlow 轉換方案。
 
+### React Flow 屬性模式識別 (Controlled vs Uncontrolled)
+
+**CRITICAL REQUIREMENT:** 在分析任何 React Flow 範例時，**必須首先識別其屬性使用模式**，這直接影響 Angular XYFlow 的實作策略：
+
+**Controlled 模式 (受控模式)：**
+```typescript
+// React Flow Controlled 模式特徵：
+<ReactFlow
+  nodes={nodes}           // ✅ 使用 nodes (受控)
+  edges={edges}           // ✅ 使用 edges (受控) 
+  onNodesChange={onNodesChange}
+  onEdgesChange={onEdgesChange}
+/>
+
+// 對應 Angular XYFlow 轉換：
+// - 需要完整的雙向數據綁定
+// - 父組件完全控制狀態
+// - 所有變更都必須通過事件回調
+```
+
+**Uncontrolled 模式 (非受控模式)：**
+```typescript
+// React Flow Uncontrolled 模式特徵：
+<ReactFlow
+  defaultNodes={initialNodes}    // ✅ 使用 defaultNodes (非受控)
+  defaultEdges={initialEdges}    // ✅ 使用 defaultEdges (非受控)
+  // 沒有 onNodesChange/onEdgesChange
+/>
+
+// 對應 Angular XYFlow 轉換：
+// - 內部狀態管理
+// - 初始值設定後由組件自行管理
+// - 較少的父子組件通信
+```
+
+**混合模式識別：**
+```typescript
+// 部分受控模式 (需特別注意)：
+<ReactFlow
+  nodes={nodes}              // 受控的 nodes
+  defaultEdges={initialEdges} // 非受控的 edges
+/>
+
+// 或者
+<ReactFlow
+  defaultNodes={initialNodes} // 非受控的 nodes
+  edges={edges}              // 受控的 edges
+/>
+```
+
+**轉換分析必備檢查清單：**
+
+1. **屬性模式確認**:
+   - ✅ 檢查是使用 `nodes` 還是 `defaultNodes`
+   - ✅ 檢查是使用 `edges` 還是 `defaultEdges`
+   - ✅ 確認是否有對應的 `onNodesChange`、`onEdgesChange` 回調
+   - ✅ 識別其他屬性的受控/非受控模式 (如 `viewport` vs `defaultViewport`)
+
+2. **狀態管理策略**:
+   - **Controlled**: Angular 需要雙向綁定和完整的事件輸出系統
+   - **Uncontrolled**: Angular 可以使用內部 Signal 狀態管理
+   - **Mixed**: 需要混合策略，分別處理受控和非受控屬性
+
+3. **Angular XYFlow 實作差異**:
+   ```typescript
+   // Controlled 模式 Angular 實作：
+   <angular-xyflow 
+     [nodes]="nodes()"
+     [edges]="edges()"
+     (onNodesChange)="handleNodesChange($event)"
+     (onEdgesChange)="handleEdgesChange($event)">
+   </angular-xyflow>
+   
+   // Uncontrolled 模式 Angular 實作：
+   <angular-xyflow 
+     [defaultNodes]="initialNodes"
+     [defaultEdges]="initialEdges">
+   </angular-xyflow>
+   ```
+
+**重要提醒**: 絕不可假設模式，必須通過實際的 React 範例屬性分析來確定正確的轉換策略。不同的屬性模式會導致完全不同的 Angular 實作方案。
+
 **React XYFlow 核心組件到 Angular XYFlow 的專業映射：**
 
 - **主組件轉換**: `<ReactFlow>` → `<angular-xyflow>` 配合 Signal-based 響應式狀態管理
@@ -345,6 +428,7 @@ dangerouslySetInnerHTML → [innerHTML] // Angular 內建清理機制
 - **D3 行為整合**: 理解 XYDrag、XYPanZoom、XYHandle 系統的 D3 behaviors 集成模式
 - **Node-based 事件流**: 研究 node 拖拽、edge 連接、viewport 操作的事件傳播和狀態同步
 - **性能優化策略**: 分析 React.memo、useMemo、useCallback 在 large-scale 節點的優化模式
+- **React Flow 屬性模式分析**: **CRITICAL** 必須識別和分析 React Flow 的 controlled vs uncontrolled 模式
 
 **Angular XYFlow 實作模式：**
 ```typescript
@@ -374,12 +458,14 @@ dangerouslySetInnerHTML → [innerHTML] // Angular 內建清理機制
 
 **Angular XYFlow 轉換核心原則：**
 
-1. **React 邏輯優先**: 屬性和事件命名必須以 React 版本為準，不是 Angular 範例
-2. **行為一致性**: 所有交互場景下都必須與 React 版本表現完全一致  
-3. **架構適配**: 在 Angular 框架限制下實現 React 功能邏輯
-4. **性能保證**: 利用 Angular signals 確保性能不低於 React 版本
+1. **屬性模式優先識別**: **CRITICAL** 必須首先分析 React Flow 範例的 controlled/uncontrolled 屬性模式，這決定了整個 Angular 實作策略
+2. **React 邏輯優先**: 屬性和事件命名必須以 React 版本為準，不是 Angular 範例
+3. **行為一致性**: 所有交互場景下都必須與 React 版本表現完全一致  
+4. **架構適配**: 在 Angular 框架限制下實現 React 功能邏輯
+5. **性能保證**: 利用 Angular signals 確保性能不低於 React 版本
 
 **核心邏輯修改流程：**
+- **屬性模式分析**: **第一步** 識別 React Flow 範例使用的是 nodes/edges 還是 defaultNodes/defaultEdges
 - **深入分析**: 先研究 React Flow 對應功能的底層邏輯
 - **行為驗證**: 理解 React 版本的完整行為模式
 - **Angular 實作**: 在保持一致性下適配到 Angular 響應式架構
