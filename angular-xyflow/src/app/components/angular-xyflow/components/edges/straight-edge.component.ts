@@ -83,6 +83,8 @@ export interface StraightEdgeProps {
       [markerStart]="markerStart()"
       [interactionWidth]="interactionWidth() || 20"
       [selectable]="selectable() ?? true"
+      [selected]="selected() ?? false"
+      [animated]="animated() ?? false"
       (edgeClick)="handleEdgeClick($event)"
       (edgeDoubleClick)="handleEdgeDoubleClick($event)"
       (edgeContextMenu)="handleEdgeContextMenu($event)"
@@ -151,13 +153,21 @@ export class StraightEdgeComponent {
   });
 
   // 合併樣式
+  // 合併樣式 - 讓 CSS 類處理選中狀態
   mergedStyle = computed(() => {
-    const isSelected = this.selected();
+    const customStyle = this.style();
+    // 🔑 關鍵修正：移除內聯的選中狀態樣式，讓 CSS 類完全控制
     const defaultStyle = {
-      stroke: isSelected ? '#555' : '#b1b1b7',
-      strokeWidth: 1 // 與 React 版本保持一致，選中狀態不改變寬度
+      // stroke: '#b1b1b7', // 移除，讓 CSS 類處理
+      // strokeWidth: 1, // 移除，讓 CSS 類處理
     };
-    return { ...defaultStyle, ...this.style() };
+    
+    // 如果沒有自定義樣式，返回 undefined 讓 CSS 類完全控制
+    if (!customStyle || Object.keys(customStyle).length === 0) {
+      return undefined;
+    }
+    
+    return { ...defaultStyle, ...customStyle };
   });
 
   // 注入 EdgeWrapper 以傳遞事件

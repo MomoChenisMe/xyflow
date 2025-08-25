@@ -22,6 +22,7 @@ import {
     <angular-xyflow
       [nodes]="nodes()"
       [edges]="edges()"
+      [elementsSelectable]="elementsSelectable()"
       (onNodesChange)="onNodesChange($event)"
       (onEdgesChange)="onEdgesChange($event)"
       (onConnect)="onConnect($event)"
@@ -29,6 +30,32 @@ import {
     >
       <!-- 🔑 統一的 DevTools 組件 -->
       <angular-xyflow-devtools position="top-left" />
+      
+      <!-- 測試控制面板 -->
+      <div style="position: absolute; top: 10px; right: 10px; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 4px; z-index: 1000;">
+        <h4>Selection Test</h4>
+        <label>
+          <input 
+            type="checkbox" 
+            [checked]="elementsSelectable()" 
+            (change)="toggleElementsSelectable()"
+          />
+          Elements Selectable
+        </label>
+        <br>
+        <label>
+          <input 
+            type="checkbox" 
+            [checked]="node2Selectable()" 
+            (change)="toggleNode2Selectable()"
+          />
+          Node 2 Selectable
+        </label>
+        <div style="margin-top: 10px; font-size: 12px;">
+          <div>Elements Selectable: {{ elementsSelectable() }}</div>
+          <div>Node 2 Selectable: {{ node2Selectable() }}</div>
+        </div>
+      </div>
     </angular-xyflow>
   `,
   styles: [`
@@ -45,40 +72,66 @@ import {
   `],
 })
 export class DevToolsExampleComponent {
-  // 初始節點資料
-  private readonly initNodes: AngularNode[] = [
+  // 測試控制信號
+  elementsSelectable = signal<boolean>(true);
+  node2Selectable = signal<boolean | undefined>(undefined);
+
+  // 測試控制方法
+  toggleElementsSelectable(): void {
+    this.elementsSelectable.update(value => !value);
+  }
+
+  toggleNode2Selectable(): void {
+    this.node2Selectable.update(value => {
+      if (value === undefined) return true;
+      if (value === true) return false;
+      return undefined;
+    });
+
+    // 更新節點狀態
+    this.nodes.update(nodes => {
+      return nodes.map(node => {
+        if (node.id === '2a') {
+          return { ...node, selectable: this.node2Selectable() };
+        }
+        return node;
+      });
+    });
+  }
+
+  // 初始節點資料 - 使用computed來響應配置變化
+  nodes = signal<AngularNode[]>([
     {
       id: '1a',
       type: 'input',
-      data: { label: 'Node 1' },
+      data: { label: 'Node 1 (always inherits)' },
       position: { x: 250, y: 5 },
     },
     {
       id: '2a',
-      data: { label: 'Node 2' },
+      data: { label: 'Node 2 (configurable)' },
       position: { x: 100, y: 100 },
+      selectable: this.node2Selectable(),
     },
     {
       id: '3a',
-      data: { label: 'Node 3' },
+      data: { label: 'Node 3 (always selectable)' },
       position: { x: 400, y: 100 },
+      selectable: true,
     },
     {
       id: '4a',
-      data: { label: 'Node 4' },
+      data: { label: 'Node 4 (always unselectable)' },
       position: { x: 400, y: 200 },
+      selectable: false,
     },
-  ];
+  ]);
 
   // 初始邊資料
-  private readonly initEdges: AngularEdge[] = [
+  edges = signal<AngularEdge[]>([
     { id: 'e1-2', source: '1a', target: '2a' },
     { id: 'e1-3', source: '1a', target: '3a' },
-  ];
-
-  // 使用信號來管理節點和邊的狀態
-  nodes = signal<AngularNode[]>(this.initNodes);
-  edges = signal<AngularEdge[]>(this.initEdges);
+  ]);
 
   // 處理節點變更
   onNodesChange(changes: NodeChange[]): void {

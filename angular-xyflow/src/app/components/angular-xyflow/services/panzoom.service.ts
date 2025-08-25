@@ -14,6 +14,7 @@ import {
   PanOnScrollMode,
 } from '@xyflow/system';
 import { AngularXYFlowService } from './angular-xyflow.service';
+import { isRightClickPan } from '../utils/pan-drag-utils';
 
 @Injectable()
 export class AngularXYFlowPanZoomService {
@@ -33,6 +34,10 @@ export class AngularXYFlowPanZoomService {
   
   // 儲存當前的 PanZoom 配置
   private currentConfig: any = {};
+  
+  // 右鍵拖拽相關狀態
+  private lastMouseButton: number = 0;
+  private wasUsedForRightClickDrag: boolean = false;
 
   // 對外暴露的計算屬性
   isDragging = computed(() => this._isDragging());
@@ -465,6 +470,59 @@ export class AngularXYFlowPanZoomService {
       this.currentConfig.panOnScrollSpeed = speed;
       this.panZoomInstance.update(this.currentConfig);
     }
+  }
+
+  // 更新平移滾輪模式設置
+  updatePanOnScrollMode(mode: PanOnScrollMode): void {
+    if (this.panZoomInstance && this.currentConfig) {
+      this.currentConfig.panOnScrollMode = mode;
+      this.panZoomInstance.update(this.currentConfig);
+    }
+  }
+
+  // 更新滾輪縮放設置
+  updateZoomOnScroll(enabled: boolean): void {
+    if (this.panZoomInstance && this.currentConfig) {
+      this.currentConfig.zoomOnScroll = enabled;
+      this.panZoomInstance.update(this.currentConfig);
+    }
+  }
+
+  // 更新觸控板縮放設置
+  updateZoomOnPinch(enabled: boolean): void {
+    if (this.panZoomInstance && this.currentConfig) {
+      this.currentConfig.zoomOnPinch = enabled;
+      this.panZoomInstance.update(this.currentConfig);
+    }
+  }
+
+  // 更新雙擊縮放設置
+  updateZoomOnDoubleClick(enabled: boolean): void {
+    if (this.panZoomInstance && this.currentConfig) {
+      this.currentConfig.zoomOnDoubleClick = enabled;
+      this.panZoomInstance.update(this.currentConfig);
+    }
+  }
+
+  // 動態更新 panOnDrag 設置
+  updatePanOnDrag(panOnDrag: boolean | number[]): void {
+    if (this.panZoomInstance && this.currentConfig) {
+      this.currentConfig.panOnDrag = panOnDrag;
+      this.panZoomInstance.update(this.currentConfig);
+    }
+  }
+
+  // 更新 noPanClassName 設置
+  updateNoPanClassName(className: string): void {
+    if (this.currentConfig && this.panZoomInstance) {
+      this.currentConfig.noPanClassName = className;
+      this.panZoomInstance.update(this.currentConfig);
+    }
+  }
+
+  // 檢查是否為右鍵拖拽
+  private isRightClickPan(panOnDrag: boolean | number[], mouseButton: number): boolean {
+    return isRightClickPan(panOnDrag, mouseButton);
   }
 
   // 銷毀服務

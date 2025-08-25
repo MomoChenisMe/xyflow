@@ -9,7 +9,8 @@ import {
   ConnectionLineType,
   PanOnScrollMode,
   SelectionMode,
-  Dimensions
+  Dimensions,
+  ConnectionMode
 } from '@xyflow/system';
 import { Type } from '@angular/core';
 
@@ -212,6 +213,17 @@ export interface AngularXYFlowProps<NodeType extends AngularNode = AngularNode, 
   nodesFocusable?: boolean;
   edgesFocusable?: boolean;
   elementsSelectable?: boolean;
+  /**
+   * 點擊連接模式：允許點擊 handle 開始連接，再點擊目標完成連接
+   * @default true
+   */
+  connectOnClick?: boolean;
+  
+  /**
+   * 連接模式：'strict' 只允許 source → target，'loose' 允許更靈活的連接
+   * @default ConnectionMode.Strict
+   */
+  connectionMode?: ConnectionMode;
 }
 
 // Viewport type
@@ -265,11 +277,13 @@ export enum NodeType {
 }
 
 // Handle related types
+export type HandleType = 'source' | 'target';
+
 export interface Handle {
   id: string | null;
   nodeId: string;
   position: Position;
-  type: 'source' | 'target';
+  type: HandleType;
   x: number;
   y: number;
 }
@@ -456,8 +470,21 @@ export type ErrorCode = '003' | '011'; // 擴展其他錯誤代碼時在此添�
  */
 export type OnErrorHandler = (code: ErrorCode, message: string) => void;
 
+// 連接事件相關類型
+export interface ConnectStartEvent {
+  event: MouseEvent | TouchEvent;
+  nodeId: string;
+  handleType: HandleType;
+  handleId: string | null;
+}
+
+export interface ConnectEndEvent {
+  event: MouseEvent | TouchEvent;
+  connection?: Connection;
+}
+
 // 重新匯出從 @xyflow/system 導入的類型
-export type { Connection, Position, XYPosition, NodeOrigin, ConnectionLineType };
+export type { Connection, Position, XYPosition, NodeOrigin, ConnectionLineType, ConnectionMode };
 
 // ===============================
 // 新增功能相關類型定義
@@ -525,6 +552,23 @@ export interface SelectionBoxStyle {
   borderWidth?: number;
   borderStyle?: string;
   opacity?: number;
+}
+
+// ===============================
+// PanOnDrag 相關類型定義
+// ===============================
+
+// 滑鼠按鍵類型
+export type MouseButton = 0 | 1 | 2; // 左鍵 | 中鍵 | 右鍵
+
+// PanOnDrag 陣列類型
+export type PanOnDragArray = MouseButton[];
+
+// PanOnDrag 配置接口
+export interface PanOnDragConfig {
+  panOnDrag: boolean | number[];
+  noPanClassName: string;
+  onPaneContextMenu?: (event: MouseEvent) => void;
 }
 
 // 重新導出 SelectionMode 以便使用

@@ -12,6 +12,7 @@ import {
   Position,
   ColorMode,
   ColorModeClass,
+  ConnectionMode,
   getNodesInside,
   getNodePositionWithOrigin,
   updateNodeInternals as systemUpdateNodeInternals,
@@ -29,6 +30,7 @@ import {
   NoConnection,
   ConnectionInProgress,
   Handle,
+  HandleType,
   NodeChange,
   EdgeChange,
   NodeSelectionChange,
@@ -196,6 +198,16 @@ export class AngularXYFlowService<
   private _connectionState = signal<ConnectionState<NodeType>>({
     inProgress: false,
   } as NoConnection);
+  
+  // 點擊連接相關 Signal
+  private _connectOnClick = signal<boolean>(true);
+  private _connectionMode = signal<ConnectionMode>(ConnectionMode.Strict);
+  private _connectionClickStartHandle = signal<{
+    nodeId: string;
+    type: HandleType; 
+    id: string | null;
+  } | null>(null);
+  
   private _initialized = signal<boolean>(false);
 
   // 存儲最新的 controlled nodes/edges，用於 setNodes/setEdges 函數形式
@@ -309,6 +321,15 @@ export class AngularXYFlowService<
     callback: ((data: { nodes: NodeType[]; edges: EdgeType[] }) => void) | null
   ) {
     this._onSelectionChange = callback;
+  }
+  
+  // 點擊連接配置方法
+  setConnectOnClick(value: boolean) {
+    this._connectOnClick.set(value);
+  }
+
+  setConnectionMode(mode: ConnectionMode) {
+    this._connectionMode.set(mode);
   }
 
   // 觸發選擇變化事件
@@ -470,6 +491,31 @@ export class AngularXYFlowService<
   > = computed(() => this._selectedHandles());
   connectionState: Signal<ConnectionState<NodeType>> =
     this._connectionState.asReadonly();
+  
+  // 🔑 基礎 Pane 點擊事件阻止條件檢查 - 連接狀態檢查
+  connectionInProgress: Signal<boolean> = computed(() => this._connectionState().inProgress);
+  
+  // 🔑 用於組件檢查 pane 點擊是否應被阻止的方法
+  // 這個方法可以被組件調用，傳入額外的狀態信息
+  isPaneClickBlocked(selectionInProgress: boolean, dragging: boolean): boolean {
+    const connectionInProgress = this._connectionState().inProgress;
+    
+    // 與 React Flow 一致的阻止條件：
+    // 1. 選擇操作進行中
+    // 2. 連接操作進行中  
+    // 3. 拖拽操作進行中
+    return selectionInProgress || connectionInProgress || dragging;
+  }
+  
+  // 點擊連接相關的計算信號
+  connectOnClick: Signal<boolean> = computed(() => this._connectOnClick());
+  connectionMode: Signal<ConnectionMode> = computed(() => this._connectionMode());
+  connectionClickStartHandle: Signal<{
+    nodeId: string;
+    type: HandleType; 
+    id: string | null;
+  } | null> = computed(() => this._connectionClickStartHandle());
+  
   initialized: Signal<boolean> = computed(() => this._initialized());
   minZoom: Signal<number> = computed(() => this._minZoom());
   maxZoom: Signal<number> = computed(() => this._maxZoom());
@@ -785,14 +831,8 @@ export class AngularXYFlowService<
           changes.push({ type: 'add', item: edge, index });
         });
 
-        // 在 controlled 模式下，只發出事件，不更新內部狀態
-        if (this.isControlledMode()) {
-          this.triggerEdgeChanges(changes);
-        } else {
-          // 在 uncontrolled 模式下，更新內部狀態並發出事件
-          this._edges.set(newEdges);
-          this.triggerEdgeChanges(changes);
-        }
+        // 🔑 統一狀態更新邏輯：triggerEdgeChanges 負責所有狀態更新
+        this.triggerEdgeChanges(changes);
       },
       addNodes: (nodes: NodeType | NodeType[]) => {
         const nodesToAdd = Array.isArray(nodes) ? nodes : [nodes];
@@ -832,15 +872,8 @@ export class AngularXYFlowService<
           item: edge,
         }));
 
-        // 在 controlled 模式下，只發出事件，不更新內部狀態
-        if (this.isControlledMode()) {
-          this.triggerEdgeChanges(changes);
-        } else {
-          // 在 uncontrolled 模式下，更新內部狀態並發出事件
-          const currentEdges = this._edges();
-          this._edges.set([...currentEdges, ...edgesToAdd]);
-          this.triggerEdgeChanges(changes);
-        }
+        // 🔑 統一狀態更新邏輯：triggerEdgeChanges 負責所有狀態更新
+        this.triggerEdgeChanges(changes);
       },
       updateNode: (
         id: string,
@@ -953,17 +986,8 @@ export class AngularXYFlowService<
           },
         ];
 
-        // 在 controlled 模式下，只發出事件，不更新內部狀態
-        if (this.isControlledMode()) {
-          this.triggerEdgeChanges(changes);
-        } else {
-          // 在 uncontrolled 模式下，更新內部狀態並發出事件
-          const newEdges = currentEdges.map((edge) =>
-            edge.id === id ? updatedEdge : edge
-          );
-          this._edges.set(newEdges);
-          this.triggerEdgeChanges(changes);
-        }
+        // 🔑 統一狀態更新邏輯：triggerEdgeChanges 負責所有狀態更新
+        this.triggerEdgeChanges(changes);
       },
       deleteElements: (elements: {
         nodes?: { id: string }[];
@@ -1510,6 +1534,109 @@ export class AngularXYFlowService<
     } as EdgeType;
   }
 
+  // 點擊連接管理方法
+  startClickConnection(handle: { nodeId: string; type: HandleType; id: string | null }) {
+    console.log('🚀 Starting click connection from handle:', handle);
+    this._connectionClickStartHandle.set(handle);
+    
+    // 觸發 onConnectStart 事件
+    if (this._onConnectStart) {
+      console.log('📤 Triggering onConnectStart event');
+      this._onConnectStart({
+        event: new MouseEvent('click') as any, // 模擬事件
+        nodeId: handle.nodeId,
+        handleType: handle.type,
+        handleId: handle.id || undefined
+      });
+    } else {
+      console.log('⚠️ No onConnectStart callback registered');
+    }
+  }
+
+  completeClickConnection(event: MouseEvent, targetHandle: {
+    nodeId: string;
+    type: HandleType;
+    id: string | null;
+  }) {
+    console.log('🔗 Starting click connection completion');
+    
+    const startHandle = this._connectionClickStartHandle();
+    if (!startHandle) {
+      console.log('❌ No start handle found');
+      return;
+    }
+
+    console.log('🎯 From handle:', startHandle, 'To handle:', targetHandle);
+
+    // 驗證連接
+    const connection = this.validateClickConnection(startHandle, targetHandle);
+    console.log('🔍 Validated connection:', connection);
+    
+    let finalConnection: Connection | undefined;
+
+    if (connection && this.isValidConnection(connection)) {
+      console.log('✅ Connection is valid, calling internal onConnect');
+      finalConnection = connection;
+      this.onConnect(connection);
+      
+      // 確認是否觸發了外部事件
+      if (this._onConnect) {
+        console.log('📤 Triggering external onConnect event');
+        this._onConnect(connection);
+      } else {
+        console.log('⚠️ No external onConnect callback registered');
+      }
+    } else {
+      console.log('❌ Connection validation failed');
+    }
+
+    // 觸發 onConnectEnd 事件
+    if (this._onConnectEnd) {
+      this._onConnectEnd({
+        connection: finalConnection,
+        event
+      });
+    }
+
+    // 清理狀態
+    console.log('🧹 Cleaning up connection state');
+    this._connectionClickStartHandle.set(null);
+  }
+
+  private validateClickConnection(
+    fromHandle: { nodeId: string; type: HandleType; id: string | null },
+    toHandle: { nodeId: string; type: HandleType; id: string | null }
+  ): Connection | null {
+    const connectionMode = this._connectionMode();
+    
+    // Strict 模式驗證
+    if (connectionMode === ConnectionMode.Strict) {
+      if (fromHandle.type === toHandle.type) {
+        return null; // 同類型不能連接
+      }
+    }
+    
+    // Loose 模式驗證
+    if (connectionMode === ConnectionMode.Loose) {
+      // 不允許自己連接自己的同一個 handle
+      if (fromHandle.nodeId === toHandle.nodeId && fromHandle.id === toHandle.id) {
+        return null;
+      }
+    }
+    
+    // 不允許連接到同一個節點（除非在 Loose 模式下的不同 handle）
+    if (fromHandle.nodeId === toHandle.nodeId && connectionMode === ConnectionMode.Strict) {
+      return null;
+    }
+
+    return {
+      source: fromHandle.type === 'source' ? fromHandle.nodeId : toHandle.nodeId,
+      target: fromHandle.type === 'target' ? fromHandle.nodeId : toHandle.nodeId,
+      sourceHandle: fromHandle.type === 'source' ? fromHandle.id : toHandle.id,
+      targetHandle: fromHandle.type === 'target' ? fromHandle.id : toHandle.id,
+    };
+  }
+
   // 清理方法 - 釋放資源
   destroy(): void {
     this.panZoom?.destroy();
@@ -1521,6 +1648,11 @@ export class AngularXYFlowService<
   // 節點選擇 - 支援單選和多選
   // 🔥 FIXED VERSION - 使用 NodeChange 機制
   selectNode(nodeId: string, multiSelect = false): void {
+    // 🔑 關鍵修正：檢查 elementsSelectable 狀態
+    if (!this._elementsSelectable()) {
+      return;
+    }
+
     const currentNodes = this._nodes();
     const currentEdges = this._edges();
     const nodeChanges: NodeChange<NodeType>[] = [];
@@ -1559,32 +1691,12 @@ export class AngularXYFlowService<
       this._selectedEdges.set([]);
     }
 
-    // 在 controlled 模式下，只發出事件，不更新狀態
-    if (this.isControlledMode()) {
-      if (nodeChanges.length > 0) {
-        this.triggerNodeChanges(nodeChanges);
-      }
-      if (edgeChanges.length > 0) {
-        this.triggerEdgeChanges(edgeChanges);
-      }
-    } else {
-      // 在 uncontrolled 模式下，更新內部狀態並發出事件
-      if (nodeChanges.length > 0) {
-        this._nodes.update(nodes =>
-          nodes.map(node => {
-            const change = nodeChanges.find(c => c.type === 'select' && c.id === node.id) as { type: 'select'; id: string; selected: boolean } | undefined;
-            return change ? { ...node, selected: change.selected } : node;
-          })
-        );
-        this.triggerNodeChanges(nodeChanges);
-      }
-
-      if (edgeChanges.length > 0) {
-        this._edges.update(edges =>
-          edges.map(edge => ({ ...edge, selected: false }))
-        );
-        this.triggerEdgeChanges(edgeChanges);
-      }
+    // 🔑 統一狀態更新邏輯：triggerChanges 負責所有狀態更新
+    if (nodeChanges.length > 0) {
+      this.triggerNodeChanges(nodeChanges);
+    }
+    if (edgeChanges.length > 0) {
+      this.triggerEdgeChanges(edgeChanges);
     }
   }
 
@@ -1649,25 +1761,124 @@ export class AngularXYFlowService<
       selected: false,
     }];
 
-    // 在 controlled 模式下，只發出事件，不更新狀態
-    if (this.isControlledMode()) {
-      this.triggerEdgeChanges(edgeChanges);
-    } else {
-      // 在 uncontrolled 模式下，更新內部狀態並發出事件
-      this._edges.update((edges) =>
-        edges.map((edge) => 
-          edge.id === edgeId ? { ...edge, selected: false } : edge
-        )
-      );
-      this.triggerEdgeChanges(edgeChanges);
-    }
+    // 🔑 統一狀態更新邏輯：使用 triggerEdgeChanges 作為唯一入口
+    this.triggerEdgeChanges(edgeChanges);
 
+    // 觸發選擇變化事件
+    this.triggerSelectionChange();
+  }
+
+  /**
+   * 添加選中的邊 - 與 React Flow 的 addSelectedEdges 方法一致
+   * 在單選模式下會清除其他所有選擇
+   * 在多選模式下只添加新的邊到選擇中
+   */
+  addSelectedEdges(edgeIds: string[]): void {
+    const multiSelectionActive = this.multiSelectionActive();
+    const currentNodes = this._nodes();
+    const currentEdges = this._edges();
+    
+    const nodeChanges: NodeChange<NodeType>[] = [];
+    const edgeChanges: EdgeChange<EdgeType>[] = [];
+    
+    if (multiSelectionActive) {
+      // 多選模式：只添加新選擇的邊
+      edgeIds.forEach(edgeId => {
+        const edge = currentEdges.find(e => e.id === edgeId);
+        if (edge && !edge.selected) {
+          edgeChanges.push({
+            type: 'select',
+            id: edgeId,
+            selected: true
+          });
+        }
+      });
+      
+      // 更新選中邊列表（添加新的）
+      const currentSelected = this._selectedEdges();
+      const newSelected = [...new Set([...currentSelected, ...edgeIds])];
+      this._selectedEdges.set(newSelected);
+    } else {
+      // 單選模式：清除其他所有選擇，只選中指定邊
+      const selectedEdgeIds = new Set(edgeIds);
+      
+      // 清除所有不在新選擇中的邊
+      currentEdges.forEach(edge => {
+        const shouldBeSelected = selectedEdgeIds.has(edge.id);
+        if (edge.selected !== shouldBeSelected) {
+          edgeChanges.push({
+            type: 'select',
+            id: edge.id,
+            selected: shouldBeSelected
+          });
+        }
+      });
+      
+      // 清除所有節點選擇
+      currentNodes.forEach(node => {
+        if (node.selected) {
+          nodeChanges.push({
+            type: 'select',
+            id: node.id,
+            selected: false
+          });
+        }
+      });
+      
+      // 更新選中列表
+      this._selectedEdges.set(edgeIds);
+      this._selectedNodes.set([]);
+    }
+    
+    // 應用變更
+    if (this.isControlledMode()) {
+      // Controlled 模式：只發出事件
+      if (nodeChanges.length > 0) {
+        this.triggerNodeChanges(nodeChanges);
+      }
+      if (edgeChanges.length > 0) {
+        this.triggerEdgeChanges(edgeChanges);
+      }
+    } else {
+      // Uncontrolled 模式：更新內部狀態並發出事件
+      if (nodeChanges.length > 0) {
+        this._nodes.update(nodes =>
+          nodes.map(node => {
+            const change = nodeChanges.find(c => c.type === 'select' && c.id === node.id) as NodeSelectionChange | undefined;
+            if (change) {
+              return { ...node, selected: change.selected };
+            }
+            return node;
+          })
+        );
+        this.triggerNodeChanges(nodeChanges);
+      }
+      
+      if (edgeChanges.length > 0) {
+        this._edges.update(edges =>
+          edges.map(edge => {
+            const change = edgeChanges.find(c => c.type === 'select' && c.id === edge.id) as EdgeSelectionChange | undefined;
+            if (change) {
+              return { ...edge, selected: change.selected };
+            }
+            return edge;
+          })
+        );
+        this.triggerEdgeChanges(edgeChanges);
+      }
+    }
+    
     // 觸發選擇變化事件
     this.triggerSelectionChange();
   }
 
   // 邊選擇 - 支援單選和多選（與 React Flow 的 addSelectedEdges 邏輯一致）
   selectEdge(edgeId: string, multiSelect = false): void {
+    // 🔑 關鍵修正：檢查 elementsSelectable 狀態
+    if (!this._elementsSelectable()) {
+      return;
+    }
+
     const currentEdges = this._edges();
     const currentNodes = this._nodes();
     const currentSelected = this._selectedEdges();
@@ -1722,43 +1933,14 @@ export class AngularXYFlowService<
     // 更新選中邊的列表
     this._selectedEdges.set(newSelectedEdges);
 
-    // 在 controlled 模式下，只發出事件，不更新狀態
-    if (this.isControlledMode()) {
+    // 🔑 統一狀態更新邏輯：無論 controlled 或 uncontrolled 模式，都使用 triggerChanges 作為唯一入口
+    // triggerEdgeChanges 內部會處理狀態更新，避免重複更新造成的時序問題
+    if (edgeChanges.length > 0) {
       this.triggerEdgeChanges(edgeChanges);
-      if (nodeChanges.length > 0) {
-        this.triggerNodeChanges(nodeChanges);
-      }
-    } else {
-      // 在 uncontrolled 模式下，更新內部狀態並發出事件
-      if (edgeChanges.length > 0) {
-        this._edges.update((edges) =>
-          edges.map((edge) => {
-            const change = edgeChanges.find(
-              (c) => c.type === 'select' && c.id === edge.id
-            ) as EdgeSelectionChange | undefined;
-            if (change) {
-              return { ...edge, selected: change.selected };
-            }
-            return edge;
-          })
-        );
-        this.triggerEdgeChanges(edgeChanges);
-      }
-
-      if (nodeChanges.length > 0) {
-        this._nodes.update((nodes) =>
-          nodes.map((node) => {
-            const change = nodeChanges.find(
-              (c) => c.type === 'select' && c.id === node.id
-            ) as NodeSelectionChange | undefined;
-            if (change) {
-              return { ...node, selected: change.selected };
-            }
-            return node;
-          })
-        );
-        this.triggerNodeChanges(nodeChanges);
-      }
+    }
+    
+    if (nodeChanges.length > 0) {
+      this.triggerNodeChanges(nodeChanges);
     }
 
     // 觸發選擇變化事件
@@ -1819,8 +2001,6 @@ export class AngularXYFlowService<
 
   // 清除選擇 - 重置所有選擇狀態
   clearSelection(): void {
-    console.log('[AngularXYFlowService] clearSelection called');
-    console.trace(); // 顯示調用堆疊
     
     const currentNodes = this._nodes();
     const currentEdges = this._edges();
@@ -1870,29 +2050,14 @@ export class AngularXYFlowService<
     this._selectedEdges.set([]);
     this._selectedHandles.set([]);
 
-    // 在 controlled 模式下，只發出事件，不更新狀態
-    if (this.isControlledMode()) {
-      if (nodeChanges.length > 0) {
-        this.triggerNodeChanges(nodeChanges);
-      }
-      if (edgeChanges.length > 0) {
-        this.triggerEdgeChanges(edgeChanges);
-      }
-    } else {
-      // 在 uncontrolled 模式下，更新內部狀態並發出事件
-      if (nodeChanges.length > 0) {
-        this._nodes.update((nodes) =>
-          nodes.map((node) => ({ ...node, selected: false }))
-        );
-        this.triggerNodeChanges(nodeChanges);
-      }
-
-      if (edgeChanges.length > 0) {
-        this._edges.update((edges) =>
-          edges.map((edge) => ({ ...edge, selected: false }))
-        );
-        this.triggerEdgeChanges(edgeChanges);
-      }
+    // 🔑 統一狀態更新邏輯：無論 controlled 或 uncontrolled 模式，都使用 triggerChanges 作為唯一入口
+    // triggerNodeChanges 和 triggerEdgeChanges 內部會處理狀態更新，避免重複更新造成的時序問題
+    if (nodeChanges.length > 0) {
+      this.triggerNodeChanges(nodeChanges);
+    }
+    
+    if (edgeChanges.length > 0) {
+      this.triggerEdgeChanges(edgeChanges);
     }
 
     // 觸發選擇變化事件
@@ -3089,7 +3254,7 @@ export class AngularXYFlowService<
 
   /**
    * 處理邊點擊邏輯
-   * 實現與 React Flow 一致的邊選擇行為
+   * 實現與 React Flow 一致的邊選擇行為 - 簡化為兩個分支
    */
   handleEdgeClick(edgeId: string, options: { unselect?: boolean } = {}): void {
     const { unselect = false } = options;
@@ -3103,35 +3268,24 @@ export class AngularXYFlowService<
     }
 
     // 檢查邊是否可選擇
-    const defaultEdgeOptions = this.defaultEdgeOptions();
-    const edgesSelectable = defaultEdgeOptions?.selectable ?? true;
-    const isEdgeSelectable = edge.selectable ?? edgesSelectable;
+    const elementsSelectable = this.elementsSelectable();
+    const isEdgeSelectable = edge.selectable !== undefined ? edge.selectable : elementsSelectable;
 
     if (!isEdgeSelectable) {
       return;
     }
 
     // 重置節點選擇框狀態
-    // 與 React 版本一致：單擊邊時隱藏 NodesSelection
     this.setNodesSelectionActive(false);
 
-    if (!edge.selected) {
-      // 選擇邊
-      if (multiSelectionActive) {
-        // 多選模式：添加到現有選擇
-        this.selectEdge(edgeId, true);
-      } else {
-        // 單選模式：清除其他選擇，只選擇此邊
-        this.clearSelection();
-        this.selectEdge(edgeId, false);
-      }
-    } else if (unselect || (edge.selected && multiSelectionActive)) {
-      // 取消選擇邊
+    // 🔥 React Flow 邏輯：只有兩個分支
+    if (edge.selected && multiSelectionActive) {
+      // 分支1：已選中的邊在多選模式下，取消選擇
       this.unselectEdge(edgeId);
     } else {
-      // 邊已選中，且不是多選模式：切換為只選中此邊
-      this.clearSelection();
-      this.selectEdge(edgeId, false);
+      // 分支2：所有其他情況都是選擇邊
+      // 包括：未選中的邊（任何模式）、已選中的邊（單選模式）
+      this.addSelectedEdges([edgeId]);
     }
   }
 

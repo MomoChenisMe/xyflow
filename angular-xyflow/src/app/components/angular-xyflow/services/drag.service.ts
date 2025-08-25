@@ -57,6 +57,11 @@ export class AngularXYFlowDragService implements OnDestroy {
     const { nodeId, handleSelector } = config;
     if (!nodeId) return;
 
+    console.log(`🔧 DragService: Initializing drag for node ${nodeId}`, {
+      handleSelector,
+      hasExistingInstance: this.xyDragInstances.has(nodeId)
+    });
+
     // 存儲拖曳回調
     this.dragCallbacks.set(nodeId, {
       onDragStart: config.onDragStart,
@@ -66,6 +71,7 @@ export class AngularXYFlowDragService implements OnDestroy {
 
     // 清理該節點的現有實例
     if (this.xyDragInstances.has(nodeId)) {
+      console.log(`🔧 DragService: Destroying existing drag instance for node ${nodeId}`);
       this.xyDragInstances.get(nodeId)?.destroy();
     }
 
@@ -159,6 +165,12 @@ export class AngularXYFlowDragService implements OnDestroy {
 
     xyDragInstance.update(updateParams);
 
+    console.log(`🔧 DragService: XYDrag instance created and updated for node ${nodeId}`, {
+      domNode: config.domNode.tagName,
+      handleSelector: currentHandleSelector,
+      isSelectable: config.isSelectable,
+      nodeClickDistance: config.nodeClickDistance
+    });
 
     // 儲存實例
     this.xyDragInstances.set(nodeId, xyDragInstance);
@@ -185,6 +197,7 @@ export class AngularXYFlowDragService implements OnDestroy {
   destroyNodeDrag(nodeId: string): void {
     const instance = this.xyDragInstances.get(nodeId);
     if (instance) {
+      console.log(`🔧 DragService: Destroying drag instance for node ${nodeId}`);
       instance.destroy();
       this.xyDragInstances.delete(nodeId);
     }

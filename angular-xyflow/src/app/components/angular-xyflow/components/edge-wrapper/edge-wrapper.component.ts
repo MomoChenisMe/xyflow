@@ -13,6 +13,7 @@ import { CommonModule, NgComponentOutlet } from '@angular/common';
 import { Position } from '@xyflow/system';
 import { AngularEdge, EdgeTypes, EdgeMarker, MarkerType } from '../../types';
 import { errorMessages, defaultErrorHandler, ErrorCode } from '../../constants';
+import { AngularXYFlowService } from '../../services/angular-xyflow.service';
 import { BezierEdgeComponent } from '../edges/bezier-edge.component';
 import { StraightEdgeComponent } from '../edges/straight-edge.component';
 import { StepEdgeComponent } from '../edges/step-edge.component';
@@ -33,10 +34,11 @@ import { SimpleBezierEdgeComponent } from '../edges/simple-bezier-edge.component
     class: 'angular-xyflow__edge xy-flow__edge',
     '[class.selected]': 'edge().selected',
     '[class.animated]': 'edge().animated',
-    '[class.selectable]': 'edge().selectable !== false',
+    '[class.selectable]': 'isSelectable()',
+    '[class.inactive]': '!isSelectable() && !hasOnClick()',
     '[style.position]': '"absolute"',
     '[style.z-index]': 'edge().zIndex || 0',
-    '[style.pointer-events]': '"none"',
+    '[style.pointer-events]': 'getPointerEvents()',
   },
   template: `
     <!-- 動態載入邊組件 (svg) -->
@@ -77,8 +79,9 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
   // 錯誤處理事件（與 React Flow 保持一致）
   onError = output<{ code: string; message: string }>();
 
-  // 注入器
+  // 注入器和服務
   protected readonly edgeInjector = inject(Injector);
+  private readonly flowService = inject(AngularXYFlowService);
 
   // 錯誤處理器
   private readonly errorHandler = (code: ErrorCode, message: string) => {
@@ -87,6 +90,42 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
     // 同時使用預設處理器輸出到 console
     defaultErrorHandler(code, message);
   };
+
+  // 🔑 關鍵修正：添加與 React Flow 完全一致的 isSelectable 計算
+  // React Flow 邏輯：edge.selectable || (elementsSelectable && typeof edge.selectable === 'undefined')
+  public isSelectable = computed(() => {
+    const edge = this.edge();
+    const elementsSelectable = this.flowService.elementsSelectable();
+    
+    // 如果 edge 有明確的 selectable 屬性，使用它
+    if (edge.selectable !== undefined) {
+      return edge.selectable;
+    }
+    
+    // 否則使用 elementsSelectable（與 React Flow 邏輯完全一致）
+    return elementsSelectable;
+  });
+
+  // 檢查是否有 onClick 事件
+  public hasOnClick = computed(() => {
+    // 在 Angular 中，我們檢查是否有事件監聽器
+    // 簡化實作：如果 edge 是 selectable，我們假設可能有 click 事件
+    // 這個邏輯可以根據實際需求進一步細化
+    return this.isSelectable();
+  });
+
+  // 根據 React Flow 邏輯設定 pointer-events
+  public getPointerEvents = computed(() => {
+    const isSelectable = this.isSelectable();
+    const hasOnClick = this.hasOnClick();
+    
+    // React Flow 邏輯：inactive edge 設定 pointer-events: none
+    if (!isSelectable && !hasOnClick) {
+      return 'none';
+    }
+    
+    return 'all';
+  });
 
   // 內建邊類型（類似 React Flow 的 builtinEdgeTypes）
   private readonly builtinEdgeTypes: Record<string, Type<any>> = {
@@ -147,6 +186,7 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
     if (this.lastComputedEdgeId !== edge.id) {
       this.lastComputedEdgeId = edge.id;
     }
+    
 
     // 核心屬性（所有邊緣組件都需要）
     const coreInputs: Record<string, any> = {
@@ -161,7 +201,9 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
     // 只有當邊緣有定義這些屬性時才添加
     if (edge.data !== undefined) coreInputs['data'] = edge.data;
     if (resolvedEdgeType) coreInputs['type'] = resolvedEdgeType;
-    if (edge.selected !== undefined) coreInputs['selected'] = edge.selected;
+    // 🔑 關鍵修正：總是傳遞 selected 屬性，預設為 false
+    coreInputs['selected'] = edge.selected ?? false;
+    
     if (this.sourceHandleId() !== undefined)
       coreInputs['sourceHandleId'] = this.sourceHandleId();
     if (this.targetHandleId() !== undefined)
@@ -210,7 +252,8 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
 
     // 樣式和行為屬性
     if (edge.style !== undefined) coreInputs['style'] = edge.style;
-    if (edge.animated !== undefined) coreInputs['animated'] = edge.animated;
+    // 🔑 關鍵修正：總是傳遞 animated 屬性，預設為 false
+    coreInputs['animated'] = edge.animated ?? false;
     if (edge.hidden !== undefined) coreInputs['hidden'] = edge.hidden;
     if (edge.deletable !== undefined) coreInputs['deletable'] = edge.deletable;
     if (edge.selectable !== undefined)

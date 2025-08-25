@@ -46,7 +46,7 @@ import { builtinNodeTypes } from '../nodes';
     '[style.width]': 'getNodeWidth()',
     '[style.height]': 'getNodeHeight()',
     '[style.user-select]': '"none"',
-    '[style.pointer-events]': '"auto"',
+    '[style.pointer-events]': 'getPointerEvents()',
     '[style.visibility]': 'nodeHasDimensions() ? "visible" : "hidden"',
     '[style.cursor]': 'getCursor()',
     '[style]': 'getNodeStyles()',
@@ -100,15 +100,10 @@ import { builtinNodeTypes } from '../nodes';
   `,
   styles: [`
     /* 基本定位和行為樣式 - 不包含顏色主題 */
+    /* cursor 現在由 host binding '[style.cursor]': 'getCursor()' 和 CSS class 控制 */
     .xy-flow__node,
     .angular-xyflow__node {
       position: absolute;
-      cursor: grab;
-    }
-
-    .xy-flow__node.dragging,
-    .angular-xyflow__node.dragging {
-      cursor: grabbing;
     }
 
     .angular-xyflow__node-content {
@@ -163,6 +158,9 @@ export class NodeWrapperComponent implements OnDestroy {
   // 內部狀態
   private isDragging = signal(false);
   private resizeObserver?: ResizeObserver;
+  
+  // 🔑 添加狀態追蹤屬性 - 對應React useDrag的狀態管理
+  private lastDisabled: boolean | undefined = undefined; // 明確初始化為 undefined
   private _dragService = inject(AngularXYFlowDragService);
   private _flowService = inject(AngularXYFlowService);
 
@@ -215,6 +213,27 @@ export class NodeWrapperComponent implements OnDestroy {
     const elementsSelectable = this._flowService.elementsSelectable();
     return !!(node.selectable || (elementsSelectable && typeof node.selectable === 'undefined'));
   });
+
+  // 🔑 檢查是否可拖拽
+  isNodeDraggable = computed(() => {
+    const node = this.node();
+    const globalDraggable = this._flowService.nodesDraggable();
+    return !!(node.draggable || (globalDraggable && typeof node.draggable === 'undefined')) && !node.hidden;
+  });
+
+  // 🔑 動態設置 pointer-events - 與 React Flow 完全一致  
+  getPointerEvents = computed(() => {
+    // React Flow 邏輯：hasPointerEvents = isSelectable || isDraggable || onClick || onMouseEnter || onMouseMove || onMouseLeave
+    const isSelectable = this.isSelectable();
+    const isDraggable = this.isNodeDraggable();
+    
+    // 🔑 關鍵修正：根據 React Flow 分析，總是允許節點接收點擊事件
+    // 這確保了 captureElementClick 能夠正常工作，不管 elementsSelectable 的狀態
+    // React Flow 中即使元素不可選擇也要能觸發點擊事件
+    const hasPointerEvents = isSelectable || isDraggable || true; // 始終為 true
+    
+    return hasPointerEvents ? 'auto' : 'none';
+  });
   
   nodeClasses = computed(() => {
     const classes = ['xy-flow__node', 'angular-xyflow__node'];
@@ -233,12 +252,10 @@ export class NodeWrapperComponent implements OnDestroy {
 
     // 關鍵修復：為可拖曳節點添加 nopan 類別（與 React Flow 一致）
     // 這防止了在節點上（特別是有 dragHandle 但不在 handle 上）拖曳時觸發 viewport panning
-    const globalDraggable = this._flowService.nodesDraggable();
-    // 🔧 關鍵修復：使用與 React Flow 完全一致的邏輯
-    const isDraggable = !!(nodeData.draggable || (globalDraggable && typeof nodeData.draggable === 'undefined')) && !nodeData.hidden;
-
-    if (isDraggable) {
+    if (this.isNodeDraggable()) {
       classes.push('nopan');
+      // 🔑 關鍵修正：為可拖曳節點添加 draggable class（與 React Flow 一致）
+      classes.push('draggable');
     }
 
     // 注意：React Flow 不會為回退到 default 的節點添加 type- 類
@@ -338,8 +355,8 @@ export class NodeWrapperComponent implements OnDestroy {
       height: node.height,
       parentId: node.parentId,
       zIndex: node.zIndex || 0,
-      draggable: node.draggable !== false,
-      selectable: node.selectable !== false,
+      draggable: !!(node.draggable || (this._flowService.nodesDraggable() && typeof node.draggable === 'undefined')),
+      selectable: !!(node.selectable || (this._flowService.elementsSelectable() && typeof node.selectable === 'undefined')),
       deletable: node.deletable !== false,
       positionAbsoluteX: positionAbsolute.x,
       positionAbsoluteY: positionAbsolute.y,
@@ -434,6 +451,56 @@ export class NodeWrapperComponent implements OnDestroy {
       // 階段2：報告 DOM 渲染完成（在所有初始化工作完成後）
       this._flowService.reportNodeDOMRendered(nodeData.id);
     });
+
+    // 🔑 關鍵修正：添加動態響應機制 - 對應React useDrag的useEffect邏輯
+    // 監聽配置變化並動態調整拖拽功能
+    effect(() => {
+      const nodeData = this.node();
+      const element = this.nodeElement?.nativeElement;
+      
+      // 🔧 關鍵修復：移除 dragInitialized 條件限制，允許動態響應
+      // 只檢查基本必需條件
+      if (!element || !nodeData) {
+        return;
+      }
+      
+      // 計算disabled狀態 - 與React版本完全一致
+      const globalDraggable = this._flowService.nodesDraggable();
+      const isDraggable = !!(nodeData.draggable || (globalDraggable && typeof nodeData.draggable === 'undefined'));
+      const disabled = nodeData.hidden || !isDraggable;
+      
+      // 檢查配置是否變化 - 對應React useEffect的依賴陣列檢查
+      const configChanged = 
+        this.lastDisabled !== disabled || 
+        this.lastDragHandle !== nodeData.dragHandle;
+      
+      // 🔧 關鍵修復：如果 lastDisabled 是首次設置（undefined），強制更新
+      const isFirstRun = this.lastDisabled === undefined;
+      
+      if (configChanged || isFirstRun) {
+        if (disabled) {
+          // 對應React: if (disabled) xyDrag.current?.destroy();
+          if (this.dragInitialized) {
+            this._dragService.destroyNodeDrag(nodeData.id);
+            this.dragInitialized = false;
+          }
+        } else {
+          // 對應React: else if (nodeRef.current) xyDrag.current?.update({...});
+          // 重新初始化拖拽（不管之前是否已初始化）
+          if (nodeData.dragHandle) {
+            requestAnimationFrame(() => {
+              this.initializeDragWithHandle(nodeData, element);
+            });
+          } else {
+            this.initializeDragWithHandle(nodeData, element);
+          }
+        }
+        
+        // 記錄最後狀態，用於下次變化檢測
+        this.lastDisabled = disabled;
+        this.lastDragHandle = nodeData.dragHandle;
+      }
+    });
   }
 
   // 新增輔助方法，對應 React 的 xyDrag.current?.update
@@ -451,6 +518,7 @@ export class NodeWrapperComponent implements OnDestroy {
   }
 
   private setupNewDragInstance(nodeData: AngularNode, element: HTMLElement): void {
+    
     // 初始化拖曳
     this._dragService.initializeDrag({
       nodeId: nodeData.id,
@@ -461,7 +529,7 @@ export class NodeWrapperComponent implements OnDestroy {
       onDragStart: (event: MouseEvent) => {
         this.nodeDragStart.emit(event);
       },
-      onDrag: (event: MouseEvent, nodeId: string, position: { x: number; y: number }) => {
+      onDrag: (event: MouseEvent, _nodeId: string, position: { x: number; y: number }) => {
         this.nodeDrag.emit({ event, position });
       },
       onDragStop: (event: MouseEvent) => {
@@ -518,13 +586,9 @@ export class NodeWrapperComponent implements OnDestroy {
 
     // 避免在拖動後觸發點擊
     if (!this.isDragging()) {
-      // 🔑 關鍵修正：使用 React Flow 式的 isSelectable 計算結果
-      if (!this.isSelectable()) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
-
+      // 🔑 關鍵修正：根據 React Flow 邏輯，captureElementClick 與 elementsSelectable 完全獨立
+      // 不應該因為 !isSelectable() 就阻止事件傳播
+      
       const globalDraggable = this._flowService.nodesDraggable();
       // 🔧 關鍵修復：使用與 React Flow 完全一致的邏輯
       const isDraggable = !!(this.node().draggable || (globalDraggable && typeof this.node().draggable === 'undefined'));
@@ -540,11 +604,13 @@ export class NodeWrapperComponent implements OnDestroy {
       const selectNodesOnDrag = this._flowService.selectNodesOnDrag();
       const nodeDragThreshold = 0;    // 目前設為 0
 
-      // 🔑 修正：只有在滿足選擇條件時才發出點擊事件
-      // 與 React Flow 保持一致的選擇邏輯
-      if (!selectNodesOnDrag || !isDraggable || nodeDragThreshold > 0) {
-        this.nodeClick.emit(event);
-      }
+      // 🔑 關鍵修正：直接在 NodeWrapper 處理所有邏輯，採用 React Flow 模式
+      
+      // 阻止事件冒泡到 Pane，確保不會觸發 Pane 點擊
+      event.stopPropagation();
+      
+      // 發出事件到上層組件處理
+      this.nodeClick.emit(event);
     }
   }
 
@@ -677,7 +743,9 @@ export class NodeWrapperComponent implements OnDestroy {
     // 🔧 關鍵修復：使用與 React Flow 完全一致的邏輯
     const isDraggable = !!(node.draggable || (globalDraggable && typeof node.draggable === 'undefined'));
 
-    // 只有在節點允許拖動時才顯示拖動游標
+    // 🔑 React Flow cursor 邏輯：
+    // - 只有在節點允許拖動時才顯示拖動游標 (grab/grabbing)
+    // - 否則顯示預設游標 (default)
     if (!isDraggable) {
       return 'default';
     }
@@ -849,7 +917,7 @@ export class NodeWrapperComponent implements OnDestroy {
     }
   }
 
-  private handleKeyboardMove(key: string): void {
+  private handleKeyboardMove(_key: string): void {
     // 這個功能可以讓用戶使用鍵盤移動節點
     // 目前先留空，可以根據需要實現
   }

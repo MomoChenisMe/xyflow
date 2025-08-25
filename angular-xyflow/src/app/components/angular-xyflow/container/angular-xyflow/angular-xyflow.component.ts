@@ -34,6 +34,7 @@ import {
   ConnectionMode,
   ColorMode,
   ColorModeClass,
+  PanOnScrollMode,
 } from '@xyflow/system';
 
 // 專案內部模組
@@ -91,8 +92,6 @@ import { ViewportComponent } from '../viewport/viewport.component';
       [style.height]="'100%'"
       [style.position]="'relative'"
       [style.overflow]="'hidden'"
-      (click)="handlePaneClick($event)"
-      (dblclick)="handlePaneDoubleClick($event)"
     >
       <!-- Pane container - 處理選取事件，與 React 版本一致 -->
       <angular-xyflow-pane
@@ -103,9 +102,12 @@ import { ViewportComponent } from '../viewport/viewport.component';
         [selectionKeyPressed]="false"
         [selectionOnDrag]="selectionOnDrag()"
         [paneClickDistance]="paneClickDistance()"
+        [captureOnPaneClick]="captureOnPaneClick()"
+        [captureOnPaneScroll]="captureOnPaneScroll()"
         (onPaneClick)="handlePaneClick($event)"
         (onPaneDoubleClick)="handlePaneDoubleClick($event)"
         (onPaneContextMenu)="handlePaneContextMenu($event)"
+        (onPaneScroll)="handlePaneScroll($event)"
         (onSelectionStart)="handleSelectionStart($event)"
         (onSelectionEnd)="handleSelectionEnd($event)"
         (onSelectionContextMenu)="handleSelectionContextMenu($event)"
@@ -260,24 +262,26 @@ import { ViewportComponent } from '../viewport/viewport.component';
         outline: none;
       }
 
+      /* 🔑 多重選擇器保障：確保選中狀態樣式能正確應用到所有可能的 DOM 結構 */
       .angular-xyflow__edge-path.selected,
+      .angular-xyflow__edge.selected .angular-xyflow__edge-path,
       .angular-xyflow__edge.selectable:focus .angular-xyflow__edge-path,
-      .angular-xyflow__edge.selectable:focus-visible
-        .angular-xyflow__edge-path {
-        stroke: #555;
-        /* 與 React 版本保持一致，選中狀態不改變寬度 */
-        /* stroke-width: 2; */
+      .angular-xyflow__edge.selectable:focus-visible .angular-xyflow__edge-path,
+      angular-xyflow-edge-wrapper.selected .angular-xyflow__edge-path,
+      .selected .angular-xyflow__edge-path {
+        stroke: #555 !important;
+        stroke-width: 2 !important;
       }
 
-      /* Dark mode edge selected/focus color */
+      /* 🔑 暗模式多重選擇器保障 */
       .dark .angular-xyflow__edge-path.selected,
+      .dark .angular-xyflow__edge.selected .angular-xyflow__edge-path,
       .dark .angular-xyflow__edge.selectable:focus .angular-xyflow__edge-path,
-      .dark
-        .angular-xyflow__edge.selectable:focus-visible
-        .angular-xyflow__edge-path {
-        stroke: #727272;
-        /* 與 React 版本保持一致，選中狀態不改變寬度 */
-        /* stroke-width: 2; */
+      .dark .angular-xyflow__edge.selectable:focus-visible .angular-xyflow__edge-path,
+      .dark angular-xyflow-edge-wrapper.selected .angular-xyflow__edge-path,
+      .dark .selected .angular-xyflow__edge-path {
+        stroke: #727272 !important;
+        stroke-width: 2 !important;
       }
 
       .angular-xyflow__edge.animated path {
@@ -371,15 +375,36 @@ export class AngularXYFlowComponent<
   snapToGrid = input<boolean>(false);
   snapGrid = input<[number, number]>([15, 15]);
   elementsSelectable = input<boolean>(true);
+  nodesDraggable = input<boolean>(true);
+  nodesConnectable = input<boolean>(true);
+  connectOnClick = input<boolean>(true);
+  connectionMode = input<ConnectionMode>(ConnectionMode.Strict);
 
   // 新增高級交互功能的輸入屬性
   selectionOnDrag = input<boolean>(false);
   selectionMode = input<SelectionMode>('full' as SelectionMode);
   panOnScroll = input<boolean>(false);
   panOnScrollSpeed = input<number>(0.5);
+  panOnScrollMode = input<PanOnScrollMode>(PanOnScrollMode.Free);
+  zoomOnScroll = input<boolean>(true);
+  zoomOnPinch = input<boolean>(true);
+  zoomOnDoubleClick = input<boolean>(true);
   zoomActivationKeyCode = input<ZoomActivationKeyCode>();
   multiSelectionKeyCode = input<MultiSelectionKeyCode>();
   selectionKeyCode = input<SelectionKeyCode>('shift');
+  
+  // 🔑 捕獲事件輸入屬性 - 與 React Flow 完全對應
+  captureElementClick = input<boolean>(false);
+  captureOnPaneScroll = input<boolean>(true);
+  
+  // 🔑 事件處理器輸入 - 與 React Flow 完全對應
+  onPaneClickHandler = input<((event: MouseEvent) => void) | undefined>(undefined);
+  onNodeClickHandler = input<((data: { event: MouseEvent; node: NodeType }) => void) | undefined>(undefined);
+  onEdgeClickHandler = input<((data: { event: MouseEvent; edge: EdgeType }) => void) | undefined>(undefined);
+  onPaneScrollHandler = input<((event: WheelEvent) => void) | undefined>(undefined);
+
+  // 🔑 計算是否捕獲事件 - 與 React Flow 完全一致的邏輯
+  captureOnPaneClick = computed(() => this.onPaneClickHandler() !== undefined);
 
   // 選取相關計算屬性 - 與 React 版本完全一致
   isSelectionActive = computed(() => {
@@ -465,6 +490,7 @@ export class AngularXYFlowComponent<
     nodes: NodeType[];
   }>();
   onPaneClick = output<{ event: MouseEvent }>();
+  onPaneScroll = output<{ event: WheelEvent }>();
 
   // 視窗移動事件
   onMove = output<{
@@ -836,6 +862,36 @@ export class AngularXYFlowComponent<
       this._flowService.setEdgesFocusable(edgesFocusable);
     });
 
+    // 同步 elementsSelectable 到服務
+    effect(() => {
+      const elementsSelectable = this.elementsSelectable();
+      this._flowService.setElementsSelectable(elementsSelectable);
+    });
+
+    // 同步 nodesDraggable 到服務
+    effect(() => {
+      const nodesDraggable = this.nodesDraggable();
+      this._flowService.setNodesDraggable(nodesDraggable);
+    });
+
+    // 同步 nodesConnectable 到服務
+    effect(() => {
+      const nodesConnectable = this.nodesConnectable();
+      this._flowService.setNodesConnectable(nodesConnectable);
+    });
+
+    // 同步 connectOnClick 到服務
+    effect(() => {
+      const connectOnClick = this.connectOnClick();
+      this._flowService.setConnectOnClick(connectOnClick);
+    });
+
+    // 同步 connectionMode 到服務
+    effect(() => {
+      const connectionMode = this.connectionMode();
+      this._flowService.setConnectionMode(connectionMode);
+    });
+
     // 同步 snapToGrid 和 snapGrid 到服務
     effect(() => {
       const snapToGrid = this.snapToGrid();
@@ -874,6 +930,36 @@ export class AngularXYFlowComponent<
     effect(() => {
       const panOnScrollSpeed = this.panOnScrollSpeed();
       this._panZoomService.updatePanOnScrollSpeed(panOnScrollSpeed);
+    });
+
+    // 監聽 panOnScrollMode 屬性變化
+    effect(() => {
+      const panOnScrollMode = this.panOnScrollMode();
+      this._panZoomService.updatePanOnScrollMode(panOnScrollMode);
+    });
+
+    // 監聽 zoomOnScroll 屬性變化
+    effect(() => {
+      const zoomOnScroll = this.zoomOnScroll();
+      this._panZoomService.updateZoomOnScroll(zoomOnScroll);
+    });
+
+    // 監聽 zoomOnPinch 屬性變化
+    effect(() => {
+      const zoomOnPinch = this.zoomOnPinch();
+      this._panZoomService.updateZoomOnPinch(zoomOnPinch);
+    });
+
+    // 監聽 zoomOnDoubleClick 屬性變化
+    effect(() => {
+      const zoomOnDoubleClick = this.zoomOnDoubleClick();
+      this._panZoomService.updateZoomOnDoubleClick(zoomOnDoubleClick);
+    });
+
+    // 監聽 panOnDrag 屬性變化
+    effect(() => {
+      const panOnDrag = this.panOnDrag();
+      this._panZoomService.updatePanOnDrag(panOnDrag);
     });
 
     // 監聽 multiSelectionKeyCode 屬性變化
@@ -980,11 +1066,11 @@ export class AngularXYFlowComponent<
       domNode: container,
       minZoom: this.minZoom(),
       maxZoom: this.maxZoom(),
-      zoomOnScroll: true,
-      zoomOnPinch: true,
+      zoomOnScroll: this.zoomOnScroll(),
+      zoomOnPinch: this.zoomOnPinch(),
       panOnScroll: this.panOnScroll(),
       panOnScrollSpeed: this.panOnScrollSpeed(),
-      zoomOnDoubleClick: true,
+      zoomOnDoubleClick: this.zoomOnDoubleClick(),
       panOnDrag: this.panOnDrag(),
       preventScrolling: true,
       paneClickDistance: this.paneClickDistance(),
@@ -1192,8 +1278,8 @@ export class AngularXYFlowComponent<
       domNode: container,
       minZoom: this.minZoom(),
       maxZoom: this.maxZoom(),
-      zoomOnScroll: true, // 滑鼠滾輪縮放：以滑鼠位置為基準
-      zoomOnPinch: true, // 觸控板縮放：以觸控位置為基準
+      zoomOnScroll: this.zoomOnScroll(), // 滑鼠滾輪縮放：以滑鼠位置為基準
+      zoomOnPinch: this.zoomOnPinch(), // 觸控板縮放：以觸控位置為基準
       panOnScroll: this.panOnScroll(),
       panOnScrollSpeed: this.panOnScrollSpeed(),
       zoomOnDoubleClick: true, // 雙擊縮放：以雙擊位置為基準
@@ -1385,24 +1471,29 @@ export class AngularXYFlowComponent<
     // 阻止事件冒泡，避免觸發pane的clearSelection
     event.stopPropagation();
 
-    // 檢查是否允許選取元素
-    if (!this._flowService.elementsSelectable()) {
-      return;
+    // 🔑 第一部分：處理選擇邏輯（與 elementsSelectable 相關）
+    const elementsSelectable = this._flowService.elementsSelectable();
+    const isNodeSelectable = !!(node.selectable || (elementsSelectable && typeof node.selectable === 'undefined'));
+    
+    // 如果節點可選擇，執行選擇邏輯
+    if (isNodeSelectable) {
+      const keyCode = this.multiSelectionKeyCode();
+      const keys = Array.isArray(keyCode) ? keyCode : keyCode ? [keyCode] : undefined;
+      const multiSelect = this._keyboardService.shouldUseMultiSelection(keys, event);
+      
+      // 選擇節點
+      this._flowService.selectNode(node.id, multiSelect);
     }
 
-    // 使用 KeyboardService 檢查多選鍵狀態（支持 multiSelectionKeyCode 配置）
-    const keyCode = this.multiSelectionKeyCode();
-    const keys = Array.isArray(keyCode) ? keyCode : keyCode ? [keyCode] : undefined;
-    const multiSelect = this._keyboardService.shouldUseMultiSelection(
-      keys,
-      event
-    );
-
-    // 選擇節點
-    this._flowService.selectNode(node.id, multiSelect);
-
-    // 觸發事件
-    this.onNodeClick.emit({ event, node });
+    // 🔑 第二部分：條件性地觸發事件回調（與 captureElementClick 相關）
+    // React Flow 邏輯：只有當有處理器時才觸發，與 elementsSelectable 完全獨立
+    const nodeClickHandler = this.onNodeClickHandler();
+    if (nodeClickHandler) {
+      nodeClickHandler({ event, node });
+    } else {
+      // 🔑 與 React Flow 一致：當沒有 onClick 處理器時，觸發 Angular 輸出事件（向後兼容）
+      this.onNodeClick.emit({ event, node });
+    }
   }
 
   handleNodeDoubleClick(event: MouseEvent, node: NodeType) {
@@ -1429,16 +1520,21 @@ export class AngularXYFlowComponent<
     // 阻止事件冒泡，避免觸發背景點擊
     event.stopPropagation();
 
-    // 檢查是否允許選取元素
-    if (!this._flowService.elementsSelectable()) {
-      return;
+    // 🔑 第一部分：選擇邏輯（與 elementsSelectable 相關）
+    if (this._flowService.elementsSelectable()) {
+      // 使用服務的 handleEdgeClick 方法處理選擇邏輯
+      this._flowService.handleEdgeClick(edge.id);
     }
 
-    // 使用服務的 handleEdgeClick 方法處理選擇邏輯
-    this._flowService.handleEdgeClick(edge.id);
-
-    // 觸發 edge 點擊事件
-    this.onEdgeClick.emit({ event, edge });
+    // 🔑 第二部分：條件性地觸發事件回調（與 captureElementClick 相關）
+    // React Flow 邏輯：只有當有處理器時才觸發，與 elementsSelectable 完全獨立
+    const edgeClickHandler = this.onEdgeClickHandler();
+    if (edgeClickHandler) {
+      edgeClickHandler({ event, edge });
+    } else {
+      // 🔑 與 React Flow 一致：當沒有 onClick 處理器時，觸發 Angular 輸出事件（向後兼容）
+      this.onEdgeClick.emit({ event, edge });
+    }
   }
 
   handleEdgeDoubleClick(event: MouseEvent, edge: EdgeType) {
@@ -1487,26 +1583,24 @@ export class AngularXYFlowComponent<
   }
 
   handlePaneClick(event: MouseEvent) {
-    // 與 React 版本一致：檢查是否正在進行選擇或連接
-    const selectionInProgress = this._selectionService.isSelectionInProgress();
-    const connectionInProgress = this._flowService.connectionState().inProgress;
-
-    console.log('[AngularXYFlowComponent] handlePaneClick - check conditions:', {
-      selectionInProgress,
-      connectionInProgress,
-      target: event.target
-    });
-
-    if (selectionInProgress || connectionInProgress) {
-      console.log('[AngularXYFlowComponent] Preventing pane click - selection/connection in progress');
-      // 重置 selectionInProgress 狀態（與 React 版本一致）
-      this._selectionService['selectionInProgress'] = false;
-      return;
+    // 🔑 條件性處理 pane 點擊事件（與 React Flow 完全一致）
+    
+    // 清除選擇狀態（與 React Flow 一致：無論 capture 狀態如何都清除選擇）
+    if (this.elementsSelectable()) {
+      this._flowService.clearSelection();
     }
-
-    // 注意：pane 點擊邏輯現在完全由 PaneComponent 處理
-    // 這裡不需要重複處理，避免事件重複發送
-    // PaneComponent 已經處理了：selectionInProgress 檢查、clearSelection、onPaneClick 事件
+    
+    // 只有在啟用 captureOnPaneClick 時才執行事件處理
+    if (this.captureOnPaneClick()) {
+      // 1. 調用用戶提供的處理器函數（與 React Flow 一致）
+      const handler = this.onPaneClickHandler();
+      if (handler) {
+        handler(event);
+      }
+      
+      // 2. 發出 Angular 輸出事件
+      this.onPaneClick.emit({ event });
+    }
   }
 
   handlePaneContextMenu(event: MouseEvent) {
@@ -1516,6 +1610,25 @@ export class AngularXYFlowComponent<
     // 發出 pane 右鍵菜單事件（與 React 版本一致）
     // 注意：panOnDrag 的檢查已經在 pane 組件中處理了
     this.onPaneContextMenu.emit({ event });
+  }
+
+  handlePaneScroll(event: WheelEvent) {
+    // 🔑 與 React Flow 完全一致的 onPaneScroll 事件處理邏輯
+    // 純事件通知，不干擾滾動行為
+    
+    // 只有當啟用 captureOnPaneScroll 或有用戶處理器時才處理
+    const scrollHandler = this.onPaneScrollHandler();
+    const shouldCapture = this.captureOnPaneScroll();
+    
+    if (shouldCapture || scrollHandler) {
+      // 1. 調用用戶提供的處理器函式（與 React Flow 一致）
+      if (scrollHandler) {
+        scrollHandler(event);
+      }
+      
+      // 2. 發出 Angular 輸出事件
+      this.onPaneScroll.emit({ event });
+    }
   }
 
   handleHandleClick(

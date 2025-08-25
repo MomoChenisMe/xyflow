@@ -16,7 +16,7 @@ import {
 import { CommonModule } from '@angular/common';
 
 // XyFlow 系統模組
-import { Position } from '@xyflow/system';
+import { Position, ConnectionMode } from '@xyflow/system';
 import { type Connection } from '@xyflow/system';
 
 // 專案內部模組
@@ -98,7 +98,6 @@ export class HandleComponent implements OnDestroy {
 
     // 添加位置類別 - 與 React Flow 一致
     const position = this.position();
-
     if (position) {
       // Position枚舉值已經是小寫字符串（如'bottom'），直接使用
       classes.push(`xy-flow__handle-${position}`);
@@ -110,7 +109,41 @@ export class HandleComponent implements OnDestroy {
       classes.push(type);
     }
 
-    // 添加狀態類別
+    // 連接狀態類別
+    const connection = this._flowService.connectionState();
+    const clickStartHandle = this._flowService.connectionClickStartHandle();
+    
+    if (connection.inProgress) {
+      const fromHandle = connection.fromHandle;
+      const toHandle = connection.toHandle;
+      
+      // 檢查是否是連接起點
+      if (fromHandle && this.isCurrentHandle(fromHandle)) {
+        classes.push('connectingfrom');
+      }
+      
+      // 檢查是否是連接終點
+      if (toHandle && this.isCurrentHandle(toHandle)) {
+        classes.push('connectingto');
+        if (connection.isValid === true) {
+          classes.push('valid');
+        } else if (connection.isValid === false) {
+          classes.push('invalid');
+        }
+      }
+      
+      // 連接指示器：可以作為目標的 handle
+      if (this.canBeConnectionTarget(fromHandle)) {
+        classes.push('connectionindicator');
+      }
+    }
+    
+    // 點擊連接狀態
+    if (clickStartHandle && this.isCurrentHandle(clickStartHandle)) {
+      classes.push('clickconnecting');
+    }
+    
+    // 舊的連接狀態類別
     if (this.isConnecting()) {
       classes.push('connecting');
     }
@@ -125,9 +158,17 @@ export class HandleComponent implements OnDestroy {
       classes.push('selected');
     }
 
-    // 添加連接狀態類別 - 與 React Flow 一致
-    if (this.isConnectable()) {
+    // 可連接性類別
+    if (this.canConnect()) {
       classes.push('connectable');
+      
+      if (this.isConnectableStart()) {
+        classes.push('connectablestart');
+      }
+      
+      if (this.isConnectableEnd()) {
+        classes.push('connectableend');
+      }
     } else {
       classes.push('disconnected');
     }
@@ -179,6 +220,30 @@ export class HandleComponent implements OnDestroy {
     const handleConnectable = this.isConnectable();
     return globalConnectable && handleConnectable;
   });
+
+  // 輔助方法：檢查是否是當前 handle
+  isCurrentHandle(handle: any): boolean {
+    if (!handle) return false;
+    return handle.nodeId === this.nodeId() && 
+           handle.id === (this.handleId() || null) && 
+           handle.type === this.type();
+  }
+
+  // 輔助方法：檢查是否可以作為連接目標
+  canBeConnectionTarget(fromHandle: any): boolean {
+    if (!fromHandle || !this.isConnectableEnd()) return false;
+    
+    const connectionMode = this._flowService.connectionMode();
+    
+    if (connectionMode === ConnectionMode.Strict) {
+      // Strict 模式：只允許異類型連接
+      return fromHandle.type !== this.type();
+    } else {
+      // Loose 模式：允許更靈活的連接
+      return fromHandle.nodeId !== this.nodeId() || 
+             fromHandle.id !== (this.handleId() || null);
+    }
+  }
 
   constructor() {
     // 關鍵：模擬 React Flow Handle 組件的自動行為
@@ -286,9 +351,36 @@ export class HandleComponent implements OnDestroy {
   }
 
   onHandleClick(event: MouseEvent): void {
-    // 阻止事件冒泡
     event.stopPropagation();
 
+    const connectOnClick = this._flowService.connectOnClick();
+    
+    // 如果啟用點擊連接功能
+    if (connectOnClick && this.canConnect()) {
+      const clickStartHandle = this._flowService.connectionClickStartHandle();
+      
+      if (!clickStartHandle) {
+        // 第一次點擊：開始連接
+        if (this.isConnectableStart()) {
+          this._flowService.startClickConnection({
+            nodeId: this.nodeId(),
+            type: this.type(),
+            id: this.handleId() || null
+          });
+        }
+      } else {
+        // 第二次點擊：完成連接
+        if (this.isConnectableEnd()) {
+          this._flowService.completeClickConnection(event, {
+            nodeId: this.nodeId(),
+            type: this.type(),
+            id: this.handleId() || null
+          });
+        }
+      }
+    }
+
+    // 保持原有的事件發射
     this.handleClick.emit({
       event,
       nodeId: this.nodeId(),

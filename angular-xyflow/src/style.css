@@ -9,6 +9,12 @@
 
   --xy-handle-background-color-default: #1a192b;
   --xy-handle-border-color-default: #fff;
+  --xy-handle-border-color-connecting: #1a192b;
+  --xy-handle-bg-color-connecting: #1a192b;
+  --xy-handle-border-color-valid: #4ade80;
+  --xy-handle-bg-color-valid: rgba(74, 222, 128, 0.1);
+  --xy-handle-border-color-invalid: #ef4444;
+  --xy-handle-bg-color-invalid: #ef4444;
 
   --xy-selection-background-color-default: rgba(0, 89, 220, 0.08);
   --xy-selection-border-default: 1px dotted rgba(0, 89, 220, 0.8);
@@ -39,6 +45,12 @@
 
   --xy-handle-background-color-default: #bebebe;
   --xy-handle-border-color-default: #1e1e1e;
+  --xy-handle-border-color-connecting: #bebebe;
+  --xy-handle-bg-color-connecting: #bebebe;
+  --xy-handle-border-color-valid: #4ade80;
+  --xy-handle-bg-color-valid: rgba(74, 222, 128, 0.2);
+  --xy-handle-border-color-invalid: #ef4444;
+  --xy-handle-bg-color-invalid: #ef4444;
 
   --xy-selection-background-color-default: rgba(200, 200, 220, 0.08);
   --xy-selection-border-default: 1px dotted rgba(200, 200, 220, 0.8);
@@ -79,11 +91,36 @@
     outline: none;
   }
 
+  /* 🔑 修正：使用後代選擇器匹配 SVG 結構 */
   &.selected .angular-xyflow__edge-path,
   &.selectable:focus .angular-xyflow__edge-path,
   &.selectable:focus-visible .angular-xyflow__edge-path {
-    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default));
-    stroke-width: 2;
+    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default)) !important;
+    stroke-width: 1 !important;
+  }
+  
+  /* 🔑 新增：inactive edge 樣式 - 與 React Flow 一致 */
+  &.inactive {
+    pointer-events: none;
+    cursor: default;
+    
+    .angular-xyflow__edge-path {
+      pointer-events: none;
+      cursor: default;
+    }
+    
+    .angular-xyflow__edge-interaction {
+      pointer-events: none;
+    }
+  }
+  
+  /* 🔑 新增：selectable edge 樣式 */
+  &.selectable {
+    cursor: pointer;
+    
+    .angular-xyflow__edge-path {
+      cursor: pointer;
+    }
   }
   
   /* 確保動畫 edge 的互動區域不受動畫影響 */
@@ -99,18 +136,32 @@
   stroke: #b1b1b7;
   stroke-width: 1;
   
+  /* 🔑 關鍵修正：多重選中狀態樣式確保生效 */
+  &.selected {
+    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default)) !important;
+    stroke-width: 1 !important;
+  }
+  
   &.animated {
     stroke-dasharray: 5;
     animation: dashdraw 0.5s linear infinite;
+    
+    /* 動畫邊的選中狀態樣式 */
+    &.selected {
+      stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default)) !important;
+      stroke-width: 1 !important;
+      stroke-dasharray: 5;
+      animation: dashdraw 0.5s linear infinite;
+    }
   }
-  
-  /* 動畫邊的選中狀態樣式 */
-  &.animated.selected {
-    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default));
-    stroke-width: 2;
-    stroke-dasharray: 5;
-    animation: dashdraw 0.5s linear infinite;
-  }
+}
+
+/* 🔧 額外的強化選擇器 - 多層級保障 */
+.angular-xyflow__edge.selected path.angular-xyflow__edge-path,
+.angular-xyflow__edge path.angular-xyflow__edge-path.selected,
+svg .angular-xyflow__edge-path.selected {
+  stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default)) !important;
+  stroke-width: 1 !important;
 }
 
 /* Edge label styles */
@@ -156,6 +207,20 @@
       box-shadow: var(--xy-node-boxshadow-selected, var(--xy-node-boxshadow-selected-default));
     }
   }
+
+  /* 🔑 新增：draggable node 樣式 - 與 React Flow 一致 */
+  &.draggable {
+    cursor: grab;
+
+    &.dragging {
+      cursor: grabbing;
+    }
+  }
+
+  /* 🔑 新增：non-draggable node 樣式 */
+  &:not(.draggable) {
+    cursor: default;
+  }
 }
 
 
@@ -200,6 +265,53 @@
 /* Handle 在可連接狀態下應該能夠點擊 */
 .xy-flow__handle.connectable {
   pointer-events: all;
+  cursor: crosshair;
+}
+
+/* 點擊連接狀態 */
+.xy-flow__handle.clickconnecting {
+  background-color: var(--xy-handle-border-color-connecting, #1a192b);
+  border-color: var(--xy-handle-border-color-connecting, #1a192b);
+  box-shadow: 0 0 0 2px rgba(26, 25, 43, 0.3);
+}
+
+/* 連接指示器增強 */
+.xy-flow__handle.connectionindicator {
+  &.connectablestart {
+    border-color: var(--xy-handle-border-color-valid, #4ade80);
+  }
+  
+  &.connectableend {
+    background-color: var(--xy-handle-bg-color-valid, rgba(74, 222, 128, 0.1));
+    border-color: var(--xy-handle-border-color-valid, #4ade80);
+  }
+}
+
+/* 連接狀態視覺反饋 */
+.xy-flow__handle.connectingfrom {
+  background-color: var(--xy-handle-bg-color-connecting, #1a192b);
+  border-color: var(--xy-handle-border-color-connecting, #1a192b);
+  box-shadow: 0 0 0 2px rgba(26, 25, 43, 0.3);
+}
+
+.xy-flow__handle.connectingto {
+  &.valid {
+    background-color: var(--xy-handle-bg-color-valid, #4ade80);
+    border-color: var(--xy-handle-border-color-valid, #4ade80);
+  }
+  
+  &.invalid {
+    background-color: var(--xy-handle-bg-color-invalid, #ef4444);
+    border-color: var(--xy-handle-border-color-invalid, #ef4444);
+  }
+}
+
+/* 可連接性狀態 */
+.xy-flow__handle.connectablestart {
+  cursor: pointer;
+}
+
+.xy-flow__handle.connectableend {
   cursor: crosshair;
 }
 
