@@ -763,6 +763,10 @@ export class AngularXYFlowService<
   private drag: XYDragInstance | null = null;
   private handle: any | null = null;
   containerElement: HTMLElement | null = null;
+  
+  // PanZoom 就緒狀態追蹤
+  private _panZoomReady = signal(false);
+  panZoomReady = computed(() => this._panZoomReady());
 
   // 獲取容器元素方法 - 提供給子服務使用
   getContainerElement(): HTMLElement | null {
@@ -2096,6 +2100,8 @@ export class AngularXYFlowService<
   // 設置 PanZoom 實例
   setPanZoom(panZoomInstance: PanZoomInstance) {
     this.panZoom = panZoomInstance;
+    this._panZoomReady.set(true); // 明確標記就緒狀態
+    console.log('AngularXYFlowService: PanZoom instance ready');
   }
 
   // 設置容器尺寸

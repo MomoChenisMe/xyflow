@@ -156,12 +156,23 @@ export class MinimapComponent implements OnDestroy {
   private _flowService = inject(AngularXYFlowService);
   
   constructor() {
-    // 設置XYMinimap實例 - 只在 SVG 元素和 panZoom 可用時執行一次
+    // 監聽 viewScale 變化並更新引用
+    effect(() => {
+      this.viewScaleRef = this.viewScale();
+    });
+    
+    // 設置XYMinimap實例 - 使用就緒狀態確保正確初始化
     effect(() => {
       const svgEl = this.svg()?.nativeElement;
+      const panZoomReady = this._flowService.panZoomReady();
       const panZoom = this._flowService.getPanZoomInstance();
+      const pannable = this.pannable();
+      const zoomable = this.zoomable();
       
-      if (svgEl && panZoom && !this.minimapInstance) {
+      // 重要：確保PanZoom就緒且交互功能啟用時才初始化 XYMinimap
+      if (svgEl && panZoomReady && panZoom && (pannable || zoomable) && !this.minimapInstance) {
+        console.log('MiniMap: Initializing with pannable:', pannable, 'zoomable:', zoomable, 'panZoomReady:', panZoomReady);
+        
         this.minimapInstance = XYMinimap({
           domNode: svgEl,
           panZoom,
@@ -172,25 +183,29 @@ export class MinimapComponent implements OnDestroy {
           getViewScale: () => this.viewScaleRef,
         });
         
-        this.updateMinimap();
+        // 立即更新配置
+        this.updateMinimapConfig();
+      }
+      // 如果交互功能被禁用且實例存在，則銷毀實例
+      else if (!pannable && !zoomable && this.minimapInstance) {
+        console.log('MiniMap: Destroying instance - no interaction enabled');
+        this.minimapInstance.destroy();
+        this.minimapInstance = null;
       }
     });
     
-    // 監聽 viewScale 變化並更新引用
+    // 專門的配置更新 effect - 分離配置更新邏輯
     effect(() => {
-      this.viewScaleRef = this.viewScale();
-    });
-    
-    // 監聽 minimap 相關配置變化
-    effect(() => {
-      // 觸發依賴：pannable, zoomable, inversePan, zoomStep, 容器尺寸
       const pannable = this.pannable();
       const zoomable = this.zoomable();
       const inversePan = this.inversePan();
       const zoomStep = this.zoomStep();
       const dimensions = this._flowService.dimensions();
       
-      this.updateMinimap();
+      // 確保在配置變化時立即更新
+      if (this.minimapInstance) {
+        this.updateMinimapConfig();
+      }
     });
     
     // 監聽視窗變化 - 確保視窗變化時立即更新
@@ -401,20 +416,31 @@ export class MinimapComponent implements OnDestroy {
     this.minimapInstance?.destroy();
   }
   
-  // 更新minimap實例
-  private updateMinimap() {
-    if (!this.minimapInstance) return;
+  // 更新minimap配置 - 改進的配置更新方法
+  private updateMinimapConfig(): void {
+    if (!this.minimapInstance) {
+      console.warn('MiniMap: Cannot update config - instance not initialized');
+      return;
+    }
     
-    const dimensions = this._flowService.dimensions();
-    this.minimapInstance.update({
-      translateExtent: [[-Infinity, -Infinity], [Infinity, Infinity]],
-      width: dimensions.width,
-      height: dimensions.height,
-      inversePan: this.inversePan(),
-      pannable: this.pannable(),
-      zoomStep: this.zoomStep(),
-      zoomable: this.zoomable(),
-    });
+    try {
+      const dimensions = this._flowService.dimensions();
+      const config = {
+        translateExtent: [[-Infinity, -Infinity], [Infinity, Infinity]] as [[number, number], [number, number]],
+        width: dimensions.width,
+        height: dimensions.height,
+        inversePan: this.inversePan(),
+        pannable: this.pannable(),
+        zoomStep: this.zoomStep(),
+        zoomable: this.zoomable(),
+      };
+      
+      console.log('MiniMap: Updating config:', config);
+      this.minimapInstance.update(config);
+      
+    } catch (error) {
+      console.error('MiniMap: Failed to update config:', error);
+    }
   }
   
   // 統一位置計算方法

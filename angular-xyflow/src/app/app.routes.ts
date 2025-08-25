@@ -28,6 +28,7 @@ import { FigmaExampleComponent } from './components/examples/figma-example/figma
 import { FloatingEdgesComponent } from './components/examples/floating-edges/floating-edges.component';
 import { HiddenExampleComponent } from './components/examples/hidden-example/hidden-example.component';
 import { InteractionExampleComponent } from './components/examples/interaction-example/interaction-example.component';
+import { InteractiveMinimapExampleComponent } from './components/examples/interactive-minimap-example/interactive-minimap-example.component';
 
 export interface IRoute {
   name: string;
@@ -172,6 +173,11 @@ export const routeList: IRoute[] = [
     component: InteractionExampleComponent,
   },
   {
+    name: 'Interactive Minimap',
+    path: 'interactive-minimap',
+    component: InteractiveMinimapExampleComponent,
+  },
+  {
     name: 'Edges',
     path: 'edges',
     component: EdgesExample,
@@ -227,6 +233,7 @@ export const routes: Routes = [
   { path: 'floating-edges', component: FloatingEdgesComponent },
   { path: 'hidden', component: HiddenExampleComponent },
   { path: 'interaction', component: InteractionExampleComponent },
+  { path: 'interactive-minimap', component: InteractiveMinimapExampleComponent },
   { path: 'edges', component: EdgesExample },
   { path: 'edge-types', component: EdgeTypesComponent },
 ];
