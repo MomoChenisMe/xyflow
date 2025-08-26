@@ -34,7 +34,9 @@ import {
   EdgeChange,
 } from '../types';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SelectionService<
   NodeType extends AngularNode = AngularNode,
   EdgeType extends AngularEdge = AngularEdge

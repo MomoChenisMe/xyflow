@@ -69,12 +69,6 @@ import { applyNodeChanges } from '../../angular-xyflow/utils/changes';
         color: #666;
         font-size: 14px;
       }
-
-      /* 高亮效果樣式 */
-      ::ng-deep .highlight {
-        box-shadow: 0 0 0 2px #ee3a73 !important;
-      }
-
     `,
   ],
 })

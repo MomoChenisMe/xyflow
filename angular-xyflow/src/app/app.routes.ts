@@ -22,15 +22,16 @@ import { EasyConnectExampleComponent } from './components/examples/easy-connect-
 import { EdgeRendererExampleComponent } from './components/examples/edge-renderer-example/edge-renderer-example.component';
 import { EdgeRoutingExampleComponent } from './components/examples/edge-routing-example/edge-routing-example.component';
 import { EdgesExample } from './components/examples/edges-example/edges-example';
-import { EdgeTypesComponent } from './components/examples/edge-types/edge-types';
+import { EdgeTypesComponent } from './components/examples/edge-types-example/edge-types';
 import { EmptyExampleComponent } from './components/examples/empty-example/empty-example.component';
 import { FigmaExampleComponent } from './components/examples/figma-example/figma-example.component';
-import { FloatingEdgesComponent } from './components/examples/floating-edges/floating-edges.component';
+import { FloatingEdgesComponent } from './components/examples/floating-edges-example/floating-edges.component';
 import { HiddenExampleComponent } from './components/examples/hidden-example/hidden-example.component';
 import { InteractionExampleComponent } from './components/examples/interaction-example/interaction-example.component';
 import { InteractiveMinimapExampleComponent } from './components/examples/interactive-minimap-example/interactive-minimap-example.component';
 import { IntersectionExampleComponent } from './components/examples/intersection-example/intersection-example.component';
 import { LayoutingExampleComponent } from './components/examples/layouting-example/layouting-example.component';
+import { MultiSetNodesExampleComponent } from './components/examples/multi-set-nodes-example/multi-set-nodes-example.component';
 
 export interface IRoute {
   name: string;
@@ -199,6 +200,11 @@ export const routeList: IRoute[] = [
     path: 'layouting',
     component: LayoutingExampleComponent,
   },
+  {
+    name: 'Multi Set Nodes',
+    path: 'multi-set-nodes',
+    component: MultiSetNodesExampleComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -235,4 +241,5 @@ export const routes: Routes = [
   { path: 'interactive-minimap', component: InteractiveMinimapExampleComponent },
   { path: 'intersection', component: IntersectionExampleComponent },
   { path: 'layouting', component: LayoutingExampleComponent },
+  { path: 'multi-set-nodes', component: MultiSetNodesExampleComponent },
 ];

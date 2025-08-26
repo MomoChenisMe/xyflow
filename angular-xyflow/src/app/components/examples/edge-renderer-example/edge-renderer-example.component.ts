@@ -68,7 +68,7 @@ import {
       }
 
       :host ::ng-deep .angular-xyflow__edge-path {
-        stroke-width: 2;
+        stroke-width: 1;
       }
     `,
   ],

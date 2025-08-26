@@ -2,7 +2,6 @@ import {
   Component,
   input,
   computed,
-  inject,
   CUSTOM_ELEMENTS_SCHEMA,
   ChangeDetectionStrategy,
 } from '@angular/core';
@@ -10,7 +9,6 @@ import { CommonModule } from '@angular/common';
 import { getBezierPath, Position } from '@xyflow/system';
 import { BaseEdgeComponent } from '../../angular-xyflow/components/edges/base-edge.component';
 import { EdgeLabelRendererComponent } from '../../angular-xyflow/components/edge-label-renderer/edge-label-renderer.component';
-import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyflow.service';
 
 @Component({
   selector: 'svg:svg[app-edge-renderer-custom-edge]',
@@ -58,9 +56,6 @@ import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyfl
   `,
 })
 export class EdgeRendererCustomEdgeComponent {
-  // 注入服務
-  private flowService = inject(AngularXYFlowService);
-
   // 使用 Angular 20 的 input signal API
   id = input.required<string>();
   source = input.required<string>();
@@ -86,6 +81,13 @@ export class EdgeRendererCustomEdgeComponent {
   deletable = input<boolean>(true);
   selectable = input<boolean>(true);
   style = input<Record<string, any>>();
+  
+  // 新增：接收節點拖拽狀態作為輸入，避免注入服務
+  isAnyConnectedNodeDragging = input<boolean>(false);
+  
+  // 🔑 關鍵修正：添加 sourceNode 和 targetNode 輸入屬性（自定義邊組件需要）
+  sourceNode = input<any>();
+  targetNode = input<any>();
 
   // 計算屬性
   pathData = computed(() => {
@@ -115,15 +117,9 @@ export class EdgeRendererCustomEdgeComponent {
     return edgeData?.['text'] || '';
   });
 
-  // 檢查連接的節點是否正在拖動
+  // 檢查連接的節點是否正在拖動 - 簡化為使用輸入狀態
   isConnectedNodeDragging = computed(() => {
-    const nodes = this.flowService.nodes();
-    const source = this.source();
-    const target = this.target();
-    
-    return nodes.some(
-      (node) => node.dragging && (target === node.id || source === node.id)
-    );
+    return this.isAnyConnectedNodeDragging();
   });
 
   onButtonClick(event: MouseEvent): void {

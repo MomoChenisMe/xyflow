@@ -247,6 +247,12 @@ export interface AngularXYFlowInstance<NodeType extends AngularNode = AngularNod
   updateNodeData: (id: string, dataUpdate: any | ((node: NodeType) => any)) => void;
   updateEdge: (id: string, edgeUpdate: Partial<EdgeType> | ((edge: EdgeType) => Partial<EdgeType>)) => void;
   deleteElements: (elements: { nodes?: { id: string }[]; edges?: { id: string }[] }) => void;
+  
+  // 批量操作方法
+  batchUpdateNodeData: (updates: Map<string, any>) => void;
+  batchUpdateEdges: (updates: Map<string, Partial<EdgeType>>) => void;
+  batchSetNodes: (updateFn: (nodes: NodeType[]) => NodeType[]) => void;
+  
   fitView: (options?: SystemFitViewOptions) => void;
   setViewport: (viewport: Viewport) => void;
   getViewport: () => Viewport;

@@ -2,12 +2,10 @@ import {
   Component,
   input,
   computed,
-  inject,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { getStraightPath } from '@xyflow/system';
-import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyflow.service';
 import { AngularNode } from '../../angular-xyflow/types';
 import { getEdgeParams } from './utils';
 
@@ -70,54 +68,38 @@ export class FloatingEdgeComponent {
   labelBgPadding = input<any>();
   labelBgBorderRadius = input<number>();
   pathOptions = input<any>();
+  
+  // 新增：直接接收節點數據作為輸入，避免注入服務
+  sourceNode = input<any>();
+  targetNode = input<any>();
 
-  // 注入服務
-  private readonly xyflowService = inject(AngularXYFlowService);
-
-  // 計算路徑數據 - 完全匹配 React Flow FloatingEdge 實現
+  // 簡化的路徑數據計算 - 使用輸入的節點數據
   pathData = computed(() => {
-    // 使用 try-catch 處理 required input 的初始化問題
-    let sourceId: string;
-    let targetId: string;
+    const source = this.sourceNode();
+    const target = this.targetNode();
 
-    try {
-      sourceId = this.source();
-      targetId = this.target();
-    } catch {
-      // 如果 required inputs 還未準備好，返回空路徑
-      return '';
-    }
-
-    if (!sourceId || !targetId) {
-      return '';
-    }
-
-    // 從 service 獲取節點內部狀態（包含正確的 positionAbsolute 和 measured）
-    const sourceInternals = this.xyflowService.getNodeInternals(sourceId);
-    const targetInternals = this.xyflowService.getNodeInternals(targetId);
-
-    if (!sourceInternals || !targetInternals) {
+    if (!source || !target) {
       return '';
     }
 
     // 創建與 React Flow InternalNode 相同的數據結構
-    const sourceNode = {
+    const sourceNodeData = {
       internals: {
-        positionAbsolute: sourceInternals.positionAbsolute,
+        positionAbsolute: source.positionAbsolute || source.position,
       },
-      measured: sourceInternals.measured,
+      measured: source.measured || { width: 100, height: 40 },
     };
 
-    const targetNode = {
+    const targetNodeData = {
       internals: {
-        positionAbsolute: targetInternals.positionAbsolute,
+        positionAbsolute: target.positionAbsolute || target.position,
       },
-      measured: targetInternals.measured,
+      measured: target.measured || { width: 100, height: 40 },
     };
 
     const { sx, sy, tx, ty } = getEdgeParams(
-      sourceNode,
-      targetNode
+      sourceNodeData,
+      targetNodeData
     );
 
     // 使用與 React Flow 完全相同的 getStraightPath 調用

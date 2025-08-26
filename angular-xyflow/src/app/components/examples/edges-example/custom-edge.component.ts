@@ -66,6 +66,10 @@ export class CustomEdgeComponent {
   deletable = input<boolean>(true);
   selectable = input<boolean>(true);
   style = input<Record<string, any>>();
+  
+  // 🔑 關鍵修正：添加 sourceNode 和 targetNode 輸入屬性（自定義邊組件需要）
+  sourceNode = input<any>();
+  targetNode = input<any>();
 
   // 計算屬性
   pathData = computed(() => {

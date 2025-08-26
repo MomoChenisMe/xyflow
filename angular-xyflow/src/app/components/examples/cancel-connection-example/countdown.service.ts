@@ -1,6 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class CountdownService {
   private interval: ReturnType<typeof setInterval> | null = null;
 

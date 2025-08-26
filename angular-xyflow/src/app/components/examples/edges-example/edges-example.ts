@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { AngularXYFlowComponent } from '../../angular-xyflow/container/angular-xyflow/angular-xyflow.component';
 import { ControlsComponent } from '../../angular-xyflow/additional-components/controls/controls.component';
 import { BackgroundComponent } from '../../angular-xyflow/additional-components/background/background.component';
@@ -9,33 +10,65 @@ import { CustomEdge3Component } from './custom-edge3.component';
 import {
   AngularNode,
   AngularEdge,
-  Connection,
   MarkerType,
+  NodeChange,
+  EdgeChange,
 } from '../../angular-xyflow/types';
-import { applyNodeChanges, applyEdgeChanges } from '../../angular-xyflow/utils/changes';
-
-// 定義事件類型
-interface NodeMouseEvent {
-  event: MouseEvent;
-  node: AngularNode;
-}
-
-interface EdgeMouseEvent {
-  event: MouseEvent;
-  edge: AngularEdge;
-}
+import { Connection, addEdge } from '@xyflow/system';
+import {
+  applyNodeChanges,
+  applyEdgeChanges,
+} from '../../angular-xyflow/utils/changes';
 
 @Component({
   selector: 'app-edges-example',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CommonModule,
     AngularXYFlowComponent,
     ControlsComponent,
     BackgroundComponent,
     MinimapComponent,
   ],
-  templateUrl: './edges-example.html',
-  styleUrl: './edges-example.scss',
+  template: `
+    <angular-xyflow
+      [nodes]="nodes()"
+      [edges]="edges()"
+      [edgeTypes]="edgeTypes"
+      [defaultEdgeOptions]="defaultEdgeOptions"
+      [snapToGrid]="true"
+      (onNodesChange)="onNodesChange($event)"
+      (onEdgesChange)="onEdgesChange($event)"
+      (onNodeClick)="onNodeClick($event)"
+      (onNodeDragStop)="onNodeDragStop($event)"
+      (onEdgeClick)="onEdgeClick($event)"
+      (onEdgeDoubleClick)="onEdgeDoubleClick($event)"
+      (onConnect)="onConnect($event)"
+    >
+      <angular-xyflow-minimap />
+      <angular-xyflow-controls />
+      <angular-xyflow-background />
+    </angular-xyflow>
+  `,
+  styles: [
+    `
+      :host {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      angular-xyflow {
+        width: 100%;
+        height: 100%;
+      }
+
+      :host ::ng-deep .normal-edge {
+        stroke: #b1b1b7;
+      }
+    `,
+  ],
 })
 export class EdgesExample {
   // 初始節點
@@ -218,57 +251,35 @@ export class EdgesExample {
     },
   };
 
-  // 事件處理器
-  onNodeDragStop(event: any) {
-    console.log('drag stop', event.node || event);
+  // 事件處理方法
+  onNodeDragStop(event: { event: MouseEvent; node: AngularNode }): void {
+    console.log('drag stop', event.node);
   }
 
-  onNodeClick(event: any) {
-    console.log('click', event.node || event);
+  onNodeClick(event: { event: MouseEvent; node: AngularNode }): void {
+    console.log('click', event.node);
   }
 
-  onEdgeClick(event: any) {
-    console.log('click', event.edge || event);
+  onEdgeClick(event: { event: MouseEvent; edge: AngularEdge }): void {
+    console.log('click', event.edge);
   }
 
-  onEdgeDoubleClick(event: any) {
-    console.log('dblclick', event.edge || event);
+  onEdgeDoubleClick(event: { event: MouseEvent; edge: AngularEdge }): void {
+    console.log('dblclick', event.edge);
   }
 
-  onEdgeMouseEnter(event: any) {
-    console.log('enter', event.edge || event);
-  }
 
-  onEdgeMouseMove(event: any) {
-    console.log('move', event.edge || event);
-  }
-
-  onEdgeMouseLeave(event: any) {
-    console.log('leave', event.edge || event);
-  }
-
-  onNodesChange(changes: any) {
+  // 變更處理方法
+  onNodesChange(changes: NodeChange<AngularNode>[]): void {
     this.nodes.update(nodes => applyNodeChanges(changes, nodes));
   }
 
-  onEdgesChange(changes: any) {
+  onEdgesChange(changes: EdgeChange<AngularEdge>[]): void {
     this.edges.update(edges => applyEdgeChanges(changes, edges));
   }
 
-  onConnect(connection: any) {
-    const newEdge: AngularEdge = {
-      id: `e${connection.source}-${connection.target}`,
-      source: connection.source!,
-      target: connection.target!,
-      sourceHandle: connection.sourceHandle || undefined,
-      targetHandle: connection.targetHandle || undefined,
-      ...this.defaultEdgeOptions,
-    };
-
-    this.edges.update((edges) => [...edges, newEdge]);
+  onConnect(params: Connection): void {
+    this.edges.update((edges) => addEdge(params, edges));
   }
 
-  onDelete(elements: any) {
-    console.log('delete', elements);
-  }
 }

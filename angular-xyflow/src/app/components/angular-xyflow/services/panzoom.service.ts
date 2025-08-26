@@ -16,7 +16,9 @@ import {
 import { AngularXYFlowService } from './angular-xyflow.service';
 import { isRightClickPan } from '../utils/pan-drag-utils';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class AngularXYFlowPanZoomService {
   // 依賴注入
   private _flowService = inject(AngularXYFlowService);

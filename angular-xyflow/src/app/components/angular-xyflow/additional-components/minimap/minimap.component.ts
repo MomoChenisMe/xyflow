@@ -46,7 +46,7 @@ import type { MinimapNodeTemplateContext, MinimapNodeComponentProps } from '../.
         [attr.width]="elementWidth()"
         [attr.height]="elementHeight()"
         [attr.viewBox]="viewBox()"
-        class="xy-flow__minimap-svg"
+        [class]="'xy-flow__minimap-svg ' + (isInteractive() ? 'interactive' : 'non-interactive')"
         role="img"
         [attr.aria-labelledby]="labelledBy"
         (click)="onSvgClick($event)"
@@ -59,7 +59,11 @@ import type { MinimapNodeTemplateContext, MinimapNodeComponentProps } from '../.
         @for (node of visibleNodes(); track node.id) {
           @if (customNodeTemplate(); as template) {
             <!-- 使用自定義節點模板 -->
-            <svg:g [attr.class]="'xy-flow__minimap-node ' + (shouldShowSelected(node) ? 'selected' : '') + ' ' + (nodeClassName() || '')" (click)="onSvgNodeClick($event, node.id)">
+            <svg:g 
+              [attr.class]="'xy-flow__minimap-node ' + (shouldShowSelected(node) ? 'selected' : '') + ' ' + (nodeClassName() || '') + ' ' + (hasNodeClickHandler() ? 'clickable' : '')"
+              [attr.data-clickable]="hasNodeClickHandler()"
+              (click)="hasNodeClickHandler() ? onSvgNodeClick($event, node.id) : null"
+            >
               <ng-container 
                 [ngTemplateOutlet]="template.templateRef"
                 [ngTemplateOutletContext]="getCustomNodeContext(node)"
@@ -77,9 +81,10 @@ import type { MinimapNodeTemplateContext, MinimapNodeComponentProps } from '../.
               [attr.stroke-width]="nodeStrokeWidth()"
               [attr.rx]="nodeBorderRadius()"
               [attr.ry]="nodeBorderRadius()"
-              [class]="'xy-flow__minimap-node ' + (shouldShowSelected(node) ? 'selected' : '') + ' ' + (nodeClassName() || '')"
+              [class]="'xy-flow__minimap-node ' + (shouldShowSelected(node) ? 'selected' : '') + ' ' + (nodeClassName() || '') + ' ' + (hasNodeClickHandler() ? 'clickable' : '')"
               [attr.shape-rendering]="shapeRendering"
-              (click)="onSvgNodeClick($event, node.id)"
+              [attr.data-clickable]="hasNodeClickHandler()"
+              (click)="hasNodeClickHandler() ? onSvgNodeClick($event, node.id) : null"
             />
           }
         }
@@ -114,6 +119,14 @@ import type { MinimapNodeTemplateContext, MinimapNodeComponentProps } from '../.
       display: block;
     }
     
+    .xy-flow__minimap-svg.non-interactive {
+      cursor: default;
+    }
+    
+    .xy-flow__minimap-svg.interactive {
+      cursor: grab;
+    }
+    
     .xy-flow__minimap-mask {
       fill: var(
         --xy-minimap-mask-background-color-props,
@@ -142,6 +155,10 @@ import type { MinimapNodeTemplateContext, MinimapNodeComponentProps } from '../.
         --xy-minimap-node-stroke-width-props,
         var(--xy-minimap-node-stroke-width, var(--xy-minimap-node-stroke-width-default))
       );
+      cursor: default;
+    }
+    
+    .xy-flow__minimap-node.clickable {
       cursor: pointer;
     }
     
@@ -171,7 +188,6 @@ export class MinimapComponent implements OnDestroy {
       
       // 重要：確保PanZoom就緒且交互功能啟用時才初始化 XYMinimap
       if (svgEl && panZoomReady && panZoom && (pannable || zoomable) && !this.minimapInstance) {
-        console.log('MiniMap: Initializing with pannable:', pannable, 'zoomable:', zoomable, 'panZoomReady:', panZoomReady);
         
         this.minimapInstance = XYMinimap({
           domNode: svgEl,
@@ -188,7 +204,6 @@ export class MinimapComponent implements OnDestroy {
       }
       // 如果交互功能被禁用且實例存在，則銷毀實例
       else if (!pannable && !zoomable && this.minimapInstance) {
-        console.log('MiniMap: Destroying instance - no interaction enabled');
         this.minimapInstance.destroy();
         this.minimapInstance = null;
       }
@@ -273,6 +288,16 @@ export class MinimapComponent implements OnDestroy {
   visibleNodes = computed(() => {
     const nodes = this._flowService.nodes();
     return nodes.filter(node => !node.hidden);
+  });
+  
+  // 檢查是否有節點點擊處理器
+  hasNodeClickHandler = computed(() => {
+    return this.onNodeClick() !== null;
+  });
+  
+  // 檢查是否為交互模式
+  isInteractive = computed(() => {
+    return this.pannable() || this.zoomable();
   });
   
   boundingRect = computed(() => {
@@ -419,7 +444,6 @@ export class MinimapComponent implements OnDestroy {
   // 更新minimap配置 - 改進的配置更新方法
   private updateMinimapConfig(): void {
     if (!this.minimapInstance) {
-      console.warn('MiniMap: Cannot update config - instance not initialized');
       return;
     }
     
@@ -435,11 +459,10 @@ export class MinimapComponent implements OnDestroy {
         zoomable: this.zoomable(),
       };
       
-      console.log('MiniMap: Updating config:', config);
       this.minimapInstance.update(config);
       
     } catch (error) {
-      console.error('MiniMap: Failed to update config:', error);
+      // Silently handle config update errors
     }
   }
   
@@ -458,7 +481,8 @@ export class MinimapComponent implements OnDestroy {
   }
   
   onSvgNodeClick(event: MouseEvent, nodeId: string) {
-    event.stopPropagation();
+    // 移除 event.stopPropagation() 來匹配 React Flow 的事件冒泡行為
+    // React 版本會同時觸發 NodeClick 和 Click 事件
     
     // 根據 React Flow 邏輯：如果交互被禁用，阻止節點點擊事件
     const isSelectable = this._flowService.elementsSelectable();
@@ -474,6 +498,8 @@ export class MinimapComponent implements OnDestroy {
         clickHandler(event, node);
       }
     }
+    
+    // 事件會繼續冒泡到 onSvgClick，與 React 版本行為一致
   }
   
   // 檢查是否應該顯示選中樣式 - 根據 React Flow 邏輯

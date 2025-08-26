@@ -272,6 +272,29 @@ export class EdgeWrapperComponent<EdgeType extends AngularEdge = AngularEdge> {
     if (!isBuiltinEdge) {
       coreInputs['source'] = edge.source;
       coreInputs['target'] = edge.target;
+      
+      // 🔑 關鍵修正：為自定義邊傳遞完整的節點數據
+      // 這對於 FloatingEdge 等需要節點位置和尺寸信息的邊線至關重要
+      const sourceNode = this.flowService.nodeLookup().get(edge.source);
+      const targetNode = this.flowService.nodeLookup().get(edge.target);
+      
+      if (sourceNode) {
+        const sourceInternals = this.flowService.getNodeInternals(edge.source);
+        coreInputs['sourceNode'] = {
+          ...sourceNode,
+          positionAbsolute: sourceInternals?.positionAbsolute || sourceNode.position,
+          measured: sourceInternals?.measured || { width: 100, height: 40 }
+        };
+      }
+      
+      if (targetNode) {
+        const targetInternals = this.flowService.getNodeInternals(edge.target);
+        coreInputs['targetNode'] = {
+          ...targetNode,
+          positionAbsolute: targetInternals?.positionAbsolute || targetNode.position,
+          measured: targetInternals?.measured || { width: 100, height: 40 }
+        };
+      }
     }
 
     // 為 BaseEdge 傳遞 selectable 屬性

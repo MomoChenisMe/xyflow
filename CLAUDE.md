@@ -1555,3 +1555,116 @@ npm run e2e         # E2E tests
 
 ## Response Language
 Always response in #zh-tw
+
+---
+
+## Angular 依賴注入常見錯誤解決方案
+
+### NG0201 錯誤：No provider found for service
+
+#### 錯誤現象
+```
+ɵNotFound: NG0201: No provider found for `_AngularXYFlowService`. 
+Source: Standalone[_MultiSetNodesExampleComponent]. 
+Find more at https://angular.dev/errors/NG0201
+```
+
+#### 根本原因
+Angular 獨立組件 (standalone components) 在使用 `inject()` 函數注入服務時，如果該服務沒有正確配置為全域提供者，就會出現此錯誤。
+
+#### 具體問題分析
+1. **服務未配置為全域提供者**: `@Injectable()` 裝飾器缺少 `providedIn: 'root'` 配置
+2. **獨立組件的依賴注入範圍**: 獨立組件不屬於任何 NgModule，因此需要服務在根注入器中可用
+3. **編譯時與運行時的差異**: 編譯通過但運行時找不到服務提供者
+
+#### 解決方案
+
+**✅ 正確做法：**
+```typescript
+// angular-xyflow.service.ts
+@Injectable({
+  providedIn: 'root'  // 🔑 關鍵：將服務註冊為全域提供者
+})
+export class AngularXYFlowService<
+  NodeType extends AngularNode = AngularNode,
+  EdgeType extends AngularEdge = AngularEdge
+> {
+  // 服務實現...
+}
+```
+
+**❌ 錯誤做法：**
+```typescript
+// angular-xyflow.service.ts
+@Injectable()  // 🚫 缺少 providedIn 配置
+export class AngularXYFlowService {
+  // 服務實現...
+}
+```
+
+#### 其他可能的解決方案
+
+**方案一：在組件中提供服務 (不推薦)**
+```typescript
+@Component({
+  providers: [AngularXYFlowService],  // 組件級提供者
+  // ...
+})
+export class MultiSetNodesExampleComponent {
+  // 每個組件實例都會創建新的服務實例，破壞單例模式
+}
+```
+
+**方案二：在應用啟動時提供服務 (適用於複雜場景)**
+```typescript
+// main.ts
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AngularXYFlowService } from './app/services/angular-xyflow.service';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    AngularXYFlowService,  // 在啟動時提供服務
+    // 其他提供者...
+  ]
+});
+```
+
+#### 預防措施
+
+1. **服務創建時立即配置**：創建新服務時，立即添加 `providedIn: 'root'`
+2. **依賴服務檢查**：確保所有被注入的依賴服務也正確配置了提供者
+3. **獨立組件最佳實踐**：使用獨立組件時，偏好全域服務而非組件級服務
+
+#### 相關錯誤模式
+
+**相依服務的鏈式錯誤**：
+```typescript
+// 如果 KeyboardService 也沒有正確配置，會導致相同錯誤
+@Injectable()  // ❌ 缺少 providedIn
+export class KeyboardService { }
+
+@Injectable({ providedIn: 'root' })
+export class AngularXYFlowService {
+  private keyboard = inject(KeyboardService);  // 會失敗
+}
+```
+
+**正確的依賴鏈**：
+```typescript
+@Injectable({ providedIn: 'root' })  // ✅ 正確配置
+export class KeyboardService { }
+
+@Injectable({ providedIn: 'root' })  // ✅ 正確配置
+export class AngularXYFlowService {
+  private keyboard = inject(KeyboardService);  // ✅ 成功注入
+}
+```
+
+#### 調試技巧
+
+1. **檢查服務裝飾器**：確認所有 `@Injectable()` 都有 `providedIn: 'root'`
+2. **追蹤依賴鏈**：檢查服務的所有依賴是否也正確配置
+3. **使用開發者工具**：在瀏覽器控制台查看完整的錯誤堆疊
+4. **漸進式調試**：注釋掉服務注入，逐步啟用以找出問題源頭
+
+此錯誤是 Angular 獨立組件和現代依賴注入系統中的常見問題，正確配置 `providedIn: 'root'` 是最直接有效的解決方案。

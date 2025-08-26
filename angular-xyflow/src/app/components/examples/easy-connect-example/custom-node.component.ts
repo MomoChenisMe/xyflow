@@ -1,14 +1,12 @@
 import {
   Component,
   input,
-  inject,
   computed,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HandleComponent } from '../../angular-xyflow/components/handle/handle.component';
 import { Position } from '@xyflow/system';
-import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyflow.service';
 
 @Component({
   selector: 'app-custom-node',
@@ -80,19 +78,24 @@ export class CustomNodeComponent {
 
   Position = Position;
 
-  private xyflowService = inject(AngularXYFlowService);
+  // 新增：接收連線狀態作為輸入，避免注入服務
+  connectionInProgress = input<boolean>(false);
+  connectionFromNodeId = input<string>();
 
-  // 獲取當前連線狀態 - 直接使用 readonly signal 避免額外計算層
-  connectionStateSignal = this.xyflowService.connectionState;
-
-  // 計算是否為目標節點 - 添加更嚴格的檢查避免不必要的重計算
+  // 簡化的目標節點檢查 - 使用輸入狀態
   isTarget = computed(() => {
-    const conn = this.connectionStateSignal();
-    if (!conn.inProgress) return false;
-    const fromNodeId = conn.fromNode?.id;
+    const inProgress = this.connectionInProgress();
+    if (!inProgress) return false;
+    const fromNodeId = this.connectionFromNodeId();
     const currentId = this.id();
     return fromNodeId !== currentId;
   });
+
+  // 為了向後兼容，創建一個模擬的connectionState signal
+  connectionStateSignal = computed(() => ({
+    inProgress: this.connectionInProgress(),
+    fromNode: this.connectionFromNodeId() ? { id: this.connectionFromNodeId() } : null
+  }));
 
   // 根據狀態顯示不同標籤 - 使用靜態字串避免創建新對象
   label = computed(() => {

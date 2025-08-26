@@ -21,7 +21,7 @@ import {
   BackgroundVariant,
 } from '../../angular-xyflow';
 
-// 初始節點數據 - 與 React 範例完全相同
+// 初始節點數據 - 與 React 範例完全相同（包括原版的重複 labels）
 const INITIAL_NODES: AngularNode[] = [
   {
     id: '1',
@@ -55,32 +55,32 @@ const INITIAL_NODES: AngularNode[] = [
   },
   {
     id: '7',
-    data: { label: 'Node 7' },
+    data: { label: 'Node 4' },
     position: { x: 0, y: 1000 },
   },
   {
     id: '8',
-    data: { label: 'Node 8' },
+    data: { label: 'Node 5' },
     position: { x: 0, y: 800 },
   },
   {
     id: '9',
-    data: { label: 'Node 9' },
+    data: { label: 'Node 6' },
     position: { x: 200, y: 1000 },
   },
   {
     id: '10',
-    data: { label: 'Node 10' },
+    data: { label: 'Node 4' },
     position: { x: 1000, y: 1000 },
   },
   {
     id: '11',
-    data: { label: 'Node 11' },
+    data: { label: 'Node 5' },
     position: { x: 800, y: 1000 },
   },
   {
     id: '12',
-    data: { label: 'Node 12' },
+    data: { label: 'Node 6' },
     position: { x: 1000, y: 800 },
   },
 ];

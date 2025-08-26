@@ -190,7 +190,7 @@ export class LayoutingExampleComponent implements OnInit {
   }
 
 
-  // Dagre 布局算法
+  // Dagre 布局算法 - 優化版本（與 React Flow 行為一致）
   onLayout(direction: 'TB' | 'LR'): void {
     const isHorizontal = direction === 'LR';
     const currentNodes = this.nodes();
@@ -214,13 +214,15 @@ export class LayoutingExampleComponent implements OnInit {
     // 執行布局計算
     dagre.layout(this.dagreGraph);
 
-    // 更新節點位置
+    // 更新節點位置和連接點位置
     const layoutedNodes = currentNodes.map(node => {
       const nodeWithPosition = this.dagreGraph.node(node.id);
       return {
         ...node,
+        // 🔑 關鍵：設定 handle 的位置
         targetPosition: isHorizontal ? Position.Left : Position.Top,
         sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
+        // 更新節點位置
         position: {
           x: nodeWithPosition.x,
           y: nodeWithPosition.y,
@@ -228,35 +230,9 @@ export class LayoutingExampleComponent implements OnInit {
       };
     });
 
+    // 直接更新節點，讓 Angular 的變更檢測和 Signal 系統自動處理
+    // 不需要手動刷新或延遲，系統會自動重新計算 edges
     this.nodes.set(layoutedNodes);
-
-    // 🔍 強制刷新 handleBounds 以反映新的 position 設置
-    setTimeout(() => {
-      const flow = this.angularFlow();
-      if (flow) {
-        const flowService = (flow as any)._flowService;
-        if (flowService) {
-          // 清除緩存
-          if (flowService.forceRefreshHandleBounds) {
-            flowService.forceRefreshHandleBounds();
-          }
-
-          // 強制測量所有節點的 handleBounds
-          setTimeout(() => {
-            const nodes = this.nodes();
-            nodes.forEach(node => {
-              const bounds = flowService.measureNodeHandleBounds?.(node.id);
-              if (bounds) {
-                flowService.nodeHandleBounds?.set(node.id, bounds);
-              }
-            });
-
-            // 觸發更新
-            flowService._nodeInternalsUpdateTrigger?.update((v: number) => v + 1);
-          }, 200); // 額外延遲確保 DOM 完全更新
-        }
-      }
-    }, 100); // 稍微延遲以確保 DOM 已更新
   }
 
   // 取消選擇所有節點

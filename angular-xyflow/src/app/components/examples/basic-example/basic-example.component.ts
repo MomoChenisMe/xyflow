@@ -61,7 +61,7 @@ import {
     >
       <angular-xyflow-background [variant]="backgroundVariant.Dots" />
 
-      <angular-xyflow-minimap [pannable]="true" [zoomable]="true" />
+      <angular-xyflow-minimap />
 
       <angular-xyflow-controls />
 

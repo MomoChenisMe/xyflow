@@ -1,7 +1,6 @@
-import { Component, ChangeDetectionStrategy, CUSTOM_ELEMENTS_SCHEMA, input, computed, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, CUSTOM_ELEMENTS_SCHEMA, input, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Position, getBezierPath } from '@xyflow/system';
-import { AngularXYFlowService } from '../../angular-xyflow/services/angular-xyflow.service';
 import { getEdgeParams } from './floating-edges.utils';
 
 @Component({
@@ -27,8 +26,6 @@ import { getEdgeParams } from './floating-edges.utils';
   `,
 })
 export class FloatingEdgeComponent {
-  private flowService = inject(AngularXYFlowService);
-
   // 基本邊線屬性 - 與React版本的EdgeProps一致
   id = input.required<string>();
   source = input.required<string>();
@@ -55,29 +52,31 @@ export class FloatingEdgeComponent {
   deletable = input<boolean>(true);
   selectable = input<boolean>(true);
 
-  // 模擬React版本的useStore邏輯 - 獲取實時節點數據
+  // 新增：直接接收節點數據作為輸入，避免注入服務
+  sourceNode = input<any>();
+  targetNode = input<any>();
+
+  // 簡化的節點數據處理 - 使用輸入的節點數據
   sourceAndTargetNodes = computed(() => {
-    const sourceNode = this.flowService.nodeLookup().get(this.source());
-    const targetNode = this.flowService.nodeLookup().get(this.target());
+    const sourceNode = this.sourceNode();
+    const targetNode = this.targetNode();
     
     // 為節點添加絕對位置信息，用於正確的浮動邊線計算
     let sourceNodeWithAbsolute = sourceNode;
     let targetNodeWithAbsolute = targetNode;
     
     if (sourceNode) {
-      const sourceInternals = this.flowService.getNodeInternals(sourceNode.id);
       sourceNodeWithAbsolute = {
         ...sourceNode,
-        positionAbsolute: sourceInternals?.positionAbsolute || sourceNode.position
-      } as any;
+        positionAbsolute: sourceNode.positionAbsolute || sourceNode.position
+      };
     }
     
     if (targetNode) {
-      const targetInternals = this.flowService.getNodeInternals(targetNode.id);
       targetNodeWithAbsolute = {
         ...targetNode,
-        positionAbsolute: targetInternals?.positionAbsolute || targetNode.position
-      } as any;
+        positionAbsolute: targetNode.positionAbsolute || targetNode.position
+      };
     }
     
     return { sourceNode: sourceNodeWithAbsolute, targetNode: targetNodeWithAbsolute };

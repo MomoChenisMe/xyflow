@@ -398,6 +398,27 @@ export class NodeWrapperComponent implements OnDestroy {
       }
     });
 
+    // 🔑 關鍵新增：監聽 handle 位置變化 - 對應 React Flow 的 useNodeObserver
+    // 當 sourcePosition 或 targetPosition 變化時，立即更新 node internals
+    effect(() => {
+      const nodeData = this.node();
+      const element = this.nodeElement?.nativeElement;
+      
+      if (!element || !nodeData) {
+        return;
+      }
+
+      // 追蹤位置變化 - 讀取 sourcePosition 和 targetPosition
+      const sourcePosition = nodeData.sourcePosition;
+      const targetPosition = nodeData.targetPosition;
+      const nodeType = nodeData.type || 'default';
+
+      // 觸發 node internals 更新，重新計算 handleBounds
+      // 這會確保 edge 立即重新計算位置，沒有延遲
+      // 修正：使用正確的 API 格式
+      this._flowService.updateNodeInternals(nodeData.id);
+    });
+
     // 關鍵：使用 afterNextRender 確保 DOM 渲染後再設置拖曳
     // 對應 React 的第二個 useEffect（更新拖曳配置）
     // 雖然混合讀寫不是最佳實踐，但由於 TypeScript 類型推斷限制，暫時使用簡化版本

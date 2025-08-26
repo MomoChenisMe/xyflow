@@ -21,7 +21,9 @@ interface DragConfig {
   multiSelectionKeyCode?: import('./keyboard.service').KeyboardKey | import('./keyboard.service').KeyboardKey[];
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class AngularXYFlowDragService implements OnDestroy {
   private xyDragInstances = new Map<string, XYDragInstance>();
   private _dragging = signal(false);
