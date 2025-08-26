@@ -57,10 +57,6 @@ export class AngularXYFlowDragService implements OnDestroy {
     const { nodeId, handleSelector } = config;
     if (!nodeId) return;
 
-    console.log(`🔧 DragService: Initializing drag for node ${nodeId}`, {
-      handleSelector,
-      hasExistingInstance: this.xyDragInstances.has(nodeId)
-    });
 
     // 存儲拖曳回調
     this.dragCallbacks.set(nodeId, {
@@ -71,7 +67,6 @@ export class AngularXYFlowDragService implements OnDestroy {
 
     // 清理該節點的現有實例
     if (this.xyDragInstances.has(nodeId)) {
-      console.log(`🔧 DragService: Destroying existing drag instance for node ${nodeId}`);
       this.xyDragInstances.get(nodeId)?.destroy();
     }
 
@@ -90,7 +85,6 @@ export class AngularXYFlowDragService implements OnDestroy {
         const node = nodeLookup.get(id);
         
         if (!node) {
-          console.warn(`Node ${id} not found in nodeLookup`);
           return;
         }
 
@@ -165,12 +159,6 @@ export class AngularXYFlowDragService implements OnDestroy {
 
     xyDragInstance.update(updateParams);
 
-    console.log(`🔧 DragService: XYDrag instance created and updated for node ${nodeId}`, {
-      domNode: config.domNode.tagName,
-      handleSelector: currentHandleSelector,
-      isSelectable: config.isSelectable,
-      nodeClickDistance: config.nodeClickDistance
-    });
 
     // 儲存實例
     this.xyDragInstances.set(nodeId, xyDragInstance);
@@ -197,7 +185,6 @@ export class AngularXYFlowDragService implements OnDestroy {
   destroyNodeDrag(nodeId: string): void {
     const instance = this.xyDragInstances.get(nodeId);
     if (instance) {
-      console.log(`🔧 DragService: Destroying drag instance for node ${nodeId}`);
       instance.destroy();
       this.xyDragInstances.delete(nodeId);
     }
@@ -316,7 +303,7 @@ export class AngularXYFlowDragService implements OnDestroy {
         this._flowService.clearSelection();
       },
       onError: (error: string) => {
-        console.error('XYDrag error:', error);
+        // XYDrag error handling
       },
       onNodeDragStart: (_event: MouseEvent, _node: any, _nodes: any[]) => {
         // 節點拖拽開始處理
@@ -424,10 +411,11 @@ export class AngularXYFlowDragService implements OnDestroy {
         this._dragging.set(true);
       },
       // 拖曳過程中 - 讓 XYDrag 系統自動處理選中節點的拖曳
-      onDrag: (_event: MouseEvent, dragItems) => {
+      onDrag: (event: MouseEvent, dragItems) => {
         // XYDrag 系統會自動提供所有選中節點的拖曳信息
         // 我們只需要應用這些變化
         const flowInstance = this._flowService.getFlowInstance();
+        
         for (const [dragNodeId, dragItem] of dragItems) {
           flowInstance.updateNode(dragNodeId, {
             position: dragItem.position,
@@ -455,6 +443,7 @@ export class AngularXYFlowDragService implements OnDestroy {
     // 儲存實例
     this.xyDragInstances.set(instanceKey, xyDragInstance);
   }
+
 
   ngOnDestroy(): void {
     this.destroy();

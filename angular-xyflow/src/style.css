@@ -395,3 +395,20 @@ svg .angular-xyflow__edge-path.selected {
     border-right: none;
   }
 }
+
+/* Intersection Example - Highlight 樣式 */
+.angular-xyflow__node.highlight {
+  background-color: #ff5050 !important;
+  color: white !important;
+  
+  /* 確保與 React 版本視覺效果一致 */
+  transition: background-color 0.2s ease;
+}
+
+/* 針對不同節點類型的高亮樣式 */
+.angular-xyflow__node-default.highlight,
+.angular-xyflow__node-input.highlight,
+.angular-xyflow__node-output.highlight {
+  background-color: #ff5050 !important;
+  color: white !important;
+}

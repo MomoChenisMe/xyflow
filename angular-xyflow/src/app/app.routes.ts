@@ -29,6 +29,8 @@ import { FloatingEdgesComponent } from './components/examples/floating-edges/flo
 import { HiddenExampleComponent } from './components/examples/hidden-example/hidden-example.component';
 import { InteractionExampleComponent } from './components/examples/interaction-example/interaction-example.component';
 import { InteractiveMinimapExampleComponent } from './components/examples/interactive-minimap-example/interactive-minimap-example.component';
+import { IntersectionExampleComponent } from './components/examples/intersection-example/intersection-example.component';
+import { LayoutingExampleComponent } from './components/examples/layouting-example/layouting-example.component';
 
 export interface IRoute {
   name: string;
@@ -103,9 +105,9 @@ export const routeList: IRoute[] = [
     component: CustomNodeExampleComponent,
   },
   {
-    name: 'Default Nodes',
-    path: 'default-nodes',
-    component: DefaultNodesExampleComponent,
+    name: 'Default Edge Overwrite',
+    path: 'default-edge-overwrite',
+    component: DefaultEdgeOverwriteExampleComponent,
   },
   {
     name: 'Default Node Overwrite',
@@ -113,9 +115,9 @@ export const routeList: IRoute[] = [
     component: DefaultNodeOverwriteExampleComponent,
   },
   {
-    name: 'Default Edge Overwrite',
-    path: 'default-edge-overwrite',
-    component: DefaultEdgeOverwriteExampleComponent,
+    name: 'Default Nodes',
+    path: 'default-nodes',
+    component: DefaultNodesExampleComponent,
   },
   {
     name: 'DevTools',
@@ -123,14 +125,14 @@ export const routeList: IRoute[] = [
     component: DevToolsExampleComponent,
   },
   {
-    name: 'Drag Handle',
-    path: 'drag-handle',
-    component: DragHandleExampleComponent,
-  },
-  {
     name: 'Drag and Drop',
     path: 'drag-n-drop',
     component: DragNDropExampleComponent,
+  },
+  {
+    name: 'Drag Handle',
+    path: 'drag-handle',
+    component: DragHandleExampleComponent,
   },
   {
     name: 'Easy Connect',
@@ -143,14 +145,24 @@ export const routeList: IRoute[] = [
     component: EdgeRendererExampleComponent,
   },
   {
-    name: 'Empty',
-    path: 'empty',
-    component: EmptyExampleComponent,
-  },
-  {
     name: 'Edge Routing',
     path: 'edge-routing',
     component: EdgeRoutingExampleComponent,
+  },
+  {
+    name: 'Edge Types',
+    path: 'edge-types',
+    component: EdgeTypesComponent,
+  },
+  {
+    name: 'Edges',
+    path: 'edges',
+    component: EdgesExample,
+  },
+  {
+    name: 'Empty',
+    path: 'empty',
+    component: EmptyExampleComponent,
   },
   {
     name: 'Figma',
@@ -178,14 +190,14 @@ export const routeList: IRoute[] = [
     component: InteractiveMinimapExampleComponent,
   },
   {
-    name: 'Edges',
-    path: 'edges',
-    component: EdgesExample,
+    name: 'Intersection',
+    path: 'intersection',
+    component: IntersectionExampleComponent,
   },
   {
-    name: 'Edge Types',
-    path: 'edge-types',
-    component: EdgeTypesComponent,
+    name: 'Layouting',
+    path: 'layouting',
+    component: LayoutingExampleComponent,
   },
 ];
 
@@ -199,41 +211,28 @@ export const routes: Routes = [
   { path: 'cancel-connection', component: CancelConnectionExampleComponent },
   { path: 'click-distance', component: ClickDistanceExampleComponent },
   { path: 'color-mode', component: ColorModeExampleComponent },
-  {
-    path: 'controlled-uncontrolled',
-    component: ControlledUncontrolledExampleComponent,
-  },
-  {
-    path: 'controlled-viewport',
-    component: ControlledViewportExampleComponent,
-  },
-  {
-    path: 'custom-connection-line',
-    component: CustomConnectionLineExampleComponent,
-  },
+  { path: 'controlled-uncontrolled', component: ControlledUncontrolledExampleComponent },
+  { path: 'controlled-viewport', component: ControlledViewportExampleComponent },
+  { path: 'custom-connection-line', component: CustomConnectionLineExampleComponent },
   { path: 'custom-minimap-node', component: CustomMinimapNodeExampleComponent },
   { path: 'custom-node', component: CustomNodeExampleComponent },
+  { path: 'default-edge-overwrite', component: DefaultEdgeOverwriteExampleComponent },
+  { path: 'default-node-overwrite', component: DefaultNodeOverwriteExampleComponent },
   { path: 'default-nodes', component: DefaultNodesExampleComponent },
-  {
-    path: 'default-node-overwrite',
-    component: DefaultNodeOverwriteExampleComponent,
-  },
-  {
-    path: 'default-edge-overwrite',
-    component: DefaultEdgeOverwriteExampleComponent,
-  },
   { path: 'devtools', component: DevToolsExampleComponent },
-  { path: 'drag-handle', component: DragHandleExampleComponent },
   { path: 'drag-n-drop', component: DragNDropExampleComponent },
+  { path: 'drag-handle', component: DragHandleExampleComponent },
   { path: 'easy-connect', component: EasyConnectExampleComponent },
   { path: 'edge-renderer', component: EdgeRendererExampleComponent },
   { path: 'edge-routing', component: EdgeRoutingExampleComponent },
+  { path: 'edge-types', component: EdgeTypesComponent },
+  { path: 'edges', component: EdgesExample },
   { path: 'empty', component: EmptyExampleComponent },
   { path: 'figma', component: FigmaExampleComponent },
   { path: 'floating-edges', component: FloatingEdgesComponent },
   { path: 'hidden', component: HiddenExampleComponent },
   { path: 'interaction', component: InteractionExampleComponent },
   { path: 'interactive-minimap', component: InteractiveMinimapExampleComponent },
-  { path: 'edges', component: EdgesExample },
-  { path: 'edge-types', component: EdgeTypesComponent },
+  { path: 'intersection', component: IntersectionExampleComponent },
+  { path: 'layouting', component: LayoutingExampleComponent },
 ];

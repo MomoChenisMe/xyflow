@@ -26,6 +26,7 @@
     "@angular/forms": "^20.1.0",
     "@angular/platform-browser": "^20.1.0",
     "@angular/router": "^20.1.0",
+    "@dagrejs/dagre": "^1.1.5",
     "@xyflow/system": "^0.0.66",
     "d3-drag": "^3.0.0",
     "d3-interpolate": "^3.0.1",

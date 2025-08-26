@@ -160,7 +160,7 @@ export interface EdgeConnectionPoints {
       </div>
 
       <!-- 🔑 關鍵修正：Viewport Portal 容器在 viewport 內部，自動繼承變換 -->
-      <div 
+      <div
         #viewportPortalContainer
         class="angular-xyflow__viewport-portal"
         [style.position]="'absolute'"
@@ -271,8 +271,8 @@ export class ViewportComponent<
   getEdgeConnectionPoints =
     input.required<
       (
-        sourceNode: NodeType,
-        targetNode: NodeType,
+        sourceNodeId: string,
+        targetNodeId: string,
         edge: EdgeType
       ) => EdgeConnectionPoints
     >();
@@ -282,7 +282,7 @@ export class ViewportComponent<
     >();
 
   // 過濾掉隱藏的節點，實現與 React Flow 完全一致的 DOM 結構
-  visibleNodesFiltered = computed(() => 
+  visibleNodesFiltered = computed(() =>
     this.visibleNodes().filter(node => !node.hidden)
   );
 
@@ -291,21 +291,25 @@ export class ViewportComponent<
   // React 版本的做法是在每個 EdgeWrapper 內部獨立計算，這裡為了架構一致性在父組件計算
   edgeConnectionPointsMap = computed(() => {
     const edges = this.visibleEdges();
-    const getNode = this.getNodeById();
+    const nodes = this.visibleNodes(); // 🔑 React Flow 等效：最新的節點數據源
     const getConnectionPoints = this.getEdgeConnectionPoints();
 
     const connectionPointsMap = new Map<string, EdgeConnectionPoints>();
 
-    // 不使用快取，確保每次節點位置改變時都能重新計算
+    // 🔑 關鍵修正：完全模仿 React Flow 的做法
+    // React Flow: 使用 store.nodeLookup.get(nodeId)，我們使用傳入的最新 nodes
     edges.forEach((edge) => {
-      const sourceNode = getNode(edge.source);
-      const targetNode = getNode(edge.target);
+      const sourceNode = nodes.find(n => n.id === edge.source);
+      const targetNode = nodes.find(n => n.id === edge.target);
+      
       if (sourceNode && targetNode) {
+        // 🔑 關鍵修正：按照 React Flow 模式，傳遞節點 ID 而非節點對象
         const connectionPoints = getConnectionPoints(
-          sourceNode,
-          targetNode,
+          sourceNode.id,  // 傳遞節點 ID，讓方法內動態獲取最新狀態
+          targetNode.id,  // 傳遞節點 ID，讓方法內動態獲取最新狀態
           edge
         );
+        
         connectionPointsMap.set(edge.id, connectionPoints);
       }
     });
@@ -316,24 +320,24 @@ export class ViewportComponent<
   visibleEdgesFiltered = computed(() => {
     const edges = this.visibleEdges();
     const connectionPointsMap = this.edgeConnectionPointsMap();
-    
+
     return edges.filter(edge => {
       // React Flow 邏輯：檢查邊緣隱藏狀態
       if (edge.hidden) {
         return false;
       }
-      
+
       const connectionPoints = connectionPointsMap.get(edge.id);
       if (!connectionPoints) {
         return false;
       }
-      
+
       // React Flow 邏輯：檢查座標有效性
       const { sourceX, sourceY, targetX, targetY } = connectionPoints;
       if (sourceX === null || sourceY === null || targetX === null || targetY === null) {
         return false;
       }
-      
+
       return true;
     });
   });
@@ -389,17 +393,17 @@ export class ViewportComponent<
     effect(() => {
       const container = this.viewportPortalDynamic();
       const activeItems = this._portalService.activeItems();
-      
+
       if (container) {
         // 清空現有內容
         container.clear();
-        
+
         // 渲染所有活躍的 portal 項目
         activeItems.forEach(item => {
           if (item.content instanceof TemplateRef) {
-            container.createEmbeddedView(item.content, { 
+            container.createEmbeddedView(item.content, {
               $implicit: item.data,
-              data: item.data 
+              data: item.data
             });
           }
         });

@@ -570,12 +570,47 @@ export class AngularXYFlowComponent<
       const selectedNodeIds = this._flowService.selectedNodes();
       const elevateOnSelect = this._flowService.elevateNodesOnSelect();
       
-      // 為 controlled nodes 應用動態 z-index 計算並同步 selected 狀態
-      return controlledNodes.map((node, index) => ({
-        ...node,
-        selected: selectedNodeIds.includes(node.id), // 🔑 關鍵修正：同步選中狀態
-        zIndex: this._flowService.calculateNodeZIndex(node, index, selectedNodeIds, elevateOnSelect)
-      }));
+      // 🔑 關鍵修正：為 controlled nodes 應用完整的節點增強，確保包含邊緣計算所需的屬性
+      return controlledNodes.map((node, index) => {
+        // 獲取或創建節點的 internals 屬性
+        const nodeInternals = this._flowService.getNodeInternals(node.id);
+        const positionAbsolute = this._flowService.getNodePositionAbsolute(node.id);
+        
+        // 🔑 確保 measured 屬性總是存在且有效
+        const defaultMeasured = { width: node.width || 150, height: node.height || 40 };
+        const measured = nodeInternals?.measured || defaultMeasured;
+        
+        // 🔑 關鍵修正：確保 handles 配置使用最新的 position 值
+        const handles = [
+          { 
+            id: 'default-source', 
+            type: 'source', 
+            position: node.sourcePosition || Position.Bottom,
+            x: 0, y: 0 // 預設值，實際計算在 handleBounds 中
+          },
+          { 
+            id: 'default-target', 
+            type: 'target', 
+            position: node.targetPosition || Position.Top,
+            x: 0, y: 0 // 預設值，實際計算在 handleBounds 中
+          }
+        ];
+        
+        return {
+          ...node,
+          selected: selectedNodeIds.includes(node.id), // 同步選中狀態
+          zIndex: this._flowService.calculateNodeZIndex(node, index, selectedNodeIds, elevateOnSelect),
+          // 🔑 關鍵：添加邊緣計算所需的屬性，確保結構完整
+          positionAbsolute: positionAbsolute || node.position,
+          measured: measured, // 直接在節點層級添加 measured 屬性
+          handles: handles, // 添加 handles 配置
+          internals: {
+            positionAbsolute: positionAbsolute || node.position,
+            measured: measured,
+            ...(nodeInternals || {})
+          }
+        };
+      });
     }
 
     // 在 uncontrolled 模式下：
@@ -1360,10 +1395,10 @@ export class AngularXYFlowComponent<
     return internalNode as NodeType;
   }
 
-  // 獲取邊的連接點（使用實際測量的 handle 位置）
+  // 🔑 關鍵修正：按照 React Flow 模式，動態獲取最新節點狀態
   getEdgeConnectionPoints(
-    sourceNode: NodeType,
-    targetNode: NodeType,
+    sourceNodeId: string,
+    targetNodeId: string,
     edge: EdgeType
   ): {
     sourceX: number;
@@ -1373,18 +1408,32 @@ export class AngularXYFlowComponent<
     sourcePosition: Position;
     targetPosition: Position;
   } {
-    // 檢查節點是否已完全初始化
-    const internalSourceNode = sourceNode as any;
-    const internalTargetNode = targetNode as any;
+    // 🔑 動態獲取最新節點狀態，與 React Flow 的 store.nodeLookup.get() 等效
+    const nodeLookup = this._flowService.nodeLookup();
+    const internalSourceNode = nodeLookup.get(sourceNodeId);
+    const internalTargetNode = nodeLookup.get(targetNodeId);
 
+
+    if (!internalSourceNode || !internalTargetNode) {
+      console.warn(`⚠️ 節點未找到: source=${sourceNodeId}, target=${targetNodeId}`);
+      // 如果找不到節點，返回預設值
+      return {
+        sourceX: 0, sourceY: 0, targetX: 0, targetY: 0,
+        sourcePosition: Position.Bottom, targetPosition: Position.Top
+      };
+    }
 
     // 如果節點還沒有 handleBounds，表示還未初始化完成，使用備用計算
     if (
-      !internalSourceNode.internals?.handleBounds ||
-      !internalTargetNode.internals?.handleBounds
+      !(internalSourceNode as any).internals?.handleBounds ||
+      !(internalTargetNode as any).internals?.handleBounds
     ) {
-      return this.getFallbackEdgePosition(sourceNode, targetNode);
+      return this.getFallbackEdgePosition(internalSourceNode, internalTargetNode);
     }
+
+    const sourceInternals = (internalSourceNode as any).internals;
+    const targetInternals = (internalTargetNode as any).internals;
+
 
     // 使用系統包的 getEdgePosition 函數
     const edgePosition = getEdgePosition({
@@ -1399,11 +1448,13 @@ export class AngularXYFlowComponent<
       },
     });
 
+
     // 如果 getEdgePosition 返回 null，則使用備用計算
     if (!edgePosition) {
-      return this.getFallbackEdgePosition(sourceNode, targetNode);
+      return this.getFallbackEdgePosition(internalSourceNode, internalTargetNode);
     }
-    return {
+    
+    const result = {
       sourceX: edgePosition.sourceX,
       sourceY: edgePosition.sourceY,
       targetX: edgePosition.targetX,
@@ -1411,12 +1462,38 @@ export class AngularXYFlowComponent<
       sourcePosition: edgePosition.sourcePosition,
       targetPosition: edgePosition.targetPosition,
     };
+    
+    return result;
   }
 
-  // 備用邊計算（當測量失敗時使用）
+  // 🔑 關鍵修正：優先使用節點的直接屬性，確保佈局變更立即生效
+  private getPositionFromHandles(node: any, isSource: boolean): Position | null {
+    // 🔑 優先使用節點的直接 sourcePosition/targetPosition 屬性
+    const directPosition = isSource ? node.sourcePosition : node.targetPosition;
+    if (directPosition) {
+      return directPosition;
+    }
+    
+    // 備用：從 handles 配置中獲取
+    if (node.handles && Array.isArray(node.handles)) {
+      const handle = node.handles.find((h: any) => 
+        isSource ? h.type === 'source' : h.type === 'target'
+      );
+      if (handle?.position) {
+        return handle.position;
+      }
+    }
+    
+    // 最後備用：智能默認值
+    return isSource ? Position.Bottom : Position.Top;
+  }
+
+  // 🔑 關鍵修正：備用邊計算，按照 React Flow 模式使用 handles[].position
   private getFallbackEdgePosition(sourceNode: NodeType, targetNode: NodeType) {
-    const sourcePosition = sourceNode.sourcePosition || Position.Bottom;
-    const targetPosition = targetNode.targetPosition || Position.Top;
+    // 🔑 使用 handles 配置而非 node.sourcePosition，與 React Flow 邏輯一致
+    const sourcePosition = this.getPositionFromHandles(sourceNode, true) || Position.Bottom;
+    const targetPosition = this.getPositionFromHandles(targetNode, false) || Position.Top;
+
 
     const getSimpleHandlePosition = (node: any, position: Position) => {
       // 直接使用節點的 internals，因為從 nodeLookup 獲取的節點已包含此資訊
@@ -1424,24 +1501,44 @@ export class AngularXYFlowComponent<
         x: node.position.x,
         y: node.position.y,
       };
-      const measured = node.measured || {
+      
+      // 🔑 關鍵修正：正確獲取節點尺寸
+      // 優先順序：internals.measured > node.measured > node.width/height > 默認值
+      const measured = node.internals?.measured || node.measured || {
         width: node.width || 150,
-        height: node.height || 40,
+        height: node.height || 50,  // 修正預設高度為 50（與 layouting 範例一致）
       };
+      
+      // 🔑 Handle 尺寸：根據 CSS (.xy-flow__handle) 定義
+      const HANDLE_SIZE = 6; // 6px × 6px
+      const HANDLE_RADIUS = HANDLE_SIZE / 2; // 3px
+      
 
+      // 🔑 修正：根據 CSS transform 計算 handle 中心位置
+      // Handle 中心位置extends超出節點邊界，與 CSS 中的 transform 一致
       switch (position) {
         case Position.Top:
-          return { x: nodePos.x + measured.width / 2, y: nodePos.y };
+          // CSS: top: 0; transform: translate(-50%, -50%)
+          return { 
+            x: nodePos.x + measured.width / 2, 
+            y: nodePos.y - HANDLE_RADIUS 
+          };
         case Position.Bottom:
+          // CSS: bottom: 0; transform: translate(-50%, 50%)
           return {
             x: nodePos.x + measured.width / 2,
-            y: nodePos.y + measured.height,
+            y: nodePos.y + measured.height + HANDLE_RADIUS,
           };
         case Position.Left:
-          return { x: nodePos.x, y: nodePos.y + measured.height / 2 };
+          // CSS: left: 0; transform: translate(-50%, -50%)
+          return { 
+            x: nodePos.x - HANDLE_RADIUS, 
+            y: nodePos.y + measured.height / 2 
+          };
         case Position.Right:
+          // CSS: right: 0; transform: translate(50%, -50%)
           return {
-            x: nodePos.x + measured.width,
+            x: nodePos.x + measured.width + HANDLE_RADIUS,
             y: nodePos.y + measured.height / 2,
           };
         default:

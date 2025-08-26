@@ -1,6 +1,9 @@
 // Angular 核心模組
 import { Injectable, signal, computed, Signal, effect, inject } from '@angular/core';
 
+// 交集檢測工具
+import { isRectIntersecting, nodeToRect } from '../utils/intersection-utils';
+
 // XyFlow 系統模組
 import {
   type PanZoomInstance,
@@ -647,10 +650,9 @@ export class AngularXYFlowService<
     nodes.forEach((node) => {
       const internals = nodeInternals.get(node.id);
       if (internals) {
-        // 創建包含 internals 的完整節點，與 React Flow 一致
-        // 確保 internals 包含所有必需的屬性，包括 handleBounds
+        // 🔑 關鍵修正：創建包含 internals 的完整節點，確保保留所有原始屬性
         const nodeWithInternals = {
-          ...node,
+          ...node, // 保留所有原始屬性，包括 sourcePosition 和 targetPosition
           internals: {
             positionAbsolute: internals.positionAbsolute,
             measured: internals.measured,
@@ -661,6 +663,9 @@ export class AngularXYFlowService<
           // 添加 width 和 height 屬性供 system 函數使用
           width: internals.measured.width,
           height: internals.measured.height,
+          // 🔑 明確保留佈局相關屬性（防止被覆蓋）
+          sourcePosition: node.sourcePosition,
+          targetPosition: node.targetPosition,
         } as NodeType;
 
         lookup.set(node.id, nodeWithInternals);
@@ -1190,7 +1195,9 @@ export class AngularXYFlowService<
   ): { source: any[]; target: any[] } | null {
     // 限制在當前Flow實例的容器範圍內查詢節點
     const container = this.getContainerElement();
-    if (!container) return null;
+    if (!container) {
+      return null;
+    }
 
     const nodeElement = container.querySelector(
       `[data-node-id="${nodeId}"]`
@@ -1249,6 +1256,7 @@ export class AngularXYFlowService<
       const positionStr = handle.getAttribute('data-handlepos') || 'top';
       const positionEnum = this.stringToPositionEnum(positionStr);
       
+      
       const handleData = {
         id: handle.getAttribute('data-handleid') || null,
         type: 'target' as const,
@@ -1263,7 +1271,19 @@ export class AngularXYFlowService<
       return handleData;
     });
 
+
     return { source, target };
+  }
+
+  /**
+   * 強制清除所有節點的 handleBounds 緩存並重新測量
+   */
+  forceRefreshHandleBounds(): void {
+    this.nodeHandleBounds.clear();
+    this.nodeHandlesCache.clear();
+    
+    // 觸發重新測量
+    this._nodeInternalsUpdateTrigger.update((v) => v + 1);
   }
 
   /**
@@ -1540,20 +1560,16 @@ export class AngularXYFlowService<
 
   // 點擊連接管理方法
   startClickConnection(handle: { nodeId: string; type: HandleType; id: string | null }) {
-    console.log('🚀 Starting click connection from handle:', handle);
     this._connectionClickStartHandle.set(handle);
     
     // 觸發 onConnectStart 事件
     if (this._onConnectStart) {
-      console.log('📤 Triggering onConnectStart event');
       this._onConnectStart({
         event: new MouseEvent('click') as any, // 模擬事件
         nodeId: handle.nodeId,
         handleType: handle.type,
         handleId: handle.id || undefined
       });
-    } else {
-      console.log('⚠️ No onConnectStart callback registered');
     }
   }
 
@@ -1562,36 +1578,26 @@ export class AngularXYFlowService<
     type: HandleType;
     id: string | null;
   }) {
-    console.log('🔗 Starting click connection completion');
     
     const startHandle = this._connectionClickStartHandle();
     if (!startHandle) {
-      console.log('❌ No start handle found');
       return;
     }
 
-    console.log('🎯 From handle:', startHandle, 'To handle:', targetHandle);
 
     // 驗證連接
     const connection = this.validateClickConnection(startHandle, targetHandle);
-    console.log('🔍 Validated connection:', connection);
     
     let finalConnection: Connection | undefined;
 
     if (connection && this.isValidConnection(connection)) {
-      console.log('✅ Connection is valid, calling internal onConnect');
       finalConnection = connection;
       this.onConnect(connection);
       
       // 確認是否觸發了外部事件
       if (this._onConnect) {
-        console.log('📤 Triggering external onConnect event');
         this._onConnect(connection);
-      } else {
-        console.log('⚠️ No external onConnect callback registered');
       }
-    } else {
-      console.log('❌ Connection validation failed');
     }
 
     // 觸發 onConnectEnd 事件
@@ -1603,7 +1609,6 @@ export class AngularXYFlowService<
     }
 
     // 清理狀態
-    console.log('🧹 Cleaning up connection state');
     this._connectionClickStartHandle.set(null);
   }
 
@@ -2101,7 +2106,6 @@ export class AngularXYFlowService<
   setPanZoom(panZoomInstance: PanZoomInstance) {
     this.panZoom = panZoomInstance;
     this._panZoomReady.set(true); // 明確標記就緒狀態
-    console.log('AngularXYFlowService: PanZoom instance ready');
   }
 
   // 設置容器尺寸
@@ -2964,7 +2968,7 @@ export class AngularXYFlowService<
         this.resolveFitView(true);
       }
     } catch (error) {
-      console.error('Error in executeFitView:', error);
+      // Error in executeFitView
       this.resolveFitView(false);
     }
   }
@@ -3108,9 +3112,7 @@ export class AngularXYFlowService<
     const currentInternals = this._nodeInternals().get(nodeId);
 
     if (!node || !currentInternals) {
-      console.warn(
-        `[Service] Cannot update internals for node ${nodeId}: node or internals not found`
-      );
+      // Warning: Cannot update internals for node: node or internals not found
       return;
     }
 
@@ -3230,7 +3232,7 @@ export class AngularXYFlowService<
     const multiSelectionActive = this.multiSelectionActive();
 
     if (!node) {
-      console.error(`Node with id "${nodeId}" not found`);
+      // Node not found
       return;
     }
 
@@ -3269,7 +3271,7 @@ export class AngularXYFlowService<
     const multiSelectionActive = this.multiSelectionActive();
 
     if (!edge) {
-      console.error(`Edge with id "${edgeId}" not found`);
+      // Edge not found
       return;
     }
 
@@ -3324,5 +3326,72 @@ export class AngularXYFlowService<
       zIndex: this.calculateZ(node, index, selectedNodeIds, elevateOnSelect)
     }));
   });
+
+  /**
+   * 獲取與指定節點相交的所有其他節點
+   * @param targetNode 目標節點、矩形或包含id的對象
+   * @param partially 是否允許部分重疊 (預設: true)
+   * @param nodesList 可選的節點清單，預設使用當前所有節點
+   * @returns 相交的節點陣列
+   */
+  getIntersectingNodes(
+    targetNode: NodeType | Rect | { id: string },
+    partially: boolean = true,
+    nodesList?: NodeType[]
+  ): NodeType[] {
+    const nodes = nodesList || this._nodes();
+    const nodeInternals = this._nodeInternals();
+    
+    // 將目標轉換為矩形
+    let targetRect: Rect;
+    if ('x' in targetNode && 'width' in targetNode) {
+      targetRect = targetNode as Rect;
+    } else if ('position' in targetNode) {
+      targetRect = nodeToRect(targetNode as NodeType, nodeInternals);
+    } else {
+      // 根據 id 查找節點
+      const node = nodes.find(n => n.id === (targetNode as any).id);
+      if (!node) return [];
+      targetRect = nodeToRect(node, nodeInternals);
+    }
+    
+    // 檢測交集
+    return nodes.filter(node => {
+      if ('id' in targetNode && node.id === (targetNode as any).id) {
+        return false; // 排除自己
+      }
+      
+      const nodeRect = nodeToRect(node, nodeInternals);
+      return isRectIntersecting(targetRect, nodeRect, partially);
+    });
+  }
+
+  /**
+   * 檢測節點是否與指定區域相交
+   * @param node 節點、矩形或包含id的對象
+   * @param area 目標檢測區域
+   * @param partially 是否接受部分重疊 (預設: true)
+   * @returns 是否相交
+   */
+  isNodeIntersecting(
+    node: NodeType | Rect | { id: string },
+    area: Rect,
+    partially: boolean = true
+  ): boolean {
+    const nodeInternals = this._nodeInternals();
+    
+    let nodeRect: Rect;
+    if ('x' in node && 'width' in node) {
+      nodeRect = node as Rect;
+    } else if ('position' in node) {
+      nodeRect = nodeToRect(node as NodeType, nodeInternals);
+    } else {
+      const foundNode = this._nodes().find(n => n.id === (node as any).id);
+      if (!foundNode) return false;
+      nodeRect = nodeToRect(foundNode, nodeInternals);
+    }
+    
+    return isRectIntersecting(nodeRect, area, partially);
+  }
 
 }
