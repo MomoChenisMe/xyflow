@@ -12,6 +12,7 @@ import {
   OnDestroy,
   afterNextRender,
   CUSTOM_ELEMENTS_SCHEMA,
+  HostBinding,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
@@ -29,6 +30,16 @@ import { Handle } from '../../types';
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  host: {
+    '[style.position]': 'hostStyle()?.["position"]',
+    '[style.transform]': 'hostStyle()?.["transform"]',
+    '[style.transition]': 'hostStyle()?.["transition"]',
+    '[style.top]': 'hostStyle()?.["top"]',
+    '[style.left]': 'hostStyle()?.["left"]',
+    '[style.right]': 'hostStyle()?.["right"]',
+    '[style.bottom]': 'hostStyle()?.["bottom"]',
+    '[style.z-index]': 'hostStyle()?.["zIndex"] || "10"',  // 預設 z-index 10，確保在節點內容上方
+  },
   template: `
     <div
       #handleElement
@@ -61,6 +72,7 @@ export class HandleComponent implements OnDestroy {
   isConnectableEnd = input<boolean>(true);   // 是否可以作為連線終點
   selected = input<boolean>(false);
   style = input<Record<string, any>>({});
+  hostStyle = input<Record<string, any>>({});  // 用於宿主元素的樣式
 
   // 輸出事件
   connectStart = output<{
@@ -112,16 +124,16 @@ export class HandleComponent implements OnDestroy {
     // 連接狀態類別
     const connection = this._flowService.connectionState();
     const clickStartHandle = this._flowService.connectionClickStartHandle();
-    
+
     if (connection.inProgress) {
       const fromHandle = connection.fromHandle;
       const toHandle = connection.toHandle;
-      
+
       // 檢查是否是連接起點
       if (fromHandle && this.isCurrentHandle(fromHandle)) {
         classes.push('connectingfrom');
       }
-      
+
       // 檢查是否是連接終點
       if (toHandle && this.isCurrentHandle(toHandle)) {
         classes.push('connectingto');
@@ -131,18 +143,18 @@ export class HandleComponent implements OnDestroy {
           classes.push('invalid');
         }
       }
-      
+
       // 連接指示器：可以作為目標的 handle
       if (this.canBeConnectionTarget(fromHandle)) {
         classes.push('connectionindicator');
       }
     }
-    
+
     // 點擊連接狀態
     if (clickStartHandle && this.isCurrentHandle(clickStartHandle)) {
       classes.push('clickconnecting');
     }
-    
+
     // 舊的連接狀態類別
     if (this.isConnecting()) {
       classes.push('connecting');
@@ -161,11 +173,11 @@ export class HandleComponent implements OnDestroy {
     // 可連接性類別
     if (this.canConnect()) {
       classes.push('connectable');
-      
+
       if (this.isConnectableStart()) {
         classes.push('connectablestart');
       }
-      
+
       if (this.isConnectableEnd()) {
         classes.push('connectableend');
       }
@@ -191,7 +203,9 @@ export class HandleComponent implements OnDestroy {
     delete style['position'];
     delete style['left'];
     delete style['right'];
-    delete style['transform'];
+
+    // 保留 transform 和 transition 屬性，允許動畫效果
+    // 這對於 moving handles 等動畫功能至關重要
 
     // 對於 top/bottom，我們允許細微調整，但要確保不破壞基本定位
     // 這允許像 color-selector-node 中的多個handle定位
@@ -224,23 +238,23 @@ export class HandleComponent implements OnDestroy {
   // 輔助方法：檢查是否是當前 handle
   isCurrentHandle(handle: any): boolean {
     if (!handle) return false;
-    return handle.nodeId === this.nodeId() && 
-           handle.id === (this.handleId() || null) && 
+    return handle.nodeId === this.nodeId() &&
+           handle.id === (this.handleId() || null) &&
            handle.type === this.type();
   }
 
   // 輔助方法：檢查是否可以作為連接目標
   canBeConnectionTarget(fromHandle: any): boolean {
     if (!fromHandle || !this.isConnectableEnd()) return false;
-    
+
     const connectionMode = this._flowService.connectionMode();
-    
+
     if (connectionMode === ConnectionMode.Strict) {
       // Strict 模式：只允許異類型連接
       return fromHandle.type !== this.type();
     } else {
       // Loose 模式：允許更靈活的連接
-      return fromHandle.nodeId !== this.nodeId() || 
+      return fromHandle.nodeId !== this.nodeId() ||
              fromHandle.id !== (this.handleId() || null);
     }
   }
@@ -354,11 +368,11 @@ export class HandleComponent implements OnDestroy {
     event.stopPropagation();
 
     const connectOnClick = this._flowService.connectOnClick();
-    
+
     // 如果啟用點擊連接功能
     if (connectOnClick && this.canConnect()) {
       const clickStartHandle = this._flowService.connectionClickStartHandle();
-      
+
       if (!clickStartHandle) {
         // 第一次點擊：開始連接
         if (this.isConnectableStart()) {
