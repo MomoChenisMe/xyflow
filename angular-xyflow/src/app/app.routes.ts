@@ -33,6 +33,7 @@ import { IntersectionExampleComponent } from './components/examples/intersection
 import { LayoutingExampleComponent } from './components/examples/layouting-example/layouting-example.component';
 import { MultiSetNodesExampleComponent } from './components/examples/multi-set-nodes-example/multi-set-nodes-example.component';
 import { MovingHandlesExampleComponent } from './components/examples/moving-handles-example/moving-handles-example.component';
+import { MultiFlowsExampleComponent } from './components/examples/multi-flows-example/multi-flows-example.component';
 
 export interface IRoute {
   name: string;
@@ -202,6 +203,11 @@ export const routeList: IRoute[] = [
     component: LayoutingExampleComponent,
   },
   {
+    name: 'Multi Flows',
+    path: 'multi-flows',
+    component: MultiFlowsExampleComponent,
+  },
+  {
     name: 'Multi Set Nodes',
     path: 'multi-set-nodes',
     component: MultiSetNodesExampleComponent,
@@ -247,6 +253,7 @@ export const routes: Routes = [
   { path: 'interactive-minimap', component: InteractiveMinimapExampleComponent },
   { path: 'intersection', component: IntersectionExampleComponent },
   { path: 'layouting', component: LayoutingExampleComponent },
+  { path: 'multi-flows', component: MultiFlowsExampleComponent },
   { path: 'multi-set-nodes', component: MultiSetNodesExampleComponent },
   { path: 'moving-handles', component: MovingHandlesExampleComponent },
 ];
