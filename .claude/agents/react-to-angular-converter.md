@@ -322,7 +322,101 @@ title={tooltip} → [title]="tooltip"
 dangerouslySetInnerHTML → [innerHTML] // Angular 內建清理機制
 ```
 
+**樣式轉換專精：**
+
+```typescript
+// React 樣式 → Angular 樣式（完全對等原則）
+// ✅ 正確：保持原始樣式不變
+<div style={{width: '100px', height: '50px'}} /> 
+→ <div [ngStyle]="{ width: '100px', height: '50px' }"></div>
+
+// ❌ 錯誤：自行添加額外樣式
+<div style={{width: '100px'}} />
+→ <div [ngStyle]="{ width: '100px', margin: '10px' }"></div> // 不允許添加 margin
+
+// Host Element 處理
+// React 組件直接渲染
+<CustomNode style={{position: 'absolute'}} />
+// Angular 需考慮 host element 層級
+<app-custom-node [hostStyle]="{ position: 'absolute' }"></app-custom-node>
+// 或使用 :host 選擇器處理
+:host {
+  position: absolute; // 應用到 host element
+}
+
+// CSS 類名轉換（保持一致）
+className="flow-node active" → [class]="'flow-node active'"
+className={`node ${isActive ? 'active' : ''}`} 
+→ [class]="'node' + (isActive ? ' active' : '')"
+```
+
+**組件屬性轉換專精：**
+
+```typescript
+// React Props → Angular Inputs（完全對等原則）
+
+// ✅ 正確：保持所有屬性一致
+// React Component
+<NodeResizer 
+  minWidth={100}
+  minHeight={50}
+  isVisible={true}
+  handleStyle={{ backgroundColor: '#fff' }}
+  lineStyle={{ borderColor: '#000' }}
+/>
+
+// Angular Component - 完全對等轉換
+<angular-xyflow-node-resizer
+  [minWidth]="100"
+  [minHeight]="50"
+  [isVisible]="true"
+  [handleStyle]="{ backgroundColor: '#fff' }"
+  [lineStyle]="{ borderColor: '#000' }"
+/>
+
+// ❌ 錯誤：自行添加額外屬性
+<angular-xyflow-node-resizer
+  [minWidth]="100"
+  [minHeight]="50"
+  [isVisible]="true"
+  [handleStyle]="{ backgroundColor: '#fff' }"
+  [lineStyle]="{ borderColor: '#000' }"
+  [enableAnimation]="true"  // 不允許添加原版沒有的屬性
+  [customPadding]="10"       // 不允許自創屬性
+/>
+
+// ❌ 錯誤：刪除或忽略屬性
+// React 有 5 個屬性
+<NodeResizer 
+  minWidth={100}
+  minHeight={50}
+  isVisible={true}
+  handleStyle={{ backgroundColor: '#fff' }}
+  lineStyle={{ borderColor: '#000' }}
+/>
+
+// Angular 只實作 3 個屬性 - 錯誤
+<angular-xyflow-node-resizer
+  [minWidth]="100"
+  [minHeight]="50"
+  [isVisible]="true"
+  // 缺少 handleStyle 和 lineStyle
+/>
+
+// 屬性默認值保持一致
+// React: minWidth 默認值為 10
+interface NodeResizerProps {
+  minWidth?: number; // 默認 10
+}
+
+// Angular: 必須保持相同默認值
+export class NodeResizerComponent {
+  minWidth = input(10); // 保持默認值 10，不可改為其他值
+}
+```
+
 **轉換注意事項：**
+
 - 必須分析 React 原始語法的具體用途和行為
 - 確保 Angular 模板產生相同的 DOM 結構和互動行為
 - 利用 Angular 20 的新控制流語法提升性能和可讀性
@@ -463,6 +557,9 @@ dangerouslySetInnerHTML → [innerHTML] // Angular 內建清理機制
 3. **行為一致性**: 所有交互場景下都必須與 React 版本表現完全一致  
 4. **架構適配**: 在 Angular 框架限制下實現 React 功能邏輯
 5. **性能保證**: 利用 Angular signals 確保性能不低於 React 版本
+6. **樣式屬性完全對等**: 轉換時必須保持與 React 版本完全相同的樣式屬性，不得自行添加額外的樣式或修改原有樣式。所有 CSS 類名、內聯樣式、樣式計算邏輯都必須與 React 原版保持一致
+7. **Host Element 樣式處理**: Angular 組件會自動創建 host element 包裝層，轉換 React 樣式時必須考慮此架構差異。需要正確處理樣式繼承、display 屬性、佈局影響，確保最終渲染效果與 React 版本一致
+8. **組件屬性完全對等**: 組件的所有屬性（props/inputs）必須與 React 版本完全一致，不得自行添加、刪除或修改任何屬性。包括屬性名稱、類型、默認值、必選/可選狀態都必須保持一致
 
 **核心邏輯修改流程：**
 - **屬性模式分析**: **第一步** 識別 React Flow 範例使用的是 nodes/edges 還是 defaultNodes/defaultEdges
