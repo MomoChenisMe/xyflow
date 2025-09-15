@@ -8,6 +8,7 @@ export { ViewportPortalService } from './services/viewport-portal.service';
 // Core components
 export { NodeWrapperComponent } from './components/node-wrapper/node-wrapper.component';
 export { HandleComponent } from './components/handle/handle.component';
+export { NodeResizerComponent, NodeResizerDirective, NodeResizeControlComponent, ResizeControlVariant, type ResizeDirection, type ResizeEvent } from './components/node-resizer';
 export { EdgeLabelRendererComponent } from './components/edge-label-renderer/edge-label-renderer.component';
 export { ConnectionLineComponent } from './components/connection-line/connection-line.component';
 export { ViewportComponent } from './container/viewport/viewport.component';

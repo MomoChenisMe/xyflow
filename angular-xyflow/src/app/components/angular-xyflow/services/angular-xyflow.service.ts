@@ -21,6 +21,7 @@ import {
   updateNodeInternals as systemUpdateNodeInternals,
   getDimensions,
   type InternalNodeUpdate,
+  type NodeLookup,
 } from '@xyflow/system';
 
 // 專案內部模組
@@ -1266,6 +1267,7 @@ export class AngularXYFlowService<
   setNodeOrigin(origin: [number, number]): void {
     this._nodeOrigin.set(origin);
   }
+
 
   /**
    * 將 position 字符串轉換為 Position enum
@@ -3490,6 +3492,86 @@ export class AngularXYFlowService<
     }
 
     return isRectIntersecting(nodeRect, area, partially);
+  }
+
+  /**
+   * XYResizer 適配方法 - 獲取系統模組格式的節點查詢表
+   * 用於與 @xyflow/system 的 XYResizer 整合
+   */
+  getSystemNodeLookup(): Map<string, any> {
+    const nodes = this._nodes();
+    const nodeInternals = this._nodeInternals();
+    const systemNodeLookup = new Map();
+    
+    // 轉換為系統模組期望的格式
+    nodes.forEach(node => {
+      const internals = nodeInternals.get(node.id);
+      systemNodeLookup.set(node.id, {
+        ...node,
+        measured: internals?.measured || { 
+          width: node.width || (node as any).initialWidth || 150, 
+          height: node.height || (node as any).initialHeight || 80 
+        },
+        origin: node.origin || this._nodeOrigin(),
+        internals: {
+          positionAbsolute: internals?.positionAbsolute || { x: node.position.x, y: node.position.y },
+          z: node.zIndex || 0,
+          userNode: node,
+          handleBounds: (internals as any)?.handleBounds,
+          bounds: (internals as any)?.bounds,
+        }
+      });
+    });
+    
+    return systemNodeLookup;
+  }
+
+  /**
+   * XYResizer 適配方法 - 獲取面板 DOM 節點
+   */
+  getPaneDomNode(): HTMLDivElement | null {
+    // TODO: 實際上應該返回 viewport 的 DOM 元素
+    // 暫時返回 null，不影響基本功能
+    return null;
+  }
+
+  /**
+   * XYResizer 適配方法 - 獲取當前變換狀態
+   */
+  getCurrentTransform(): Transform {
+    return this._transform();
+  }
+
+  /**
+   * 更新節點尺寸
+   */
+  updateNodeDimensions(nodeId: string, dimensions: { width?: number; height?: number }): void {
+    const nodes = this._nodes();
+    const updatedNodes = nodes.map(node => 
+      node.id === nodeId ? { ...node, ...dimensions } : node
+    );
+    this.updateNodes(updatedNodes);
+  }
+
+  /**
+   * 更新節點位置
+   */
+  updateNodePosition(nodeId: string, position: { x: number; y: number }): void {
+    const nodes = this._nodes();
+    const updatedNodes = nodes.map(node => 
+      node.id === nodeId ? { ...node, position } : node
+    );
+    this.updateNodes(updatedNodes);
+  }
+
+  /**
+   * XYResizer 適配方法 - 獲取當前 snap grid 設定
+   */
+  getSnapGridSettings(): { snapGrid: [number, number]; snapToGrid: boolean } {
+    return {
+      snapGrid: this._snapGrid(),
+      snapToGrid: this._snapToGrid()
+    };
   }
 
 }

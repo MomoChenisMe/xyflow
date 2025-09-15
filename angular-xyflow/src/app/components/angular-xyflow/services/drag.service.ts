@@ -152,7 +152,7 @@ export class AngularXYFlowDragService implements OnDestroy {
     // 更新拖拽配置 - 只傳遞 DragUpdateParams 需要的參數
     const updateParams = {
       domNode: config.domNode,
-      noDragClassName: 'non-draggable',
+      noDragClassName: 'nodrag', // 修正：使用 React Flow 標準的 'nodrag' 類別
       handleSelector: currentHandleSelector,
       isSelectable: config.isSelectable,
       nodeId: config.nodeId,
@@ -369,15 +369,15 @@ export class AngularXYFlowDragService implements OnDestroy {
 
     if (nodeElement && instance) {
       if (draggable) {
-        nodeElement.classList.remove('non-draggable');
+        nodeElement.classList.remove('nodrag'); // 修正：使用 React Flow 標準的 'nodrag' 類別
       } else {
-        nodeElement.classList.add('non-draggable');
+        nodeElement.classList.add('nodrag'); // 修正：使用 React Flow 標準的 'nodrag' 類別
       }
 
       // 更新拖拽實例的 noDragClassName
       instance.update({
         domNode: nodeElement,
-        noDragClassName: 'non-draggable',
+        noDragClassName: 'nodrag', // 修正：使用 React Flow 標準的 'nodrag' 類別
         nodeId: nodeId,
         isSelectable: true,
         nodeClickDistance: 1

@@ -34,6 +34,7 @@ import { LayoutingExampleComponent } from './components/examples/layouting-examp
 import { MultiSetNodesExampleComponent } from './components/examples/multi-set-nodes-example/multi-set-nodes-example.component';
 import { MovingHandlesExampleComponent } from './components/examples/moving-handles-example/moving-handles-example.component';
 import { MultiFlowsExampleComponent } from './components/examples/multi-flows-example/multi-flows-example.component';
+import { NodeResizerExampleComponent } from './components/examples/node-resizer-example/node-resizer-example.component';
 
 export interface IRoute {
   name: string;
@@ -217,6 +218,11 @@ export const routeList: IRoute[] = [
     path: 'moving-handles',
     component: MovingHandlesExampleComponent,
   },
+  {
+    name: 'Node Resizer',
+    path: 'node-resizer',
+    component: NodeResizerExampleComponent,
+  },
 ];
 
 export const routes: Routes = [
@@ -256,4 +262,5 @@ export const routes: Routes = [
   { path: 'multi-flows', component: MultiFlowsExampleComponent },
   { path: 'multi-set-nodes', component: MultiSetNodesExampleComponent },
   { path: 'moving-handles', component: MovingHandlesExampleComponent },
+  { path: 'node-resizer', component: NodeResizerExampleComponent },
 ];

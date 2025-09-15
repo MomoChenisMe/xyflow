@@ -55,7 +55,19 @@ import { builtinNodeTypes } from '../nodes';
     '(contextmenu)': 'onNodeContextMenu($event)',
     '(mousedown)': 'onNodeMouseDown($event)',
     '(focus)': 'onNodeFocus($event)',
-    '(keydown)': 'onNodeKeyDown($event)'
+    '(keydown)': 'onNodeKeyDown($event)',
+    
+    // NodeResizer 相關的屬性綁定 - 總是應用 directive
+    'angularXyflowNodeResizer': '',
+    '[attr.nodeId]': 'node().id',
+    '[attr.selected]': 'selected()',
+    '[attr.minWidth]': 'node().data?.["minWidth"] || 10',
+    '[attr.maxWidth]': 'node().data?.["maxWidth"] || 999999',
+    '[attr.minHeight]': 'node().data?.["minHeight"] || 10',
+    '[attr.maxHeight]': 'node().data?.["maxHeight"] || 999999',
+    '[attr.isVisible]': 'node().data?.["isVisible"] ?? selected()',
+    '[attr.keepAspectRatio]': 'node().data?.["keepAspectRatio"] || false',
+    '[attr.enableResizer]': 'needsResizer()'
   },
   template: `
     <!-- Node content -->
@@ -183,6 +195,21 @@ export class NodeWrapperComponent implements OnDestroy {
 
   // 追踪最後的 dragHandle 值，用於檢測變化
   private lastDragHandle?: string;
+
+  // 🔑 事件處理器綁定 - 避免在 computed 中創建函數
+  private readonly nodeChangeHandler = (change: any) => this.handleNodeResize(change);
+
+  // 檢測節點是否需要 resizer 功能
+  needsResizer = computed(() => {
+    const node = this.node();
+    const nodeType = node.type || 'default';
+    
+    // 檢測節點類型是否包含 'resizer' 關鍵字
+    // 或者檢查節點數據是否有 resizer 相關配置
+    return nodeType.includes('resizer') || 
+           nodeType.includes('Resizer') ||
+           node.data?.['enableResize'] === true;
+  });
 
   // 獲取解析後的節點類型（與 React Flow 邏輯一致）
   private getResolvedNodeType(): string {
@@ -360,7 +387,10 @@ export class NodeWrapperComponent implements OnDestroy {
       deletable: node.deletable !== false,
       positionAbsoluteX: positionAbsolute.x,
       positionAbsoluteY: positionAbsolute.y,
-      dragHandle: node.dragHandle
+      dragHandle: node.dragHandle,
+      
+      // 🔑 關鍵修復：添加 resize 事件處理器
+      nodeChange: this.nodeChangeHandler
     };
     return inputs;
   });
@@ -965,5 +995,50 @@ export class NodeWrapperComponent implements OnDestroy {
     // 簡單的啟發式判斷：檢查最近是否有鍵盤事件
     // 這是一個簡化的實現，在生產環境中可能需要更複雜的邏輯
     return document.activeElement?.tagName !== 'BODY';
+  }
+
+  // 🔑 關鍵修復：處理來自動態元件的 resize 事件
+  handleNodeResize(change: any): void {
+    if (!change) return;
+    
+    const nodeElement = this.nodeElement?.nativeElement;
+    if (!nodeElement) return;
+
+    const flowInstance = this._flowService.getFlowInstance();
+    if (!flowInstance) return;
+
+    // 處理尺寸變更
+    if (change.type === 'dimensions' && change.dimensions) {
+      const { width, height } = change.dimensions;
+      
+      // 🎯 直接調整 NodeWrapper host element 的大小
+      if (width !== undefined) {
+        nodeElement.style.width = `${width}px`;
+      }
+      
+      if (height !== undefined) {
+        nodeElement.style.height = `${height}px`;
+      }
+
+      // 🔑 同時更新節點狀態（使用現有的 updateNode 方法）
+      const updates: any = {};
+      if (width !== undefined) updates.width = width;
+      if (height !== undefined) updates.height = height;
+
+      if (Object.keys(updates).length > 0) {
+        flowInstance.updateNode(change.id, updates);
+        
+        // 觸發重新測量和 handle bounds 計算
+        requestAnimationFrame(() => {
+          this._flowService.updateNodeInternals(change.id);
+        });
+      }
+    }
+
+    // 處理位置變更（如果需要的話）
+    if (change.type === 'position' && change.position) {
+      // 通常 resize 不會改變位置，但為了完整性還是處理
+      flowInstance.updateNode(change.id, { position: change.position });
+    }
   }
 }
